@@ -28,6 +28,15 @@ class Settings:
     APP_VERSION: str = "1.0.0.1"
     IDENTITY_VERSION: int = 1
 
+    # CORS — comma-separated list of allowed origins. Defaults to
+    # localhost for dev; set the real frontend origin(s) in Render's
+    # Environment tab once the frontend has a real deployed URL.
+    ALLOWED_ORIGINS: list[str] = [
+        o.strip() for o in os.getenv(
+            "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"
+        ).split(",") if o.strip()
+    ]
+
     # Relationship grid
     ROW_RANGE: int = 64
     GRID_COLS: int = 220

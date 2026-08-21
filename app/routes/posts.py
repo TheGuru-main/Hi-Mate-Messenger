@@ -40,6 +40,7 @@ async def create_post(
         category=payload.category,
         content=payload.content,
         media_ref=payload.media_ref,
+        identity_version=current_user.identity_version,
     )
     db.add(post)
     db.commit()
@@ -103,8 +104,14 @@ async def react_to_post(
     ).first()
     if existing:
         existing.emoji = payload.emoji
+        existing.identity_version = current_user.identity_version
     else:
-        db.add(Reaction(post_id=post_id, uid=current_user.uid, emoji=payload.emoji))
+        db.add(Reaction(
+            post_id=post_id,
+            uid=current_user.uid,
+            emoji=payload.emoji,
+            identity_version=current_user.identity_version,
+        ))
     db.commit()
     return {"status": "reacted"}
 
@@ -121,6 +128,7 @@ async def comment_on_post(
         author_uid=current_user.uid,
         content=payload.content,
         media_ref=payload.media_ref,
+        identity_version=current_user.identity_version,
     )
     db.add(comment)
     db.commit()

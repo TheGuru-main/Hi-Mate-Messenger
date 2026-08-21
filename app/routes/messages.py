@@ -1,6 +1,5 @@
 import hashlib
 import time
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
@@ -11,6 +10,7 @@ from app.models.user import User
 from app.models.message import Message, Group
 from app.schemas.message import MessageCreate, MessageOut, GroupCreate, GroupOut
 from app.services import placement
+from app.sockets.manager import manager
 
 router = APIRouter(tags=["messages"])
 
@@ -49,8 +49,27 @@ async def send_message(
     db.commit()
     db.refresh(message)
 
-    # TODO: push over the WebSocket channel (app/sockets/manager.py) to
-    # receiver_uid or every group member_uid here.
+    # Real-time push — payload matches MessageOut shape so the client can
+    # render it directly without a re-fetch.
+    push_payload = {
+        "type": "message",
+        "id": str(message.id),
+        "sender_uid": message.sender_uid,
+        "receiver_uid": message.receiver_uid,
+        "group_id": message.group_id,
+        "message_type": message.type,
+        "content": message.content,
+        "media_ref": message.media_ref,
+        "created_at": message.created_at.isoformat(),
+    }
+
+    if payload.receiver_uid:
+        await manager.send_to_user(payload.receiver_uid, push_payload)
+        # Also echo to the sender's other connected devices, if any
+        await manager.send_to_user(current_user.uid, push_payload)
+    else:
+        # Group: single shared envelope, fan out to every member
+        await manager.send_to_group(group.member_uids, push_payload)
 
     return message
 

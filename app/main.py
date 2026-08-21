@@ -2,11 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine
+from app.config import get_settings
 from app.routes import auth, users, messages, klique, posts, search
 from app.sockets.routes import router as ws_router
 
 # Import models so Base knows about every table before create_all runs
 from app import models  # noqa: F401
+
+settings = get_settings()
 
 app = FastAPI(
     title="Hi-Mate API",
@@ -17,7 +20,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tighten this to the real frontend origin before launch
+    allow_origins=settings.ALLOWED_ORIGINS,  # set ALLOWED_ORIGINS env var in Render once frontend URL exists
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -35,7 +38,7 @@ app.include_router(ws_router)  # WebSocket routes stay unprefixed
 @app.on_event("startup")
 def on_startup():
     # Creates tables if they don't exist. Fine for early development —
-    # switch to Alembic migrations before this touches real user data.
+    # Alembic migrations (see /alembic) take over once this is production data.
     Base.metadata.create_all(bind=engine)
 
 
