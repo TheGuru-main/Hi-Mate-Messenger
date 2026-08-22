@@ -18,6 +18,8 @@ services:
       - key: AT_API_KEY
         sync: false
 
+      - key: PYTHON_VERSION
+        value: 3.11.9
 databases:
   - name: himate-db
     plan: free
