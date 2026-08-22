@@ -8,10 +8,11 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# Render's Postgres URLs sometimes come as "postgres://" — SQLAlchemy 2.x wants "postgresql://"
 db_url = settings.DATABASE_URL
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
+if db_url.startswith("postgresql://"):
+    db_url = db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
 
 engine = create_engine(db_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
