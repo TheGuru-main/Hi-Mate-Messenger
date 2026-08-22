@@ -23,6 +23,10 @@ class Settings:
     AT_API_KEY: str = os.getenv("AT_API_KEY", "")
     OTP_EXPIRE_MINUTES: int = 10
     OTP_MAX_ATTEMPTS: int = 5
+    GNEWS_API_KEY: str = os.getenv("GNEWS_API_KEY", "")
+    SPORTMONK_API_KEY: str = os.getenv("SPORTMONK_API_KEY", "")
+    SPORTMONK_BASE_URL: str = os.getenv("SPORTMONK_BASE_URL", "https://api.sportmonks.com/v3/football")
+    NEWS_CACHE_MINUTES: int = 15
 
     # App
     APP_VERSION: str = "1.0.0.1"

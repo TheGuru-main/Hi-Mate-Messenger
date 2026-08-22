@@ -5,6 +5,7 @@ from app.database import Base, engine
 from app.config import get_settings
 from app.routes import auth, users, messages, klique, posts, search
 from app.sockets.routes import router as ws_router
+from app.routes import auth, users, messages, klique, posts, search, news
 
 # Import models so Base knows about every table before create_all runs
 from app import models  # noqa: F401
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(auth.router, prefix="/v1")
 app.include_router(users.router, prefix="/v1")
 app.include_router(messages.router, prefix="/v1")
+app.include_router(news.router, prefix="/v1")
 app.include_router(klique.router, prefix="/v1")
 app.include_router(posts.router, prefix="/v1")
 app.include_router(search.router, prefix="/v1")
