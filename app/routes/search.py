@@ -32,7 +32,7 @@ def _fetch_at_row(db: Session, row: int) -> list[Candidate]:
     return [
         Candidate(
             id=u.uid, row=row, field=u.business_role, role="User",
-            country=u.country, language=u.language,
+            country=u.country, region=u.region, locality=u.locality, language=u.language,
         )
         for u in users
     ]
@@ -48,6 +48,8 @@ async def klique_suggestions(
         searcher_field=current_user.business_role or "",
         searcher_role="User",
         searcher_country=current_user.country or "",
+        searcher_region=current_user.region or "",
+        searcher_locality=current_user.locality or "",
         searcher_language=current_user.language or "",
         surface="klique",
         fetch_candidates_at_row=lambda row: _fetch_at_row(db, row),
@@ -66,6 +68,8 @@ async def nearby(
         searcher_field=current_user.business_role or "",
         searcher_role="User",
         searcher_country=current_user.country or "",
+        searcher_region=current_user.region or "",
+        searcher_locality=current_user.locality or "",
         searcher_language=current_user.language or "",
         surface="other",
         fetch_candidates_at_row=lambda row: _fetch_at_row(db, row),

@@ -9,18 +9,27 @@ not crawler-only):
               -> by k=250, backward has taken 5*250 = 1,250 total unit steps
 
 Filter order (strict tiers, NOT an additive weighted sum):
-  1. Nearest (proximity)
+  1. Nearest (proximity, row axis)
   2. Category (Talent Field / Business field, exact match)
   3. Role (hierarchy-based HARD FILTER — non-hierarchy roles excluded entirely)
   4. Sibling-field (last tier)
 
 Role hierarchy is a real filter: a candidate whose role isn't in the
 searcher's hierarchy list is excluded from results, not just down-weighted.
+
+--- Phase 2 addition ---
+Location and Language scoring now use real COLUMN distance within their
+grid bands (see app/services/placement.py compute_column /
+column_distance), instead of flat "equal or not" checks. An exact match
+still scores full weight; a near-miss (adjacent first letters) scores
+partial credit; a missing value on either side skips that dimension
+entirely (no penalty), per the locked empty-field rule.
 """
 from dataclasses import dataclass, field
 from typing import Callable
 
 from app.config import get_settings
+from app.services.placement import compute_column, column_distance
 
 settings = get_settings()
 
@@ -102,6 +111,8 @@ class Candidate:
     field: str | None = None
     role: str | None = None
     country: str | None = None
+    region: str | None = None
+    locality: str | None = None
     language: str | None = None
     reacted: bool = False
     created_at_score: float = 0.0  # freshness input, higher = fresher
@@ -115,11 +126,26 @@ class ScoredResult:
     total: float
 
 
+def _band_score(weight: float, col_a: int | None, col_b: int | None) -> float:
+    """
+    Score a single grid band using real column distance, not flat equality.
+    Exact match -> full weight. Missing value on either side -> 0,
+    contributing nothing (skipped dimension, not penalized). Otherwise
+    scaled by how close the two columns are within their 26-slot band.
+    """
+    dist = column_distance(col_a, col_b)
+    if dist is None:
+        return 0.0
+    return weight * (1 - dist)
+
+
 def crawl(
     searcher_row: int,
     searcher_field: str,
     searcher_role: str,
     searcher_country: str,
+    searcher_region: str,
+    searcher_locality: str,
     searcher_language: str,
     surface: str,
     fetch_candidates_at_row: Callable[[int], list[Candidate]],
@@ -135,12 +161,31 @@ def crawl(
     seen_ids: set[str] = set()
     results: list[ScoredResult] = []
 
+    # Searcher's own column positions, computed once up front
+    s_country_col = compute_column("country", searcher_country)
+    s_region_col = compute_column("region", searcher_region)
+    s_locality_col = compute_column("locality", searcher_locality)
+    s_language_col = compute_column("language", searcher_language)
+
     def score_candidate(cand: Candidate, row: int) -> ScoredResult:
         distance = min(abs(row - searcher_row), ROW_RANGE - abs(row - searcher_row))
         proximity = max(0.0, 50 * (1 - distance / ROW_RANGE))
         category = 40 if cand.field == searcher_field else (5 if sibling_of(cand.field or "", searcher_field) else 0)
-        location = 20 if cand.country == searcher_country else 0
-        language = 15 if cand.language == searcher_language else 0
+
+        # Location score now blends country/region/locality band distance
+        # (20 total, split across the three sub-bands) instead of one flat check
+        c_country_col = compute_column("country", cand.country)
+        c_region_col = compute_column("region", cand.region)
+        c_locality_col = compute_column("locality", cand.locality)
+        location = (
+            _band_score(20 / 3, s_country_col, c_country_col)
+            + _band_score(20 / 3, s_region_col, c_region_col)
+            + _band_score(20 / 3, s_locality_col, c_locality_col)
+        )
+
+        c_language_col = compute_column("language", cand.language)
+        language = _band_score(15, s_language_col, c_language_col)
+
         reacted = 10 if cand.reacted else 0
         freshness = min(5.0, cand.created_at_score)
         role_score = role_match(searcher_role, cand.role or "") or 0

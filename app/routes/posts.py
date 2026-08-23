@@ -55,7 +55,7 @@ async def get_feed(
 ):
     """
     Feed powered by the relationship-grid crawler — see app/services/crawler.py
-    for the locked forward/backward walk + filter cascade.
+    for the locked forward/backward walk + filter cascade + Phase 2 column scoring.
     """
     def fetch_at_row(row: int) -> list[Candidate]:
         users_at_row = db.query(User).filter(User.start_row == row).all()
@@ -70,6 +70,8 @@ async def get_feed(
                 field=u.business_role,
                 role="User",  # Talent/Scout roles parked for now
                 country=u.country,
+                region=u.region,
+                locality=u.locality,
                 language=u.language,
             ))
         return candidates
@@ -79,6 +81,8 @@ async def get_feed(
         searcher_field=current_user.business_role or "",
         searcher_role="User",
         searcher_country=current_user.country or "",
+        searcher_region=current_user.region or "",
+        searcher_locality=current_user.locality or "",
         searcher_language=current_user.language or "",
         surface="feed",
         fetch_candidates_at_row=fetch_at_row,
