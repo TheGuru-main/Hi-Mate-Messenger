@@ -14,16 +14,13 @@ Filter order (strict tiers, NOT an additive weighted sum):
   3. Role (hierarchy-based HARD FILTER — non-hierarchy roles excluded entirely)
   4. Sibling-field (last tier)
 
-Role hierarchy is a real filter: a candidate whose role isn't in the
-searcher's hierarchy list is excluded from results, not just down-weighted.
+Location (20) and Language (15) use real column distance within their
+grid bands — exact match = full weight, near-miss = partial credit,
+missing value on either side = dimension skipped (no penalty).
 
---- Phase 2 addition ---
-Location and Language scoring now use real COLUMN distance within their
-grid bands (see app/services/placement.py compute_column /
-column_distance), instead of flat "equal or not" checks. An exact match
-still scores full weight; a near-miss (adjacent first letters) scores
-partial credit; a missing value on either side skips that dimension
-entirely (no penalty), per the locked empty-field rule.
+Interest (10) — PROPOSED weight, not part of the originally locked
+ranking table (which only specified Relationship/Category/Role/Location/
+Language/Reacted/Freshness/Sibling-field). Flagged for confirmation.
 """
 from dataclasses import dataclass, field
 from typing import Callable
@@ -44,21 +41,21 @@ SURFACE_CAPS = {
     "other": settings.CAP_OTHER,
 }
 
-# Role hierarchy — closest-to-farthest per role. Position drives the Role
-# score (20 / 15 / 10). A role NOT in this list is excluded entirely.
 ROLE_HIERARCHY = {
-    "Talent": ["Scout", "Talent", "Mini Org"],  # Big Org reached only via mediation, not direct
+    "Talent": ["Scout", "Talent", "Mini Org"],
     "Scout": ["Talent", "Mini Org", "Big Org"],
     "Mini Org": ["Talent", "Big Org", "Scout"],
-    "Big Org": ["Mini Org", "Scout", "Talent"],  # "hot talent" modeled as Talent
-    "User": ["Talent", "Scout", "Mini Org", "Big Org", "User"],  # unrestricted, per current assumption
+    "Big Org": ["Mini Org", "Scout", "Talent"],
+    "User": ["Talent", "Scout", "Mini Org", "Big Org", "User"],
 }
 ROLE_POSITION_SCORES = [20, 15, 10]
 
-# Sibling-field clusters (adjacent fields, smaller relevance bonus)
 SIBLING_CLUSTERS = [
-    {"T", "F", "H", "M", "L"},  # tailor - fashionista - fashion house - musician - model
+    {"T", "F", "H", "M", "L"},
 ]
+
+# PROPOSED — not locked. Interest/Hobby band weight.
+INTEREST_WEIGHT = 10
 
 
 def mod_row(row: int) -> int:
@@ -66,8 +63,6 @@ def mod_row(row: int) -> int:
 
 
 def role_match(searcher_role: str, candidate_role: str) -> int | None:
-    """Returns the Role score, or None if the candidate's role isn't in the
-    searcher's hierarchy at all (meaning: EXCLUDE this candidate)."""
     order = ROLE_HIERARCHY.get(searcher_role, [])
     if candidate_role not in order:
         return None
@@ -89,11 +84,6 @@ class WalkStep:
 
 
 def walk_steps(start_row: int, max_k: int = SHARED_K):
-    """
-    Generator yielding each step of the locked forward/backward walk.
-    Forward: one jump of 5 per step k.
-    Backward: 5 unit-steps of 1 per the SAME step k (5x more frequent).
-    """
     for k in range(0, max_k + 1):
         forward_row = mod_row(start_row + k * FORWARD_D)
         backward_rows = []
@@ -114,8 +104,9 @@ class Candidate:
     region: str | None = None
     locality: str | None = None
     language: str | None = None
+    interest: str | None = None
     reacted: bool = False
-    created_at_score: float = 0.0  # freshness input, higher = fresher
+    created_at_score: float = 0.0
 
 
 @dataclass
@@ -127,12 +118,6 @@ class ScoredResult:
 
 
 def _band_score(weight: float, col_a: int | None, col_b: int | None) -> float:
-    """
-    Score a single grid band using real column distance, not flat equality.
-    Exact match -> full weight. Missing value on either side -> 0,
-    contributing nothing (skipped dimension, not penalized). Otherwise
-    scaled by how close the two columns are within their 26-slot band.
-    """
     dist = column_distance(col_a, col_b)
     if dist is None:
         return 0.0
@@ -149,31 +134,23 @@ def crawl(
     searcher_language: str,
     surface: str,
     fetch_candidates_at_row: Callable[[int], list[Candidate]],
+    searcher_interest: str = "",
 ) -> list[ScoredResult]:
-    """
-    Runs the locked crawler walk and returns ranked, capped results.
-
-    `fetch_candidates_at_row` is injected so this stays a pure algorithm —
-    the caller wires it to a real DB query (e.g. "SELECT * FROM users WHERE
-    start_row = :row").
-    """
     cap = SURFACE_CAPS.get(surface, SURFACE_CAPS["other"])
     seen_ids: set[str] = set()
     results: list[ScoredResult] = []
 
-    # Searcher's own column positions, computed once up front
     s_country_col = compute_column("country", searcher_country)
     s_region_col = compute_column("region", searcher_region)
     s_locality_col = compute_column("locality", searcher_locality)
     s_language_col = compute_column("language", searcher_language)
+    s_interest_col = compute_column("interest", searcher_interest)
 
     def score_candidate(cand: Candidate, row: int) -> ScoredResult:
         distance = min(abs(row - searcher_row), ROW_RANGE - abs(row - searcher_row))
         proximity = max(0.0, 50 * (1 - distance / ROW_RANGE))
         category = 40 if cand.field == searcher_field else (5 if sibling_of(cand.field or "", searcher_field) else 0)
 
-        # Location score now blends country/region/locality band distance
-        # (20 total, split across the three sub-bands) instead of one flat check
         c_country_col = compute_column("country", cand.country)
         c_region_col = compute_column("region", cand.region)
         c_locality_col = compute_column("locality", cand.locality)
@@ -186,10 +163,13 @@ def crawl(
         c_language_col = compute_column("language", cand.language)
         language = _band_score(15, s_language_col, c_language_col)
 
+        c_interest_col = compute_column("interest", cand.interest)
+        interest = _band_score(INTEREST_WEIGHT, s_interest_col, c_interest_col)
+
         reacted = 10 if cand.reacted else 0
         freshness = min(5.0, cand.created_at_score)
         role_score = role_match(searcher_role, cand.role or "") or 0
-        total = proximity + category + location + language + reacted + freshness + role_score
+        total = proximity + category + location + language + interest + reacted + freshness + role_score
         return ScoredResult(
             candidate=cand,
             distance=distance,
@@ -199,6 +179,7 @@ def crawl(
                 "role": role_score,
                 "location": location,
                 "language": language,
+                "interest": interest,
                 "reacted": reacted,
                 "freshness": freshness,
             },
@@ -217,11 +198,10 @@ def crawl(
                     continue
                 role_score = role_match(searcher_role, cand.role or "")
                 if role_score is None:
-                    continue  # HARD FILTER — not in hierarchy, excluded entirely
+                    continue
                 seen_ids.add(cand.id)
                 results.append(score_candidate(cand, row))
 
-    # Strict tiered sort: nearest -> category -> role -> (remaining as tiebreak)
     results.sort(
         key=lambda r: (
             r.distance,

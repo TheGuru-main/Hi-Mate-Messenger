@@ -21,9 +21,6 @@ async def search(
         uid = placement.strip_plus(q)
         user = db.query(User).filter(User.uid == uid).first()
         return [user] if user else []
-
-    # username: fuzzy-ish via ILIKE for now — Elastic Cloud radius search is
-    # a later enhancement (see app/services/placement.py elastic_cloud())
     return db.query(User).filter(User.username.ilike(f"%{q}%")).limit(25).all()
 
 
@@ -32,7 +29,8 @@ def _fetch_at_row(db: Session, row: int) -> list[Candidate]:
     return [
         Candidate(
             id=u.uid, row=row, field=u.business_role, role="User",
-            country=u.country, region=u.region, locality=u.locality, language=u.language,
+            country=u.country, region=u.region, locality=u.locality,
+            language=u.language, interest=u.interest,
         )
         for u in users
     ]
@@ -51,6 +49,7 @@ async def klique_suggestions(
         searcher_region=current_user.region or "",
         searcher_locality=current_user.locality or "",
         searcher_language=current_user.language or "",
+        searcher_interest=current_user.interest or "",
         surface="klique",
         fetch_candidates_at_row=lambda row: _fetch_at_row(db, row),
     )
@@ -71,6 +70,7 @@ async def nearby(
         searcher_region=current_user.region or "",
         searcher_locality=current_user.locality or "",
         searcher_language=current_user.language or "",
+        searcher_interest=current_user.interest or "",
         surface="other",
         fetch_candidates_at_row=lambda row: _fetch_at_row(db, row),
     )
