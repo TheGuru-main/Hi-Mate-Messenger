@@ -6,6 +6,7 @@ from app.models.otp import OTPVerification
 from app.models.pairwise_relationship import PairwiseRelationship
 from app.models.reccord import ReccordEntry
 from app.models.news_preference import NewsPreference
+from app.models.media_asset import MediaAsset
 
 __all__ = [
     "User",
@@ -22,4 +23,5 @@ __all__ = [
     "PairwiseRelationship",
     "ReccordEntry",
     "NewsPreference",
+    "MediaAsset",
 ]
