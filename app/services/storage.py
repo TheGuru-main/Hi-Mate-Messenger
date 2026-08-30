@@ -1,23 +1,26 @@
 """
-Real cloud object storage for user media — S3-compatible API, so this
-works unchanged against AWS S3, Cloudflare R2, or Backblaze B2 depending
-on which STORAGE_* env vars you set. This is PUBLIC/production storage
-for actual user-uploaded media — not to be confused with any client-side
-session cache (that's a frontend concern, unrelated to this file).
+Real cloud object storage for user media — S3-compatible API (Backblaze
+B2, or AWS S3/Cloudflare R2 if you switch later — same code either way).
 
-Setup (Cloudflare R2 recommended — S3-compatible, no egress fees):
-  1. Create an R2 bucket in the Cloudflare dashboard
-  2. Create an R2 API token (Account API token with R2 read/write)
-  3. Set these env vars in Render:
-       STORAGE_ENDPOINT_URL   = https://<account_id>.r2.cloudflarestorage.com
-       STORAGE_ACCESS_KEY_ID  = <your R2 access key>
-       STORAGE_SECRET_KEY     = <your R2 secret key>
-       STORAGE_BUCKET_NAME    = himate-media
-       STORAGE_PUBLIC_URL_BASE = https://<your-r2-public-domain>  (R2 custom domain or public bucket URL)
+IMPORTANT: the bucket stays PRIVATE. Making a bucket "Public" on
+Backblaze (and similarly on other providers) gates CDN/bandwidth
+delivery behind a billing requirement, which needs a card we don't have.
+Private storage + backend-generated SIGNED URLS avoids that entirely,
+and is arguably better practice anyway — nothing is guessable/public,
+access only happens through a URL we explicitly generate and expire.
 
-  For AWS S3 instead: set STORAGE_ENDPOINT_URL to the S3 regional
-  endpoint (or omit it — boto3 defaults to AWS if unset) and use your
-  AWS credentials/bucket instead.
+Backblaze B2 setup (no card needed for any of this):
+  1. Sign up at backblaze.com — B2 Cloud Storage, no card required
+  2. Create a bucket, leave it PRIVATE (default)
+  3. Application Keys -> Add a New Application Key -> Read+Write, scoped
+     to your bucket
+  4. Set these env vars in Render:
+       STORAGE_ENDPOINT_URL   = https://s3.<region>.backblazeb2.com
+       STORAGE_ACCESS_KEY_ID  = <your keyID>
+       STORAGE_SECRET_KEY     = <your applicationKey>
+       STORAGE_BUCKET_NAME    = <your bucket name>
+     (STORAGE_PUBLIC_URL_BASE is no longer needed — signed URLs are
+     generated per-request instead of a static public base.)
 """
 import uuid
 
@@ -30,6 +33,11 @@ from app.config import get_settings
 settings = get_settings()
 
 _client = None
+
+# Signed URL lifetime — how long a generated link stays valid before it
+# needs to be regenerated. 7 days is the practical max for SigV4
+# presigned URLs on most S3-compatible providers.
+DEFAULT_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60
 
 
 def _get_client():
@@ -50,12 +58,7 @@ def is_configured() -> bool:
 
 
 def upload_bytes(content: bytes, extension: str, content_type: str = "application/octet-stream") -> str:
-    """
-    Uploads a file's bytes to cloud storage, returns the media_ref (the
-    object key). Raises RuntimeError if storage isn't configured, so a
-    misconfigured deploy fails loudly at upload time rather than silently
-    losing files.
-    """
+    """Uploads to the (private) bucket, returns the media_ref (object key)."""
     if not is_configured():
         raise RuntimeError(
             "Cloud storage is not configured — set STORAGE_ACCESS_KEY_ID, "
@@ -73,10 +76,21 @@ def upload_bytes(content: bytes, extension: str, content_type: str = "applicatio
     return media_ref
 
 
-def get_public_url(media_ref: str) -> str:
-    """Public URL for a stored object, using the configured public base."""
-    base = settings.STORAGE_PUBLIC_URL_BASE.rstrip("/")
-    return f"{base}/{media_ref}"
+def get_signed_url(media_ref: str, expires_in: int = DEFAULT_URL_EXPIRY_SECONDS) -> str:
+    """
+    Generates a temporary signed URL for reading a private object.
+    Call this fresh whenever a client needs to actually display/download
+    the file — don't store the URL itself, store the media_ref and
+    re-sign on read, since signed URLs expire.
+    """
+    if not is_configured():
+        raise RuntimeError("Cloud storage is not configured.")
+    client = _get_client()
+    return client.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": settings.STORAGE_BUCKET_NAME, "Key": media_ref},
+        ExpiresIn=expires_in,
+    )
 
 
 def delete_object(media_ref: str) -> bool:

@@ -30,13 +30,14 @@ class Settings:
     SPORTMONK_BASE_URL: str = os.getenv("SPORTMONK_BASE_URL", "https://api.sportmonks.com/v3/football")
     NEWS_CACHE_MINUTES: int = 15
 
-    # Cloud object storage (S3-compatible — AWS S3, Cloudflare R2, or
-    # Backblaze B2). Public/production media path — see app/services/storage.py
+    # Cloud object storage (S3-compatible — Backblaze B2 by default, no
+    # card required; AWS S3/Cloudflare R2 also work if switched later).
+    # Bucket stays PRIVATE — access is via backend-generated signed URLs,
+    # not a public bucket URL (avoids the public-bucket billing gate).
     STORAGE_ENDPOINT_URL: str = os.getenv("STORAGE_ENDPOINT_URL", "")
     STORAGE_ACCESS_KEY_ID: str = os.getenv("STORAGE_ACCESS_KEY_ID", "")
     STORAGE_SECRET_KEY: str = os.getenv("STORAGE_SECRET_KEY", "")
     STORAGE_BUCKET_NAME: str = os.getenv("STORAGE_BUCKET_NAME", "himate-media")
-    STORAGE_PUBLIC_URL_BASE: str = os.getenv("STORAGE_PUBLIC_URL_BASE", "")
 
     # App
     APP_VERSION: str = "1.0.0.1"

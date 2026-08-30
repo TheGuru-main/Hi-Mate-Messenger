@@ -28,8 +28,10 @@ async def upload_file(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Uploads to real cloud object storage (S3-compatible — see
-    app/services/storage.py for setup). Public/production media path.
+    Uploads to a PRIVATE bucket (no public-bucket billing gate). Returns
+    a signed URL valid for 7 days — the client should re-fetch a fresh
+    one via GET /media/{media_ref}/url once it expires, rather than
+    caching the URL long-term.
     """
     ext = os.path.splitext(file.filename or "")[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
@@ -47,7 +49,7 @@ async def upload_file(
 
     content_type = CONTENT_TYPES.get(ext, "application/octet-stream")
     media_ref = storage.upload_bytes(contents, ext, content_type)
-    public_url = storage.get_public_url(media_ref)
+    signed_url = storage.get_signed_url(media_ref)
 
     asset = MediaAsset(
         media_ref=media_ref,
@@ -58,7 +60,21 @@ async def upload_file(
     db.add(asset)
     db.commit()
 
-    return {"media_ref": media_ref, "url": public_url, "size_bytes": len(contents)}
+    return {"media_ref": media_ref, "url": signed_url, "size_bytes": len(contents)}
+
+
+@router.get("/{media_ref}/url")
+async def get_fresh_url(
+    media_ref: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Re-signs a URL for an existing file — call this once the URL from
+    upload time (or a previous call here) has expired."""
+    asset = db.query(MediaAsset).filter(MediaAsset.media_ref == media_ref).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"media_ref": media_ref, "url": storage.get_signed_url(media_ref)}
 
 
 @router.delete("/{media_ref}")
