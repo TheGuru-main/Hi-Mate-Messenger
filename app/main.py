@@ -1,3 +1,5 @@
+import asyncio
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -6,11 +8,12 @@ from app.config import get_settings
 from app.routes import (
     auth, users, messages, klique, posts, search, news, smart_search,
     pairwise, location, reccord, elastic_search, media, settings as settings_route,
+    match_room,
 )
 from app.sockets.routes import router as ws_router
 from app.sockets.calls import router as calls_ws_router
+from app.services.match_poller import poll_live_matches
 
-# Import models so Base knows about every table before create_all runs
 from app import models  # noqa: F401
 
 settings = get_settings()
@@ -20,12 +23,13 @@ app = FastAPI(
     version="1.0.0.1",
     description="Core Hi-Mate messenger API — identity, placement, messaging, "
                  "Klique/Follow/Fan, feed, search, relationship-grid crawler, "
-                 "secondary letter-pair grid, RECCORD DB, location, media, settings.",
+                 "secondary letter-pair grid, RECCORD DB, location, media, settings, "
+                 "live sports match rooms.",
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,  # set ALLOWED_ORIGINS env var in Render once frontend URL exists
+    allow_origins=settings.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,15 +49,19 @@ app.include_router(reccord.router, prefix="/v1")
 app.include_router(elastic_search.router, prefix="/v1")
 app.include_router(media.router, prefix="/v1")
 app.include_router(settings_route.router, prefix="/v1")
-app.include_router(ws_router)       # WebSocket routes stay unprefixed
-app.include_router(calls_ws_router)  # call signaling, also unprefixed
+app.include_router(match_room.router, prefix="/v1")
+app.include_router(ws_router)
+app.include_router(calls_ws_router)
 
 
 @app.on_event("startup")
-def on_startup():
-    # Creates tables if they don't exist. Fine for early development —
-    # Alembic migrations (see /alembic) take over once this is production data.
+async def on_startup():
     Base.metadata.create_all(bind=engine)
+    # Background task — polls live matches for score changes, pushes
+    # goal events into match rooms. Fire-and-forget on the running
+    # event loop; Render keeps this process alive as a persistent
+    # web service, so this loop just keeps running alongside requests.
+    asyncio.create_task(poll_live_matches())
 
 
 @app.get("/")
