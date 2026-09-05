@@ -4,7 +4,7 @@
 // the app feels instant, NOT where uploaded media lives (that's the
 // backend's cloud storage, unrelated to this file).
 
-const API_BASE = "https://hi-mate-messenger-apiv1-0-0-1r.onrender.com/v1";
+const API_BASE = "https://hi-mate-messenger-apiv1-0-0-1r.onrender.com";
 const WS_BASE = "wss://hi-mate-messenger-apiv1-0-0-1r.onrender.com";
 
 export function getToken() {
