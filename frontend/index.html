@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Hi-Mate</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+<div id="network-bg"></div>
+
+<!-- ============ SPLASH ============ -->
+<div class="page" id="splash">
+  <div class="glass-header">
+    <h1>Hi-Mate</h1>
+    <p>Connect with Friends, Families, and Business partners, Locally and Globally.</p>
+  </div>
+</div>
+
+<!-- ============ AUTH: PHONE ENTRY ============ -->
+<div class="page hidden" id="auth-phone">
+  <div class="glass-header">
+    <h2>Welcome</h2>
+    <p>Enter your details to get started</p>
+  </div>
+  <div class="form-container">
+    <div class="form-section">
+      <label>Username</label>
+      <input class="input-box" id="signup-username" placeholder="Your name" />
+    </div>
+    <div class="form-section">
+      <label>Phone Number</label>
+      <div class="phone-group">
+        <select class="input-box" id="signup-country-code">
+          <option value="+234">🇳🇬 +234</option>
+          <option value="+233">🇬🇭 +233</option>
+          <option value="+254">🇰🇪 +254</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+1">🇺🇸 +1</option>
+        </select>
+        <input class="phone-input" id="signup-phone" placeholder="801 234 5678" />
+      </div>
+    </div>
+    <div class="form-section">
+      <label>Password</label>
+      <input class="input-box" type="password" id="signup-password" placeholder="Choose a password" />
+    </div>
+    <div class="form-section">
+      <label>Country</label>
+      <input class="input-box" id="signup-country" placeholder="Nigeria" />
+    </div>
+    <div class="form-section">
+      <label>Language</label>
+      <input class="input-box" id="signup-language" placeholder="English" />
+    </div>
+    <button class="primary-btn" id="btn-signup">Create Account</button>
+    <button class="secondary-btn" id="btn-goto-login">Already have an account? Log in</button>
+  </div>
+  <div class="error-text" id="signup-error"></div>
+</div>
+
+<!-- ============ AUTH: LOGIN ============ -->
+<div class="page hidden" id="auth-login">
+  <div class="glass-header">
+    <h2>Log In</h2>
+    <p>Welcome back</p>
+  </div>
+  <div class="form-container">
+    <div class="form-section">
+      <label>Phone Number</label>
+      <div class="phone-group">
+        <select class="input-box" id="login-country-code">
+          <option value="+234">🇳🇬 +234</option>
+          <option value="+233">🇬🇭 +233</option>
+          <option value="+254">🇰🇪 +254</option>
+          <option value="+44">🇬🇧 +44</option>
+          <option value="+1">🇺🇸 +1</option>
+        </select>
+        <input class="phone-input" id="login-phone" placeholder="801 234 5678" />
+      </div>
+    </div>
+    <div class="form-section">
+      <label>Password</label>
+      <input class="input-box" type="password" id="login-password" placeholder="Password" />
+    </div>
+    <button class="primary-btn" id="btn-login">Log In</button>
+    <button class="secondary-btn" id="btn-goto-signup">Need an account? Sign up</button>
+  </div>
+  <div class="error-text" id="login-error"></div>
+</div>
+
+<!-- ============ AUTH: OTP ============ -->
+<div class="page hidden" id="auth-otp">
+  <div class="glass-header">
+    <h2>Verify</h2>
+    <p>Enter the code sent to your phone (check Render logs in dev mode)</p>
+  </div>
+  <div class="form-container">
+    <div class="form-section">
+      <label>Verification Code</label>
+      <input class="input-box" id="otp-code" placeholder="123456" maxlength="6" />
+    </div>
+    <button class="primary-btn" id="btn-verify-otp">Verify</button>
+  </div>
+  <div class="error-text" id="otp-error"></div>
+</div>
+
+<!-- ============ HOME SHELL ============ -->
+<div class="page hidden" id="home">
+  <div class="top-bar">
+    <div class="brand">Hi-Mate</div>
+    <button class="icon-btn" id="btn-open-settings">⚙</button>
+  </div>
+
+  <div class="tab-content" id="tab-feed">
+    <div class="composer">
+      <select class="input-box small" id="post-category">
+        <option value="">Category…</option>
+        <option>Personal</option><option>Technology</option><option>AI</option>
+        <option>Education</option><option>Business</option><option>Medical</option>
+        <option>Health & Fitness</option><option>Entertainment</option><option>Sports</option>
+        <option>News</option><option>Religion & Culture</option><option>Lifestyle</option>
+        <option>Advertisement</option>
+      </select>
+      <textarea class="input-box" id="post-content" placeholder="What's on your mind?"></textarea>
+      <button class="primary-btn" id="btn-create-post">Post</button>
+    </div>
+    <div id="feed-list" class="scroll-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-search">
+    <input class="input-box" id="search-input" placeholder="Search username, phone, or content…" />
+    <div class="chip-row">
+      <button class="chip" data-mode="username">Username</button>
+      <button class="chip" data-mode="phone">Phone</button>
+      <button class="chip" data-mode="content">Content</button>
+      <button class="chip" data-mode="klique">Klique suggestions</button>
+    </div>
+    <div id="search-results" class="scroll-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-matches">
+    <div class="section-title">🔴 Live Matches</div>
+    <div id="matches-list" class="scroll-list"></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-chats">
+    <div class="section-title">My Kliques</div>
+    <div id="klique-list" class="scroll-list"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-tab="feed">🏠<span>Feed</span></button>
+    <button class="nav-btn" data-tab="search">🔎<span>Search</span></button>
+    <button class="nav-btn" data-tab="matches">⚽<span>Live</span></button>
+    <button class="nav-btn" data-tab="chats">💬<span>Kliques</span></button>
+  </div>
+</div>
+
+<!-- ============ CHAT ROOM ============ -->
+<div class="page hidden" id="chat-room">
+  <div class="top-bar">
+    <button class="icon-btn" id="btn-back-from-chat">←</button>
+    <div class="brand" id="chat-room-title">Chat</div>
+  </div>
+  <div id="chat-messages" class="scroll-list chat-scroll"></div>
+  <div class="chat-input-row">
+    <input class="input-box" id="chat-input" placeholder="Type a message…" />
+    <button class="send-btn" id="btn-send-message">➤</button>
+  </div>
+</div>
+
+<!-- ============ MATCH ROOM ============ -->
+<div class="page hidden" id="match-room">
+  <div class="top-bar">
+    <button class="icon-btn" id="btn-back-from-match">←</button>
+    <div class="brand" id="match-room-title">Match</div>
+  </div>
+  <div class="scoreboard" id="match-scoreboard"></div>
+  <div class="fold" id="match-stats-fold">
+    <div class="fold-header" id="toggle-stats-fold">📊 Stats & Live View <span>▾</span></div>
+    <div class="fold-body hidden" id="match-stats-body"></div>
+  </div>
+  <div id="match-chat-messages" class="scroll-list chat-scroll"></div>
+  <div class="chat-input-row">
+    <input class="input-box" id="match-chat-input" placeholder="Banter with fans…" />
+    <button class="send-btn" id="btn-send-match-message">➤</button>
+  </div>
+</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="page hidden" id="settings">
+  <div class="top-bar">
+    <button class="icon-btn" id="btn-back-from-settings">←</button>
+    <div class="brand">Settings</div>
+  </div>
+  <div id="settings-menu" class="scroll-list"></div>
+  <button class="secondary-btn" id="btn-logout" style="margin: 20px;">Logout</button>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
