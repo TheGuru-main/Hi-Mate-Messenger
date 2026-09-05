@@ -7,21 +7,11 @@ from app.models.pairwise_relationship import PairwiseRelationship
 from app.models.reccord import ReccordEntry
 from app.models.news_preference import NewsPreference
 from app.models.media_asset import MediaAsset
+from app.models.match_room import MatchRoom
 
 __all__ = [
-    "User",
-    "Group",
-    "Message",
-    "Post",
-    "Comment",
-    "Reaction",
-    "KliqueRequest",
-    "Follow",
-    "Fan",
-    "Block",
-    "OTPVerification",
-    "PairwiseRelationship",
-    "ReccordEntry",
-    "NewsPreference",
-    "MediaAsset",
+    "User", "Group", "Message", "Post", "Comment", "Reaction",
+    "KliqueRequest", "Follow", "Fan", "Block", "OTPVerification",
+    "PairwiseRelationship", "ReccordEntry", "NewsPreference",
+    "MediaAsset", "MatchRoom",
 ]
