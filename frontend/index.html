@@ -1,66 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Hi-Mate</title>
-<link rel="stylesheet" href="css/style.css" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Hi-Mate Messenger</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div id="network-bg"></div>
 
-<!-- ============ SPLASH ============ -->
-<div class="page" id="splash">
+<canvas id="network-bg"></canvas>
+
+<!-- ========================================== -->
+<!-- SPLASH -->
+<!-- ========================================== -->
+<section id="splash" class="page">
   <div class="glass-header">
-    <h1>Hi-Mate</h1>
+    <h1>Hi-Mate Messenger 👋</h1>
     <p>Connect with Friends, Families, and Business partners, Locally and Globally.</p>
   </div>
-</div>
+  <footer>Powered by: The Guru Innovations🌀.</footer>
+</section>
 
-<!-- ============ AUTH: PHONE ENTRY ============ -->
-<div class="page hidden" id="auth-phone">
+<!-- ========================================== -->
+<!-- CREATE ACCOUNT -->
+<!-- ========================================== -->
+<section id="auth" class="page hidden">
   <div class="glass-header">
-    <h2>Welcome</h2>
-    <p>Enter your details to get started</p>
+    <h1>Welcome to Hi-Mate 👋</h1>
+    <h2>Create An Account</h2>
+    <p>Connect With Friends, Families and Business partners, Locally and Globally.</p>
   </div>
+
   <div class="form-container">
     <div class="form-section">
       <label>Username</label>
-      <input class="input-box" id="signup-username" placeholder="Your name" />
+      <input id="username" class="input-box" type="text" placeholder="Username">
+      <div id="gsp-preview" class="preview-text"></div>
     </div>
+
+    <div class="form-section">
+      <label>Continent</label>
+      <select id="continent"><option value="">All Continents</option></select>
+    </div>
+
     <div class="form-section">
       <label>Phone Number</label>
       <div class="phone-group">
-        <select class="input-box" id="signup-country-code">
-          <option value="+234">🇳🇬 +234</option>
-          <option value="+233">🇬🇭 +233</option>
-          <option value="+254">🇰🇪 +254</option>
-          <option value="+44">🇬🇧 +44</option>
-          <option value="+1">🇺🇸 +1</option>
-        </select>
-        <input class="phone-input" id="signup-phone" placeholder="801 234 5678" />
+        <select id="country-code"></select>
+        <input id="phone" class="phone-input" type="tel" placeholder="Phone Number">
       </div>
     </div>
-    <div class="form-section">
-      <label>Password</label>
-      <input class="input-box" type="password" id="signup-password" placeholder="Choose a password" />
-    </div>
+
     <div class="form-section">
       <label>Country</label>
-      <input class="input-box" id="signup-country" placeholder="Nigeria" />
+      <select id="country"></select>
     </div>
+
+    <div class="form-section">
+      <label>Region / State</label>
+      <select id="region"><option value="">Select Country first</option></select>
+      <input id="region-manual" class="input-box" type="text" placeholder="Or type your region/state manually" style="margin-top:6px;">
+    </div>
+
+    <div class="form-section">
+      <label>Locality / LGA / Community</label>
+      <select id="locality"><option value="">Select Region first</option></select>
+      <input id="locality-manual" class="input-box" type="text" placeholder="Or type your locality manually" style="margin-top:6px;">
+    </div>
+
     <div class="form-section">
       <label>Language</label>
-      <input class="input-box" id="signup-language" placeholder="English" />
+      <select id="language">
+        <option value="">Select Language</option>
+        <option>English</option><option>العربية</option><option>Français</option>
+        <option>Español</option><option>Hindi</option><option>Yoruba</option>
+        <option>Igbo</option><option>Hausa</option><option>Efik</option>
+        <option>Tiv</option><option>Ibibio</option><option>Ogoni</option>
+        <option>Ikwerre</option><option>Russian</option><option>Greek</option>
+        <option>Thai</option><option>Tamil</option><option>Bengali</option><option>Amharic</option>
+      </select>
     </div>
-    <button class="primary-btn" id="btn-signup">Create Account</button>
-    <button class="secondary-btn" id="btn-goto-login">Already have an account? Log in</button>
-  </div>
-  <div class="error-text" id="signup-error"></div>
-</div>
 
-<!-- ============ AUTH: LOGIN ============ -->
-<div class="page hidden" id="auth-login">
+    <div class="form-section">
+      <label>Business Category <span class="optional-tag">(optional)</span></label>
+      <select id="business-category"></select>
+    </div>
+
+    <div class="form-section">
+      <label>Talent Category <span class="optional-tag">(optional)</span></label>
+      <select id="talent-category"></select>
+    </div>
+
+    <div class="form-section">
+      <label>Password</label>
+      <input id="password" class="input-box" type="password" placeholder="Password">
+    </div>
+
+    <button id="create-account-btn" class="primary-btn">Create Account</button>
+    <button id="login-existing-btn" class="secondary-btn">Login to Existing Account</button>
+    <div id="auth-error" class="error-text"></div>
+  </div>
+  <footer>Powered by: The Guru Innovations🌀.</footer>
+</section>
+
+<!-- ========================================== -->
+<!-- LOGIN -->
+<!-- ========================================== -->
+<section id="login" class="page hidden">
   <div class="glass-header">
     <h2>Log In</h2>
     <p>Welcome back</p>
@@ -69,44 +115,44 @@
     <div class="form-section">
       <label>Phone Number</label>
       <div class="phone-group">
-        <select class="input-box" id="login-country-code">
-          <option value="+234">🇳🇬 +234</option>
-          <option value="+233">🇬🇭 +233</option>
-          <option value="+254">🇰🇪 +254</option>
-          <option value="+44">🇬🇧 +44</option>
-          <option value="+1">🇺🇸 +1</option>
-        </select>
-        <input class="phone-input" id="login-phone" placeholder="801 234 5678" />
+        <select id="login-country-code"></select>
+        <input id="login-phone" class="phone-input" type="tel" placeholder="Phone Number">
       </div>
     </div>
     <div class="form-section">
       <label>Password</label>
-      <input class="input-box" type="password" id="login-password" placeholder="Password" />
+      <input id="login-password" class="input-box" type="password" placeholder="Password">
     </div>
-    <button class="primary-btn" id="btn-login">Log In</button>
-    <button class="secondary-btn" id="btn-goto-signup">Need an account? Sign up</button>
+    <button id="login-submit-btn" class="primary-btn">Log In</button>
+    <button class="secondary-btn" onclick="goToPage('auth')">Back to Sign Up</button>
+    <div id="login-error" class="error-text"></div>
   </div>
-  <div class="error-text" id="login-error"></div>
-</div>
+  <footer>Powered by: The Guru Innovations🌀.</footer>
+</section>
 
-<!-- ============ AUTH: OTP ============ -->
-<div class="page hidden" id="auth-otp">
+<!-- ========================================== -->
+<!-- OTP -->
+<!-- ========================================== -->
+<section id="otp" class="page hidden">
   <div class="glass-header">
-    <h2>Verify</h2>
-    <p>Enter the code sent to your phone (check Render logs in dev mode)</p>
+    <button class="back-btn" id="otp-back-btn">← Back</button>
+    <h1>Hi-Mate Messenger 👋</h1>
+    <h2>Verify Phone Number</h2>
+    <p>Enter the 6-digit verification code sent to your phone. (Dev mode: check Render logs for the code.)</p>
   </div>
   <div class="form-container">
-    <div class="form-section">
-      <label>Verification Code</label>
-      <input class="input-box" id="otp-code" placeholder="123456" maxlength="6" />
-    </div>
-    <button class="primary-btn" id="btn-verify-otp">Verify</button>
+    <input id="otp-code" class="input-box" type="number" placeholder="Enter OTP Code" maxlength="6">
+    <div id="otp-resend-timer" class="preview-text"></div>
+    <button id="verify-otp-btn" class="primary-btn">Verify Account</button>
+    <div id="otp-error" class="error-text"></div>
   </div>
-  <div class="error-text" id="otp-error"></div>
-</div>
+  <footer>Powered by: The Guru Innovations🌀.</footer>
+</section>
 
-<!-- ============ HOME SHELL ============ -->
-<div class="page hidden" id="home">
+<!-- ========================================== -->
+<!-- HOME SHELL -->
+<!-- ========================================== -->
+<section id="home" class="page hidden">
   <div class="top-bar">
     <div class="brand">Hi-Mate</div>
     <button class="icon-btn" id="btn-open-settings">⚙</button>
@@ -129,7 +175,7 @@
   </div>
 
   <div class="tab-content hidden" id="tab-search">
-    <input class="input-box" id="search-input" placeholder="Search username, phone, or content…" />
+    <input class="input-box" id="search-input" placeholder="Search username, phone, or content…">
     <div class="chip-row">
       <button class="chip" data-mode="username">Username</button>
       <button class="chip" data-mode="phone">Phone</button>
@@ -155,23 +201,28 @@
     <button class="nav-btn" data-tab="matches">⚽<span>Live</span></button>
     <button class="nav-btn" data-tab="chats">💬<span>Kliques</span></button>
   </div>
-</div>
+</section>
 
-<!-- ============ CHAT ROOM ============ -->
-<div class="page hidden" id="chat-room">
+<!-- ========================================== -->
+<!-- CHAT ROOM -->
+<!-- ========================================== -->
+<section id="chat-room" class="page hidden">
   <div class="top-bar">
     <button class="icon-btn" id="btn-back-from-chat">←</button>
     <div class="brand" id="chat-room-title">Chat</div>
+    <button class="icon-btn" id="btn-start-group-call">📹</button>
   </div>
   <div id="chat-messages" class="scroll-list chat-scroll"></div>
   <div class="chat-input-row">
-    <input class="input-box" id="chat-input" placeholder="Type a message…" />
+    <input class="input-box" id="chat-input" placeholder="Type a message…">
     <button class="send-btn" id="btn-send-message">➤</button>
   </div>
-</div>
+</section>
 
-<!-- ============ MATCH ROOM ============ -->
-<div class="page hidden" id="match-room">
+<!-- ========================================== -->
+<!-- MATCH ROOM -->
+<!-- ========================================== -->
+<section id="match-room" class="page hidden">
   <div class="top-bar">
     <button class="icon-btn" id="btn-back-from-match">←</button>
     <div class="brand" id="match-room-title">Match</div>
@@ -183,21 +234,51 @@
   </div>
   <div id="match-chat-messages" class="scroll-list chat-scroll"></div>
   <div class="chat-input-row">
-    <input class="input-box" id="match-chat-input" placeholder="Banter with fans…" />
+    <input class="input-box" id="match-chat-input" placeholder="Banter with fans…">
     <button class="send-btn" id="btn-send-match-message">➤</button>
   </div>
-</div>
+</section>
 
-<!-- ============ SETTINGS ============ -->
-<div class="page hidden" id="settings">
+<!-- ========================================== -->
+<!-- CALL ROOM -->
+<!-- ========================================== -->
+<section id="call-room" class="page hidden">
+  <div class="top-bar">
+    <div class="brand">Group Call</div>
+  </div>
+  <video id="local-video" class="call-video-tile local" autoplay playsinline muted></video>
+  <div id="call-video-grid" class="call-grid"></div>
+  <button class="primary-btn call-end-btn" id="btn-end-call">End Call</button>
+</section>
+
+<!-- ========================================== -->
+<!-- SETTINGS -->
+<!-- ========================================== -->
+<section id="settings" class="page hidden">
   <div class="top-bar">
     <button class="icon-btn" id="btn-back-from-settings">←</button>
     <div class="brand">Settings</div>
   </div>
   <div id="settings-menu" class="scroll-list"></div>
-  <button class="secondary-btn" id="btn-logout" style="margin: 20px;">Logout</button>
-</div>
+  <button class="secondary-btn" id="btn-logout" style="margin:20px;">Logout</button>
+</section>
 
-<script type="module" src="js/app.js"></script>
+<script src="js/api.js"></script>
+<script src="js/countries.js"></script>
+<script src="js/categories.js"></script>
+<script src="js/particles.js"></script>
+<script src="js/gsp.js"></script>
+<script src="js/navigation.js"></script>
+<script src="js/socket.js"></script>
+<script src="js/otp.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/feed.js"></script>
+<script src="js/search.js"></script>
+<script src="js/chat.js"></script>
+<script src="js/matches.js"></script>
+<script src="js/calls.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/app.js"></script>
+
 </body>
 </html>
