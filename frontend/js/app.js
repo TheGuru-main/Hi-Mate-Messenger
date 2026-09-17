@@ -1,35 +1,64 @@
-// ==========================================
-// HI-MATE MESSENGER
-// app.js — boot sequence
-// ==========================================
+import { getToken, getCachedUser, api, setCachedUser } from "./api.js";
+import { showPage, showTab } from "./router.js";
+import { initAuth } from "./auth.js";
+import { initFeed, loadFeed } from "./feed.js";
+import { initSearch } from "./search.js";
+import { initChat, loadKliqueList } from "./chat.js";
+import { initMatches, loadLiveMatches } from "./matches.js";
+import { initSettings } from "./settings.js";
+import { connectMessageSocket } from "./socket.js";
 
-async function enterApp() {
-    goToPage("home");
-    goToTab("feed");
-    connectMessageSocket();
-    connectCallSocket();
-    loadFeed();
-
-    try {
-        const me = await HiMateAPI.getMe();
-        setCachedUser(me);
-    } catch (e) {
-        if (String(e.message).toLowerCase().includes("token") || String(e.message).includes("401")) {
-            clearToken();
-            goToPage("auth");
-        }
-    }
+function initBottomNav() {
+  document.querySelectorAll(".nav-btn").forEach((btn) => {
+    btn.onclick = () => {
+      const tab = btn.dataset.tab;
+      showTab(tab);
+      if (tab === "feed") loadFeed();
+      if (tab === "matches") loadLiveMatches();
+      if (tab === "chats") loadKliqueList();
+    };
+  });
 }
 
-window.addEventListener("load", () => {
-    initBottomNav();
+async function enterApp() {
+  showPage("home");
+  showTab("feed");
+  connectMessageSocket();
+  loadFeed();
 
-    setTimeout(() => {
-        const token = getToken();
-        if (token) {
-            enterApp();
-        } else {
-            goToPage("auth");
-        }
-    }, 1800); // brief splash before routing
-});
+  // Refresh cached user in case something changed server-side
+  try {
+    const me = await api.getMe();
+    setCachedUser(me);
+  } catch (e) {
+    // token likely expired — bounce back to login
+    if (String(e.message).toLowerCase().includes("token") || String(e.message).includes("401")) {
+      localStorage.removeItem("himate_token");
+      showPage("auth-phone");
+    }
+  }
+}
+
+function boot() {
+  initAuth();
+  initFeed();
+  initSearch();
+  initChat();
+  initMatches();
+  initSettings();
+  initBottomNav();
+
+  window.addEventListener("himate:authed", enterApp);
+
+  // Instant-reopen behavior: if we already have a token cached, skip
+  // straight past splash/auth into the app — this is the legitimate
+  // "local storage keeps the session alive" use case.
+  const token = getToken();
+  if (token) {
+    enterApp();
+  } else {
+    setTimeout(() => showPage("auth-phone"), 900); // brief splash, then to auth
+  }
+}
+
+document.addEventListener("DOMContentLoaded", boot);
