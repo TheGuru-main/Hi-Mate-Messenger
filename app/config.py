@@ -46,7 +46,7 @@ class Settings:
     # CORS
     ALLOWED_ORIGINS: list[str] = [
         o.strip() for o in os.getenv(
-            "ALLOWED_ORIGINS", "http://localhost:3000,http://localhost:5173"
+            "ALLOWED_ORIGINS", "https://hi-mate-messenger-apiv1-0-0-1frontr.onrender.com"
         ).split(",") if o.strip()
     ]
 
