@@ -68,7 +68,7 @@ async function runSearch() {
     }
 }
 
-function initSearch() {
+export function initSearch() {
     const chips = document.querySelectorAll(".chip");
     if (!chips.length) return;
     chips.forEach(chip => {

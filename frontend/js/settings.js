@@ -40,7 +40,7 @@ function doLogout() {
     goToPage("auth");
 }
 
-function initSettings() {
+export function initSettings() {
     const openBtn = document.getElementById("btn-open-settings");
     if (openBtn) openBtn.addEventListener("click", () => { goToPage("settings"); loadSettingsMenu(); });
 

@@ -38,7 +38,7 @@ function renderPost(post) {
     return div;
 }
 
-async function loadFeed() {
+export async function loadFeed() {
     const list = document.getElementById("feed-list");
     if (!list) return;
     list.innerHTML = '<div class="section-title">Loading…</div>';
@@ -55,7 +55,7 @@ async function loadFeed() {
     }
 }
 
-function initFeed() {
+export function initFeed() {
     const btn = document.getElementById("btn-create-post");
     if (!btn) return;
     btn.addEventListener("click", async () => {

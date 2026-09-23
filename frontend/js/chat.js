@@ -17,7 +17,7 @@ function renderKliqueEntry(k, myUid) {
     return div;
 }
 
-async function loadKliqueList() {
+export async function loadKliqueList() {
     const list = document.getElementById("klique-list");
     if (!list) return;
     list.innerHTML = '<div class="section-title">Loading…</div>';
@@ -83,7 +83,7 @@ async function sendCurrentMessage() {
     }
 }
 
-function initChat() {
+export function initChat() {
     const backBtn = document.getElementById("btn-back-from-chat");
     if (backBtn) backBtn.addEventListener("click", () => { activeConversationUid = null; goToPage("home"); });
 

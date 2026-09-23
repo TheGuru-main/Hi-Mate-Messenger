@@ -8,7 +8,7 @@ let callSocket = null;
 let messageHandlers = [];
 let callHandlers = [];
 
-function connectMessageSocket() {
+export function connectMessageSocket() {
     const token = getToken();
     if (!token) return;
     if (messageSocket && messageSocket.readyState === WebSocket.OPEN) return;
@@ -50,7 +50,7 @@ function connectCallSocket() {
     };
 }
 
-function onMessage(handler) {
+export function onMessage(handler) {
     messageHandlers.push(handler);
 }
 
