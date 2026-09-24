@@ -79,8 +79,16 @@ function openReactionPopover(anchorBtn, postId, onPicked) {
     document.body.appendChild(popover);
 
     const rect = anchorBtn.getBoundingClientRect();
-    popover.style.left = Math.max(8, rect.left - 20) + "px";
-    popover.style.top = (rect.top - popover.offsetHeight - 10 + window.scrollY) + "px";
+    const maxLeft = window.innerWidth - popover.offsetWidth - 8;
+    const idealLeft = rect.left - 20;
+    popover.style.left = Math.min(Math.max(8, idealLeft), Math.max(8, maxLeft)) + "px";
+
+    let top = rect.top - popover.offsetHeight - 10 + window.scrollY;
+    if (top < window.scrollY + 8) {
+        // not enough room above the button — place it below instead
+        top = rect.bottom + 10 + window.scrollY;
+    }
+    popover.style.top = top + "px";
 
     popover.querySelectorAll(".reaction-pick").forEach(btn => {
         btn.addEventListener("click", async (ev) => {

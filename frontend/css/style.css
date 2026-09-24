@@ -187,9 +187,10 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .action-btn.active, .gem-btn.active{ color:var(--neon-blue); }
 
 .reaction-popover{
-  position:absolute; z-index:50; display:flex; gap:4px; padding:6px 8px; border-radius:20px;
+  position:absolute; z-index:50; display:flex; flex-wrap:wrap; gap:4px; padding:6px 8px; border-radius:20px;
   background:rgba(11,16,48,.96); backdrop-filter:blur(16px); border:1px solid var(--glass-border);
   box-shadow:0 8px 24px -8px rgba(0,0,0,.5);
+  max-width:min(280px, calc(100vw - 16px));
 }
 .reaction-pick{ background:none; border:none; font-size:20px; cursor:pointer; padding:2px 4px; }
 .reaction-pick:active{ transform:scale(1.2); }
