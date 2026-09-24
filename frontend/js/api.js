@@ -85,6 +85,16 @@ export const api = {
   getLocationRegions: (countryIso) => request(`/location/regions?country=${encodeURIComponent(countryIso)}`, { auth: false }),
   getLocationLocalities: (region) => request(`/location/localities?region=${encodeURIComponent(region)}`, { auth: false }),
 
+  uploadMedia: (file) => {
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+    return request("/media/upload", { method: "POST", body: formData, isForm: true });
+  },
+
+  getComments: (postId) => request(`/posts/${postId}/comments`),
+  addComment: (postId, payload) => request(`/posts/${postId}/comments`, { method: "POST", body: payload }),
+  reactToComment: (commentId, emoji) => request(`/comments/${commentId}/react`, { method: "POST", body: { emoji } }),
+
   createStatus: (payload) => request("/status", { method: "POST", body: payload }),
   getStatusFeed: () => request("/status/feed"),
 

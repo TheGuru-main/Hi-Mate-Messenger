@@ -10,6 +10,14 @@ import { connectMessageSocket } from "./socket.js";
 import { initCategories } from "./categories.js";
 import { initStatus, loadStatusFeed } from "./status.js";
 
+function initGigButton() {
+  const btn = document.getElementById("btn-open-gig");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    alert("Gigs — coming soon: post or seek a gig in your country, community, or globally.");
+  });
+}
+
 function initBottomNav() {
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.onclick = () => {
@@ -50,6 +58,7 @@ function boot() {
   initSettings();
   initCategories();
   initStatus();
+  initGigButton();
   initBottomNav();
 
   window.addEventListener("himate:authed", enterApp);

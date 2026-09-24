@@ -157,7 +157,7 @@
 <section id="home" class="page hidden">
   <div class="top-bar">
     <div class="brand">HI-MATE MESSENGER</div>
-    <button class="icon-btn" id="btn-open-gig"><i class="fa-solid fa-briefcase"></i></button>
+    <button class="icon-btn" id="btn-open-gig" title="Gigs"><i class="fa-solid fa-briefcase"></i></button>
     <button class="icon-btn" id="btn-open-settings">⚙</button>
   </div>
 
@@ -172,6 +172,12 @@
         <option>Advertisement</option>
       </select>
       <textarea class="input-box" id="post-content" placeholder="What's on your mind?"></textarea>
+      <div id="post-media-preview" class="post-media-preview"></div>
+      <div class="composer-toolbar">
+        <button class="icon-btn" id="btn-attach-media" type="button"><i class="fa-solid fa-image"></i></button>
+        <button class="icon-btn" id="btn-record-voice" type="button"><i class="fa-solid fa-microphone"></i></button>
+        <input type="file" id="post-media-input" accept="image/*,video/*" multiple hidden>
+      </div>
       <button class="primary-btn" id="btn-create-post">Post</button>
     </div>
     <div id="feed-list" class="scroll-list"></div>
