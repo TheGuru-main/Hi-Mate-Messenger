@@ -194,3 +194,31 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 }
 .reaction-pick{ background:none; border:none; font-size:20px; cursor:pointer; padding:2px 4px; }
 .reaction-pick:active{ transform:scale(1.2); }
+
+/* ---------- Status (Klique tab) ---------- */
+.status-strip{ display:flex; gap:12px; overflow-x:auto; padding:4px 0 12px; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.status-strip::-webkit-scrollbar{ display:none; }
+.status-avatar-wrap{ display:flex; flex-direction:column; align-items:center; gap:4px; flex-shrink:0; width:60px; cursor:pointer; }
+.status-avatar{ width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; color:#050718; }
+.status-avatar.add-status{ background:rgba(255,255,255,.08); color:var(--text-primary); border:2px dashed rgba(255,255,255,.25); font-size:18px; }
+.status-avatar.has-status{ background:linear-gradient(135deg, var(--neon-blue), var(--neon-purple)); border:2px solid var(--neon-blue); }
+.status-avatar-label{ font-size:10px; color:var(--text-faint); max-width:60px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+.status-modal-overlay{ position:fixed; inset:0; z-index:100; background:rgba(6,9,38,.96); display:flex; align-items:center; justify-content:center; padding:16px; }
+.status-viewer{ width:100%; max-width:420px; height:80vh; background:#0F1430; border-radius:18px; display:flex; flex-direction:column; overflow:hidden; }
+.status-viewer-header{ display:flex; align-items:center; justify-content:space-between; padding:14px; }
+.status-viewer-name{ font-weight:700; font-size:14px; }
+.status-viewer-progress{ display:flex; gap:4px; padding:0 14px; }
+.status-progress-bar{ flex:1; height:3px; border-radius:2px; background:rgba(255,255,255,.15); }
+.status-progress-bar.seen, .status-progress-bar.active{ background:var(--neon-blue); }
+.status-viewer-body{ flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; text-align:center; position:relative; }
+.status-media{ max-width:100%; max-height:60vh; border-radius:12px; margin-bottom:12px; }
+.status-text{ font-size:16px; line-height:1.5; }
+.status-viewer-nav{ position:absolute; inset:0; display:flex; }
+.status-nav-zone{ flex:1; }
+
+.status-composer{ width:100%; max-width:420px; background:#0F1430; border-radius:18px; padding:16px; display:flex; flex-direction:column; gap:10px; }
+.status-composer textarea{ height:80px; }
+.status-recipients{ display:flex; flex-direction:column; gap:6px; max-height:140px; overflow-y:auto; background:#151A3A; border-radius:10px; padding:8px; }
+.status-recipients.hidden{ display:none; }
+.status-recipient-option{ font-size:13px; display:flex; align-items:center; gap:8px; }

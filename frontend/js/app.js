@@ -8,6 +8,7 @@ import { initMatches, loadLiveMatches } from "./matches.js";
 import { initSettings } from "./settings.js";
 import { connectMessageSocket } from "./socket.js";
 import { initCategories } from "./categories.js";
+import { initStatus, loadStatusFeed } from "./status.js";
 
 function initBottomNav() {
   document.querySelectorAll(".nav-btn").forEach((btn) => {
@@ -48,6 +49,7 @@ function boot() {
   initMatches();
   initSettings();
   initCategories();
+  initStatus();
   initBottomNav();
 
   window.addEventListener("himate:authed", enterApp);

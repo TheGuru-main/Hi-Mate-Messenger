@@ -85,6 +85,9 @@ export const api = {
   getLocationRegions: (countryIso) => request(`/location/regions?country=${encodeURIComponent(countryIso)}`, { auth: false }),
   getLocationLocalities: (region) => request(`/location/localities?region=${encodeURIComponent(region)}`, { auth: false }),
 
+  createStatus: (payload) => request("/status", { method: "POST", body: payload }),
+  getStatusFeed: () => request("/status/feed"),
+
   getSettingsMenu: () => request("/settings/menu", { auth: false }),
   changePassword: (payload) => request("/settings/change-password", { method: "POST", body: payload }),
 };
