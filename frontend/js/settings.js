@@ -3,6 +3,9 @@
 // settings.js
 // ==========================================
 
+import { api, clearToken } from "./api.js";
+import { showPage } from "./router.js";
+
 function renderMenuItem(item) {
     const div = document.createElement("div");
     div.className = "settings-item";
@@ -26,7 +29,7 @@ async function loadSettingsMenu() {
     if (!list) return;
     list.innerHTML = '<div class="section-title">Loading…</div>';
     try {
-        const items = await HiMateAPI.getSettingsMenu();
+        const items = await api.getSettingsMenu();
         list.innerHTML = "";
         items.forEach(item => list.appendChild(renderMenuItem(item)));
     } catch (e) {
@@ -37,18 +40,16 @@ async function loadSettingsMenu() {
 function doLogout() {
     clearToken();
     localStorage.removeItem("himate_user");
-    goToPage("auth");
+    showPage("auth-phone");
 }
 
 export function initSettings() {
     const openBtn = document.getElementById("btn-open-settings");
-    if (openBtn) openBtn.addEventListener("click", () => { goToPage("settings"); loadSettingsMenu(); });
+    if (openBtn) openBtn.addEventListener("click", () => { showPage("settings"); loadSettingsMenu(); });
 
     const backBtn = document.getElementById("btn-back-from-settings");
-    if (backBtn) backBtn.addEventListener("click", () => goToPage("home"));
+    if (backBtn) backBtn.addEventListener("click", () => showPage("home"));
 
     const logoutBtn = document.getElementById("btn-logout");
     if (logoutBtn) logoutBtn.addEventListener("click", doLogout);
 }
-
-window.addEventListener("load", initSettings);

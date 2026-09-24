@@ -1,6 +1,6 @@
 const PAGE_IDS = [
   "splash", "auth-phone", "auth-login", "auth-otp",
-  "home", "chat-room", "match-room", "settings",
+  "home", "chat-room", "match-room", "call-room", "settings",
 ];
 
 export function showPage(id) {

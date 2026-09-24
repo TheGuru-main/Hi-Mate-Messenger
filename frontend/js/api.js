@@ -4,7 +4,7 @@
 // the app feels instant, NOT where uploaded media lives (that's the
 // backend's cloud storage, unrelated to this file).
 
-const API_BASE = "https://hi-mate-messenger-apiv1-0-0-1r.onrender.com";
+const API_BASE = "https://hi-mate-messenger-apiv1-0-0-1r.onrender.com/v1";
 const WS_BASE = "wss://hi-mate-messenger-apiv1-0-0-1r.onrender.com";
 
 export function getToken() {
@@ -81,6 +81,9 @@ export const api = {
   getLiveMatches: () => request("/matches/live"),
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
+
+  getLocationRegions: (countryIso) => request(`/location/regions?country=${encodeURIComponent(countryIso)}`, { auth: false }),
+  getLocationLocalities: (region) => request(`/location/localities?region=${encodeURIComponent(region)}`, { auth: false }),
 
   getSettingsMenu: () => request("/settings/menu", { auth: false }),
   changePassword: (payload) => request("/settings/change-password", { method: "POST", body: payload }),

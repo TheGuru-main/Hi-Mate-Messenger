@@ -1,7 +1,6 @@
-// ==========================================
-// HI-MATE MESSENGER
-// chat.js
-// ==========================================
+import { api, getCachedUser } from "./api.js";
+import { showPage } from "./router.js";
+import { onMessage } from "./socket.js";
 
 let activeConversationUid = null;
 
@@ -10,9 +9,9 @@ function renderKliqueEntry(k, myUid) {
     const div = document.createElement("div");
     div.className = "list-item";
     div.innerHTML = `
-    <div class="avatar">${otherUid.slice(-2)}</div>
-    <div><div class="name">${otherUid}</div><div class="sub">Klique · tap to chat</div></div>
-  `;
+      <div class="avatar">${otherUid.slice(-2)}</div>
+      <div><div class="name">${otherUid}</div><div class="sub">Klique · tap to chat</div></div>
+    `;
     div.addEventListener("click", () => openChat(otherUid, otherUid));
     return div;
 }
@@ -23,7 +22,7 @@ export async function loadKliqueList() {
     list.innerHTML = '<div class="section-title">Loading…</div>';
     try {
         const me = getCachedUser();
-        const kliques = await HiMateAPI.kliqueList();
+        const kliques = await api.kliqueList();
         list.innerHTML = "";
         if (!kliques.length) {
             list.innerHTML = '<div class="section-title">No Kliques yet — search for people to connect with.</div>';
@@ -45,17 +44,17 @@ function renderBubble(content, isMine) {
     return row;
 }
 
-async function openChat(uid, displayName) {
+export async function openChat(uid, displayName) {
     activeConversationUid = uid;
     const titleEl = document.getElementById("chat-room-title");
     if (titleEl) titleEl.textContent = displayName || uid;
-    goToPage("chat-room");
+    showPage("chat-room");
 
     const container = document.getElementById("chat-messages");
     container.innerHTML = '<div class="section-title">Loading…</div>';
     try {
         const me = getCachedUser();
-        const messages = await HiMateAPI.getMessages(uid);
+        const messages = await api.getMessages(uid);
         container.innerHTML = "";
         messages.reverse().forEach(m => {
             container.appendChild(renderBubble(m.content, m.sender_uid === (me ? me.uid : null)));
@@ -77,7 +76,7 @@ async function sendCurrentMessage() {
     container.scrollTop = container.scrollHeight;
 
     try {
-        await HiMateAPI.sendMessage({ receiver_uid: activeConversationUid, type: "text", content });
+        await api.sendMessage({ receiver_uid: activeConversationUid, type: "text", content });
     } catch (e) {
         alert(e.message);
     }
@@ -85,7 +84,7 @@ async function sendCurrentMessage() {
 
 export function initChat() {
     const backBtn = document.getElementById("btn-back-from-chat");
-    if (backBtn) backBtn.addEventListener("click", () => { activeConversationUid = null; goToPage("home"); });
+    if (backBtn) backBtn.addEventListener("click", () => { activeConversationUid = null; showPage("home"); });
 
     const sendBtn = document.getElementById("btn-send-message");
     if (sendBtn) sendBtn.addEventListener("click", sendCurrentMessage);
@@ -104,5 +103,3 @@ export function initChat() {
         container.scrollTop = container.scrollHeight;
     });
 }
-
-window.addEventListener("load", initChat);

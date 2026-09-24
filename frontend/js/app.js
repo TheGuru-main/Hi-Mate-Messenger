@@ -7,6 +7,7 @@ import { initChat, loadKliqueList } from "./chat.js";
 import { initMatches, loadLiveMatches } from "./matches.js";
 import { initSettings } from "./settings.js";
 import { connectMessageSocket } from "./socket.js";
+import { initCategories } from "./categories.js";
 
 function initBottomNav() {
   document.querySelectorAll(".nav-btn").forEach((btn) => {
@@ -46,6 +47,7 @@ function boot() {
   initChat();
   initMatches();
   initSettings();
+  initCategories();
   initBottomNav();
 
   window.addEventListener("himate:authed", enterApp);

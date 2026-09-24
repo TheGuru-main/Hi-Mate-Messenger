@@ -5,9 +5,8 @@
 // Community cascade (calls the real /location endpoints).
 // ==========================================
 
-// Each entry's `code` is the EXACT single letter the backend crawler
-// scores against (business_role / interest fields). The label is what
-// the user sees; the code is what actually gets sent to the API.
+import { api } from "./api.js";
+
 const TALENT_FIELDS = [
     { code: "S", label: "⚽ Football / Soccer" },
     { code: "M", label: "🎵 Musician" },
@@ -23,8 +22,6 @@ const TALENT_FIELDS = [
     { code: "K", label: "🎙️ Podcaster" },
 ];
 
-// Business Category — same single-letter scheme, separate list since a
-// person can be a Talent in one field and run a Business in another.
 const BUSINESS_CATEGORIES = [
     { code: "S", label: "⚽ Sports / Football" },
     { code: "R", label: "🍽️ Restaurant / Food" },
@@ -55,14 +52,6 @@ function loadCategoryDropdowns() {
     populateSelect("business-category", BUSINESS_CATEGORIES);
 }
 
-
-// ==========================================
-// REGION / LGA / COMMUNITY CASCADE
-// Calls the real backend endpoints — /location/regions, /location/localities.
-// Continent -> Country already handled by countries.js; this picks up
-// from Country downward.
-// ==========================================
-
 async function loadRegionsForCountry(countryIso) {
     const regionSelect = document.getElementById("region");
     const localitySelect = document.getElementById("locality");
@@ -72,7 +61,7 @@ async function loadRegionsForCountry(countryIso) {
     if (localitySelect) localitySelect.innerHTML = '<option value="">Select Region first</option>';
 
     try {
-        const res = await HiMateAPI.getLocationRegions(countryIso);
+        const res = await api.getLocationRegions(countryIso);
         const regions = res.regions || [];
         regionSelect.innerHTML = '<option value="">Select Region/State</option>';
         regions.forEach(r => {
@@ -95,7 +84,7 @@ async function loadLocalitiesForRegion(region) {
 
     localitySelect.innerHTML = '<option value="">Loading…</option>';
     try {
-        const res = await HiMateAPI.getLocationLocalities(region);
+        const res = await api.getLocationLocalities(region);
         const localities = res.localities || [];
         localitySelect.innerHTML = '<option value="">Select Locality/LGA</option>';
         localities.forEach(l => {
@@ -128,7 +117,7 @@ function initLocationCascade() {
     }
 }
 
-window.addEventListener("load", () => {
+export function initCategories() {
     loadCategoryDropdowns();
     initLocationCascade();
-});
+}

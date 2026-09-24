@@ -25,7 +25,7 @@
 <!-- ========================================== -->
 <!-- CREATE ACCOUNT -->
 <!-- ========================================== -->
-<section id="auth" class="page hidden">
+<section id="auth-phone" class="page hidden">
   <div class="glass-header">
     <h1>Welcome to Hi-Mate 👋</h1>
     <h2>Create An Account</h2>
@@ -107,7 +107,7 @@
 <!-- ========================================== -->
 <!-- LOGIN -->
 <!-- ========================================== -->
-<section id="login" class="page hidden">
+<section id="auth-login" class="page hidden">
   <div class="glass-header">
     <h2>Log In</h2>
     <p>Welcome back</p>
@@ -125,7 +125,7 @@
       <input id="login-password" class="input-box" type="password" placeholder="Password">
     </div>
     <button id="login-submit-btn" class="primary-btn">Log In</button>
-    <button class="secondary-btn" onclick="goToPage('auth')">Back to Sign Up</button>
+    <button class="secondary-btn" id="btn-back-to-signup">Back to Sign Up</button>
     <div id="login-error" class="error-text"></div>
   </div>
   <footer>Powered by: The Guru Innovations🌀.</footer>
@@ -134,7 +134,7 @@
 <!-- ========================================== -->
 <!-- OTP -->
 <!-- ========================================== -->
-<section id="otp" class="page hidden">
+<section id="auth-otp" class="page hidden">
   <div class="glass-header">
     <button class="back-btn" id="otp-back-btn">← Back</button>
     <h1>Hi-Mate Messenger 👋</h1>
@@ -265,13 +265,13 @@
 </section>
 
 <script src="js/countries.js"></script>
-<script src="js/categories.js"></script>
 <script src="js/particles.js"></script>
 <script src="js/navigation.js"></script>
 <script src="js/gsp.js"></script>
 <script src="js/otp.js"></script>
 <script src="js/calls.js"></script>
 <script type="module" src="js/api.js"></script>
+<script type="module" src="js/categories.js"></script>
 <script type="module" src="js/router.js"></script>
 <script type="module" src="js/socket.js"></script>
 <script type="module" src="js/auth.js"></script>

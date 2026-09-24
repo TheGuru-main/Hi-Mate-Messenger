@@ -1,7 +1,4 @@
-// ==========================================
-// HI-MATE MESSENGER
-// feed.js
-// ==========================================
+import { api } from "./api.js";
 
 const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "✅", "🙏", "🙋", "👏", "🚀", "🎓", "📍", "💪"];
 
@@ -23,16 +20,16 @@ function renderPost(post) {
     const div = document.createElement("div");
     div.className = "card";
     div.innerHTML = `
-    <div class="meta">${post.category || ""} · ${timeAgo(post.created_at)}</div>
-    <div class="content">${escapeHtml(post.content)}</div>
-    <div class="actions">
-      ${REACTIONS.slice(0, 6).map(e => `<button class="reaction-btn" data-post="${post.id}" data-emoji="${e}">${e}</button>`).join("")}
-    </div>
-  `;
+      <div class="meta">${post.category || ""} · ${timeAgo(post.created_at)}</div>
+      <div class="content">${escapeHtml(post.content)}</div>
+      <div class="actions">
+        ${REACTIONS.slice(0, 6).map(e => `<button class="reaction-btn" data-post="${post.id}" data-emoji="${e}">${e}</button>`).join("")}
+      </div>
+    `;
     div.querySelectorAll(".reaction-btn").forEach(btn => {
         btn.addEventListener("click", async () => {
             btn.classList.add("active");
-            try { await HiMateAPI.react(btn.dataset.post, btn.dataset.emoji); } catch (e) { console.error(e); }
+            try { await api.react(btn.dataset.post, btn.dataset.emoji); } catch (e) { console.error(e); }
         });
     });
     return div;
@@ -43,7 +40,7 @@ export async function loadFeed() {
     if (!list) return;
     list.innerHTML = '<div class="section-title">Loading…</div>';
     try {
-        const posts = await HiMateAPI.getFeed();
+        const posts = await api.getFeed();
         list.innerHTML = "";
         if (!posts.length) {
             list.innerHTML = '<div class="section-title">No posts yet — be the first to share something.</div>';
@@ -64,7 +61,7 @@ export function initFeed() {
         if (!category) return alert("Pick a category first.");
         if (!content) return alert("Write something first.");
         try {
-            await HiMateAPI.createPost({ category, content });
+            await api.createPost({ category, content });
             document.getElementById("post-content").value = "";
             document.getElementById("post-category").value = "";
             loadFeed();
@@ -73,5 +70,3 @@ export function initFeed() {
         }
     });
 }
-
-window.addEventListener("load", initFeed);

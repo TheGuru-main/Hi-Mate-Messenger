@@ -99,6 +99,11 @@ export function initAuth() {
         otpBackBtn.addEventListener("click", () => showPage("auth-phone"));
     }
 
+    const backToSignupBtn = document.getElementById("btn-back-to-signup");
+    if (backToSignupBtn) {
+        backToSignupBtn.addEventListener("click", () => showPage("auth-phone"));
+    }
+
     if (loginBtn) {
         loginBtn.addEventListener("click", () => {
             showPage("auth-login");

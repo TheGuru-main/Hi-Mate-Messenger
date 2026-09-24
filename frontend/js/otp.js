@@ -20,12 +20,12 @@ function startOtpCountdown() {
 
 // Restart the countdown whenever the OTP page becomes visible
 const otpPageObserver = new MutationObserver(() => {
-    const otpPage = document.getElementById("otp");
+    const otpPage = document.getElementById("auth-otp");
     if (otpPage && !otpPage.classList.contains("hidden")) {
         startOtpCountdown();
     }
 });
 window.addEventListener("load", () => {
-    const otpPage = document.getElementById("otp");
+    const otpPage = document.getElementById("auth-otp");
     if (otpPage) otpPageObserver.observe(otpPage, { attributes: true, attributeFilter: ["class"] });
 });
