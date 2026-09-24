@@ -50,6 +50,7 @@ app.include_router(elastic_search.router, prefix="/v1")
 app.include_router(media.router, prefix="/v1")
 app.include_router(settings_route.router, prefix="/v1")
 app.include_router(match_room.router, prefix="/v1")
+app.include_router(status.router, prefix="/v1")
 app.include_router(ws_router)
 app.include_router(calls_ws_router)
 
