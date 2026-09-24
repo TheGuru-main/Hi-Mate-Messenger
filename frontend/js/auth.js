@@ -65,6 +65,10 @@ export function initAuth() {
                 const res = await api.signup(payload);
                 pendingSignupToken = res.signup_token;
                 showPage("auth-otp");
+                // TEMP: dev-mode OTP popup until a real SMS provider is wired up.
+                if (res.otp) {
+                    alert(`Your OTP (dev mode — no SMS provider yet): ${res.otp}`);
+                }
             } catch (e) {
                 showAuthError(e.message);
             }

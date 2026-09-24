@@ -45,9 +45,13 @@ async def signup(payload: SignupRequest, db: Session = Depends(get_db)):
     db.add(record)
     db.commit()
 
-    await sms.send_otp_sms(payload.phone, otp)
+    try:
+        await sms.send_otp_sms(payload.phone, otp)
+    except Exception as e:
+        # TEMP: Africa's Talking not fully set up yet — do not block signup on SMS failure.
+        print(f"[signup] SMS send failed, continuing anyway (dev mode): {e}")
 
-    return SignupResponse(signup_token=signup_token, expires_in=settings.OTP_EXPIRE_MINUTES * 60)
+    return SignupResponse(signup_token=signup_token, expires_in=settings.OTP_EXPIRE_MINUTES * 60, otp=otp)  # TEMP: dev-mode passthrough
 
 
 @router.post("/otp/verify", response_model=TokenResponse)

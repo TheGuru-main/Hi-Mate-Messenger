@@ -35,6 +35,7 @@ class SignupRequest(BaseModel):
 class SignupResponse(BaseModel):
     signup_token: str
     expires_in: int
+    otp: Optional[str] = None  # TEMP: dev-mode OTP passthrough until a real SMS provider is wired up — remove before production
 
 
 class OTPVerifyRequest(BaseModel):
