@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -14,7 +15,7 @@ router = APIRouter(tags=["posts"])
 class PostCreate(BaseModel):
     category: str
     content: str | None = None
-    media_ref: str | None = None
+    media_refs: list[str] = []
 
 
 class ReactionCreate(BaseModel):
@@ -24,6 +25,28 @@ class ReactionCreate(BaseModel):
 class CommentCreate(BaseModel):
     content: str | None = None
     media_ref: str | None = None
+
+
+def serialize_post(post: Post, author: User | None, comment_count: int) -> dict:
+    media_list = []
+    if post.media_refs:
+        media_list = [m for m in post.media_refs.split(",") if m]
+    elif post.media_ref:
+        media_list = [post.media_ref]
+
+    return {
+        "id": str(post.id),
+        "author_uid": post.author_uid,
+        "author_username": author.username if author else None,
+        "author_region": author.region if author else None,
+        "author_locality": author.locality if author else None,
+        "author_talent_category": author.interest if author else None,
+        "category": post.category,
+        "content": post.content,
+        "media_refs": media_list,
+        "comment_count": comment_count,
+        "created_at": post.created_at.isoformat() if post.created_at else None,
+    }
 
 
 @router.post("/posts")
@@ -39,13 +62,13 @@ async def create_post(
         author_uid=current_user.uid,
         category=payload.category,
         content=payload.content,
-        media_ref=payload.media_ref,
+        media_refs=",".join(payload.media_refs) if payload.media_refs else None,
         identity_version=current_user.identity_version,
     )
     db.add(post)
     db.commit()
     db.refresh(post)
-    return post
+    return serialize_post(post, current_user, 0)
 
 
 @router.get("/feed")
@@ -88,7 +111,23 @@ async def get_feed(
 
     author_uids = [r.candidate.id for r in results]
     posts = db.query(Post).filter(Post.author_uid.in_(author_uids)).order_by(Post.created_at.desc()).all()
-    return posts
+
+    if not posts:
+        return []
+
+    post_ids = [p.id for p in posts]
+    authors = {u.uid: u for u in db.query(User).filter(User.uid.in_(author_uids)).all()}
+    comment_counts = dict(
+        db.query(Comment.post_id, func.count(Comment.id))
+        .filter(Comment.post_id.in_(post_ids))
+        .group_by(Comment.post_id)
+        .all()
+    )
+
+    return [
+        serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0))
+        for p in posts
+    ]
 
 
 @router.post("/posts/{post_id}/react")

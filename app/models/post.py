@@ -24,7 +24,8 @@ class Post(Base):
     author_uid = Column(String, ForeignKey("users.uid"), nullable=False)
     category = Column(String, nullable=False)  # must be one of FEED_CATEGORIES — validated at the schema layer
     content = Column(Text, nullable=True)
-    media_ref = Column(String, nullable=True)
+    media_ref = Column(String, nullable=True)  # LEGACY: old single-image posts, kept for backward compat
+    media_refs = Column(Text, nullable=True)  # NEW: comma-joined list of media_refs, for multi-image/video posts
     identity_version = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 

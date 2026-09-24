@@ -57,6 +57,13 @@ app.include_router(calls_ws_router)
 @app.on_event("startup")
 async def on_startup():
     Base.metadata.create_all(bind=engine)
+
+    # One-time, idempotent column additions that create_all() can't do
+    # (it only creates missing tables, never alters existing ones).
+    from sqlalchemy import text
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE posts ADD COLUMN IF NOT EXISTS media_refs TEXT;"))
+        conn.commit()
     # Background task — polls live matches for score changes, pushes
     # goal events into match rooms. Fire-and-forget on the running
     # event loop; Render keeps this process alive as a persistent
