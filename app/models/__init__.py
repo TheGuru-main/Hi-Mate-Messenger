@@ -1,5 +1,5 @@
 from app.models.user import User
-from app.models.message import Group, Message
+from app.models.message import Group, Message, GroupEvent
 from app.models.post import Post, Comment, Reaction
 from app.models.klique import KliqueRequest, Follow, Fan, Block
 from app.models.otp import OTPVerification
@@ -15,3 +15,4 @@ __all__ = [
     "PairwiseRelationship", "ReccordEntry", "NewsPreference",
     "MediaAsset", "MatchRoom",
 ]
+from app.models.notification import Notification

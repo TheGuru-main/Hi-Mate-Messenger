@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.routes import (
     auth, users, messages, klique, posts, search, news, smart_search,
     pairwise, location, reccord, elastic_search, media, settings as settings_route,
-    match_room, status,
+    match_room, status, notifications,
 )
 from app.sockets.routes import router as ws_router
 from app.sockets.calls import router as calls_ws_router
@@ -51,6 +51,7 @@ app.include_router(media.router, prefix="/v1")
 app.include_router(settings_route.router, prefix="/v1")
 app.include_router(match_room.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
+app.include_router(notifications.router, prefix="/v1")
 app.include_router(ws_router)
 app.include_router(calls_ws_router)
 
