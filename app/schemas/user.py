@@ -34,6 +34,8 @@ class UserUpdate(BaseModel):
     date_of_birth: Optional[date] = None
     profile_image_ref: Optional[str] = None
     cover_image_ref: Optional[str] = None
+    bio: Optional[str] = None
+    education_level: Optional[str] = None
 
 
 class ContactMatchRequest(BaseModel):

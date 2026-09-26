@@ -73,6 +73,8 @@ async def on_startup():
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_image_ref TEXT;"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS description TEXT;"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS purpose TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS education_level TEXT;"))
         conn.commit()
     # Background task — polls live matches for score changes, pushes
     # goal events into match rooms. Fire-and-forget on the running

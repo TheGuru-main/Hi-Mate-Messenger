@@ -106,6 +106,8 @@ async def get_user_profile(uid: str, db: Session = Depends(get_db), current_user
         "profile_image_url": profile_image_url,
         "cover_image_url": cover_image_url,
         "date_of_birth": target.date_of_birth.isoformat() if target.date_of_birth else None,
+        "bio": target.bio,
+        "education_level": target.education_level,
         "joined_at": target.created_at.isoformat() if target.created_at else None,
         "post_count": post_count,
         "klique_status": klique_status,

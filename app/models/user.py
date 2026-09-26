@@ -33,6 +33,8 @@ class User(Base):
     date_of_birth = Column(Date, nullable=True)
     profile_image_ref = Column(String, nullable=True)
     cover_image_ref = Column(String, nullable=True)
+    bio = Column(String, nullable=True)
+    education_level = Column(String, nullable=True)
     religion = Column(String, nullable=True)
     feed_preferences = Column(String, nullable=True)  # comma-separated for simplicity; move to array/table later
 
