@@ -32,6 +32,8 @@ class UserUpdate(BaseModel):
     marital_status: Optional[str] = None
     religion: Optional[str] = None
     date_of_birth: Optional[date] = None
+    profile_image_ref: Optional[str] = None
+    cover_image_ref: Optional[str] = None
 
 
 class ContactMatchRequest(BaseModel):

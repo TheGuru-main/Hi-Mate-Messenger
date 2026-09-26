@@ -2,7 +2,7 @@ import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { openChat } from "./chat.js";
 import { talentLabel, businessLabel } from "./categories.js";
-import { timeAgo } from "./media-utils.js";
+import { timeAgo, compressImage } from "./media-utils.js";
 
 let currentProfileUid = null;
 let currentTab = "posts";
@@ -109,7 +109,25 @@ export async function openProfile(uid) {
 
     try {
         const profile = await api.getUserProfile(uid);
-        document.getElementById("profile-avatar").textContent = (profile.username || "?").slice(0, 2).toUpperCase();
+        const avatarEl = document.getElementById("profile-avatar");
+        const editAvatarBtn = document.getElementById("btn-edit-avatar");
+        const editCoverBtn = document.getElementById("btn-edit-cover");
+        const coverEl = document.getElementById("profile-cover");
+
+        if (profile.profile_image_url) {
+            avatarEl.style.backgroundImage = `url(${profile.profile_image_url})`;
+            avatarEl.textContent = "";
+            avatarEl.appendChild(editAvatarBtn);
+        } else {
+            avatarEl.style.backgroundImage = "";
+            avatarEl.textContent = (profile.username || "?").slice(0, 2).toUpperCase();
+            avatarEl.appendChild(editAvatarBtn);
+        }
+        coverEl.style.backgroundImage = profile.cover_image_url ? `url(${profile.cover_image_url})` : "";
+
+        editAvatarBtn.classList.toggle("hidden", !profile.is_me);
+        editCoverBtn.classList.toggle("hidden", !profile.is_me);
+
         document.getElementById("profile-username").textContent = profile.username;
 
         const badges = [];
@@ -131,7 +149,38 @@ export async function openProfile(uid) {
     }
 }
 
+async function uploadAndSetImage(file, field) {
+    try {
+        const toUpload = await compressImage(file);
+        const res = await api.uploadMedia(toUpload);
+        await api.updateMe({ [field]: res.media_ref });
+        if (currentProfileUid) openProfile(currentProfileUid);
+    } catch (e) {
+        alert(`Upload failed: ${e.message}`);
+    }
+}
+
 export function initProfile() {
+    const avatarInput = document.getElementById("profile-avatar-input");
+    const coverInput = document.getElementById("profile-cover-input");
+    const editAvatarBtn = document.getElementById("btn-edit-avatar");
+    const editCoverBtn = document.getElementById("btn-edit-cover");
+
+    if (editAvatarBtn && avatarInput) {
+        editAvatarBtn.addEventListener("click", (e) => { e.stopPropagation(); avatarInput.click(); });
+        avatarInput.addEventListener("change", () => {
+            if (avatarInput.files.length) uploadAndSetImage(avatarInput.files[0], "profile_image_ref");
+            avatarInput.value = "";
+        });
+    }
+    if (editCoverBtn && coverInput) {
+        editCoverBtn.addEventListener("click", () => coverInput.click());
+        coverInput.addEventListener("change", () => {
+            if (coverInput.files.length) uploadAndSetImage(coverInput.files[0], "cover_image_ref");
+            coverInput.value = "";
+        });
+    }
+
     const backBtn = document.getElementById("btn-back-from-profile");
     if (backBtn) backBtn.addEventListener("click", () => showPage("home"));
 

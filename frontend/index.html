@@ -303,8 +303,16 @@
     <div class="brand">Profile</div>
   </div>
 
+  <div class="profile-cover" id="profile-cover">
+    <button class="icon-btn profile-cover-edit hidden" id="btn-edit-cover" type="button"><i class="fa-solid fa-camera"></i></button>
+  </div>
   <div class="profile-header">
-    <div class="avatar profile-avatar" id="profile-avatar">?</div>
+    <div class="avatar profile-avatar" id="profile-avatar">
+      ?
+      <button class="icon-btn profile-avatar-edit hidden" id="btn-edit-avatar" type="button"><i class="fa-solid fa-camera"></i></button>
+    </div>
+    <input type="file" id="profile-avatar-input" accept="image/*" hidden>
+    <input type="file" id="profile-cover-input" accept="image/*" hidden>
     <div class="profile-name" id="profile-username">—</div>
     <div class="profile-badges" id="profile-badges"></div>
     <div class="profile-meta" id="profile-meta"></div>

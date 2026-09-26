@@ -10,6 +10,7 @@ from app.models.klique import KliqueRequest, Follow
 from app.schemas.user import UserOut, UserUpdate, ContactMatchRequest, ContactMatchResponse, ContactMatch
 from app.services import placement
 from app.routes.posts import serialize_post
+from app.services import storage
 
 router = APIRouter(tags=["users"])
 
@@ -81,6 +82,19 @@ async def get_user_profile(uid: str, db: Session = Depends(get_db), current_user
         Follow.follower_uid == current_user.uid, Follow.followee_uid == uid
     ).first() is not None
 
+    profile_image_url = None
+    if target.profile_image_ref:
+        try:
+            profile_image_url = storage.get_signed_url(target.profile_image_ref)
+        except Exception:
+            pass
+    cover_image_url = None
+    if target.cover_image_ref:
+        try:
+            cover_image_url = storage.get_signed_url(target.cover_image_ref)
+        except Exception:
+            pass
+
     return {
         "uid": target.uid,
         "username": target.username,
@@ -89,6 +103,8 @@ async def get_user_profile(uid: str, db: Session = Depends(get_db), current_user
         "country": target.country,
         "region": target.region,
         "locality": target.locality,
+        "profile_image_url": profile_image_url,
+        "cover_image_url": cover_image_url,
         "date_of_birth": target.date_of_birth.isoformat() if target.date_of_birth else None,
         "joined_at": target.created_at.isoformat() if target.created_at else None,
         "post_count": post_count,
