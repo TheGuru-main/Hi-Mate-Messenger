@@ -253,3 +253,17 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 /* ---------- Klique toolbar ---------- */
 .klique-toolbar{ display:flex; gap:8px; margin-bottom:10px; }
 .klique-toolbar .secondary-btn{ flex:1; font-size:12px; height:38px; margin-top:0; display:flex; align-items:center; justify-content:center; gap:6px; }
+
+/* ---------- Composer input fields — distinct from general inputs ---------- */
+.composer .input-box, .composer select, .composer textarea{
+  background: #10163A;
+  border: 1px solid rgba(0,229,255,.18);
+}
+.composer textarea.input-box{
+  background: #10163A;
+  border: 1px solid rgba(0,229,255,.18);
+}
+.composer .input-box:focus, .composer textarea:focus{
+  border-color: var(--neon-blue);
+  box-shadow: 0 0 0 3px rgba(0,229,255,.12);
+}
