@@ -95,6 +95,9 @@ export const api = {
   addComment: (postId, payload) => request(`/posts/${postId}/comments`, { method: "POST", body: payload }),
   reactToComment: (commentId, emoji) => request(`/comments/${commentId}/react`, { method: "POST", body: { emoji } }),
 
+  createGroup: (payload) => request("/groups", { method: "POST", body: payload }),
+  matchContacts: (phone_numbers) => request("/contacts/match", { method: "POST", body: { phone_numbers } }),
+
   createStatus: (payload) => request("/status", { method: "POST", body: payload }),
   getStatusFeed: () => request("/status/feed"),
 
