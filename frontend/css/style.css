@@ -307,3 +307,10 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .profile-action-btn{ flex:1; font-size:12px; height:40px; margin-top:0; display:flex; align-items:center; justify-content:center; gap:6px; }
 .profile-post-card{ margin-bottom:10px; }
 .profile-post-thumb{ width:100%; border-radius:10px; margin-bottom:8px; max-height:280px; object-fit:cover; }
+
+/* ---------- Live Video placeholder ---------- */
+.coming-soon-banner{
+  display:flex; align-items:center; gap:12px; background:#151A3A; border:1px dashed rgba(0,229,255,.3);
+  border-radius:14px; padding:16px; margin:10px 0; font-size:13px; color:var(--text-secondary);
+}
+.coming-soon-banner i{ font-size:22px; color:var(--neon-blue); }

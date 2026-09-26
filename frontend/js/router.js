@@ -11,7 +11,7 @@ export function showPage(id) {
 }
 
 export function showTab(tab) {
-  ["feed", "search", "matches", "chats"].forEach((t) => {
+  ["feed", "search", "matches", "chats", "live-video"].forEach((t) => {
     document.getElementById(`tab-${t}`).classList.toggle("hidden", t !== tab);
   });
   document.querySelectorAll(".nav-btn").forEach((btn) => {

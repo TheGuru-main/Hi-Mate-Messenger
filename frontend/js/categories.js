@@ -35,6 +35,16 @@ const BUSINESS_CATEGORIES = [
     { code: "T", label: "✂️ Tailoring" },
 ];
 
+export function talentLabel(code) {
+    const found = TALENT_FIELDS.find(f => f.code === code);
+    return found ? found.label : code;
+}
+
+export function businessLabel(code) {
+    const found = BUSINESS_CATEGORIES.find(f => f.code === code);
+    return found ? found.label : code;
+}
+
 function populateSelect(selectId, items) {
     const select = document.getElementById(selectId);
     if (!select) return;

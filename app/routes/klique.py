@@ -75,10 +75,28 @@ async def follow_user(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    existing = db.query(Follow).filter(
+        Follow.follower_uid == current_user.uid, Follow.followee_uid == uid
+    ).first()
+    if existing:
+        return {"status": "following"}  # already following — idempotent
     follow = Follow(follower_uid=current_user.uid, followee_uid=uid)
     db.add(follow)
     db.commit()
     return {"status": "following"}
+
+
+@router.delete("/follow/{uid}")
+async def unfollow_user(
+    uid: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    db.query(Follow).filter(
+        Follow.follower_uid == current_user.uid, Follow.followee_uid == uid
+    ).delete()
+    db.commit()
+    return {"status": "unfollowed"}
 
 
 @router.post("/fan/{uid}")
@@ -91,6 +109,28 @@ async def become_fan(
     db.add(fan)
     db.commit()
     return {"status": "fan"}
+
+
+@router.delete("/klique/{uid}")
+async def remove_klique(
+    uid: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Cancels a pending request (from either side) or removes an existing
+    Klique connection entirely — same endpoint covers both, since the
+    frontend just needs "undo whatever Klique state exists with this uid".
+    """
+    row = db.query(KliqueRequest).filter(
+        ((KliqueRequest.from_uid == current_user.uid) & (KliqueRequest.to_uid == uid))
+        | ((KliqueRequest.from_uid == uid) & (KliqueRequest.to_uid == current_user.uid))
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="No Klique connection or request found")
+    db.delete(row)
+    db.commit()
+    return {"status": "removed"}
 
 
 @router.post("/block/{uid}")

@@ -1,6 +1,7 @@
 import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { openChat } from "./chat.js";
+import { talentLabel, businessLabel } from "./categories.js";
 
 let currentProfileUid = null;
 let currentTab = "posts";
@@ -11,14 +12,6 @@ function escapeHtml(str) {
     return d.innerHTML;
 }
 
-function timeAgo(dateStr) {
-    if (!dateStr) return "";
-    const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-    if (diff < 60) return "just now";
-    if (diff < 3600) return Math.floor(diff / 60) + "m ago";
-    if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
-    return Math.floor(diff / 86400) + "d ago";
-}
 
 function renderPostCard(post) {
     const div = document.createElement("div");
@@ -119,8 +112,8 @@ export async function openProfile(uid) {
         document.getElementById("profile-username").textContent = profile.username;
 
         const badges = [];
-        if (profile.talent_category) badges.push(`<span class="talent-badge">${escapeHtml(profile.talent_category)}</span>`);
-        if (profile.business_category) badges.push(`<span class="talent-badge">${escapeHtml(profile.business_category)}</span>`);
+        if (profile.talent_category) badges.push(`<span class="talent-badge">${escapeHtml(talentLabel(profile.talent_category))}</span>`);
+        if (profile.business_category) badges.push(`<span class="talent-badge">${escapeHtml(businessLabel(profile.business_category))}</span>`);
         document.getElementById("profile-badges").innerHTML = badges.join(" ");
 
         const locationParts = [profile.locality, profile.region, profile.country].filter(Boolean).join(", ");

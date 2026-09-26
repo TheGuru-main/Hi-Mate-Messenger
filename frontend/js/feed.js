@@ -1,5 +1,6 @@
 import { api, getCachedUser } from "./api.js";
 import { openProfile } from "./profile.js";
+import { talentLabel, businessLabel } from "./categories.js";
 
 const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "✅", "🙏", "🙋", "👏", "🚀", "🎓", "📍", "💪", "💎"];
 const LONG_PRESS_MS = 450;
@@ -14,13 +15,6 @@ function escapeHtml(str) {
     return d.innerHTML;
 }
 
-function timeAgo(dateStr) {
-    const diff = (Date.now() - new Date(dateStr).getTime()) / 1000;
-    if (diff < 60) return "just now";
-    if (diff < 3600) return Math.floor(diff / 60) + "m ago";
-    if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
-    return Math.floor(diff / 86400) + "d ago";
-}
 
 function isVideoRef(ref) {
     return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(ref || "");
@@ -285,7 +279,7 @@ function renderPost(post) {
     div.className = "card feed-card";
     const initials = (post.author_username || "?").slice(0, 2).toUpperCase();
     const locationParts = [post.author_locality, post.author_region].filter(Boolean).join(", ");
-    const talentBadge = post.author_talent_category ? `<span class="talent-badge">${escapeHtml(post.author_talent_category)}</span>` : "";
+    const talentBadge = post.author_talent_category ? `<span class="talent-badge">${escapeHtml(talentLabel(post.author_talent_category))}</span>` : "";
 
     div.innerHTML = `
       <div class="post-header">
@@ -371,7 +365,7 @@ function renderMediaPreview() {
     });
 }
 
-import { compressImage } from "./media-utils.js";
+import { compressImage, timeAgo } from "./media-utils.js";
 
 async function handleMediaFiles(files) {
     for (const file of files) {

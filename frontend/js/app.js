@@ -11,6 +11,15 @@ import { initCategories } from "./categories.js";
 import { initStatus, loadStatusFeed } from "./status.js";
 import { initProfile } from "./profile.js";
 
+function initGoLiveButton() {
+  const btn = document.getElementById("btn-go-live");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    showTab("live-video");
+    alert("Going live is coming soon — this will open your camera and start broadcasting to viewers in this tab.");
+  });
+}
+
 function initGigButton() {
   const btn = document.getElementById("btn-open-gig");
   if (!btn) return;
@@ -61,6 +70,7 @@ function boot() {
   initCategories();
   initStatus();
   initGigButton();
+  initGoLiveButton();
   initProfile();
   initBottomNav();
 
