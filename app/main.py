@@ -67,6 +67,7 @@ async def on_startup():
         conn.execute(text("ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_comment_id UUID;"))
         conn.execute(text("ALTER TABLE reactions ADD COLUMN IF NOT EXISTS comment_id UUID;"))
         conn.execute(text("ALTER TABLE reactions ALTER COLUMN post_id DROP NOT NULL;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS date_of_birth DATE;"))
         conn.commit()
     # Background task — polls live matches for score changes, pushes
     # goal events into match rooms. Fire-and-forget on the running

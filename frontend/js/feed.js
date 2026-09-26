@@ -1,4 +1,5 @@
 import { api, getCachedUser } from "./api.js";
+import { openProfile } from "./profile.js";
 
 const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "✅", "🙏", "🙋", "👏", "🚀", "🎓", "📍", "💪", "💎"];
 const LONG_PRESS_MS = 450;
@@ -288,9 +289,9 @@ function renderPost(post) {
 
     div.innerHTML = `
       <div class="post-header">
-        <div class="avatar">${initials}</div>
+        <div class="avatar profile-tap" data-uid="${post.author_uid}">${initials}</div>
         <div class="post-header-text">
-          <div class="post-author-name">${escapeHtml(post.author_username || post.author_uid)} ${talentBadge}</div>
+          <div class="post-author-name profile-tap" data-uid="${post.author_uid}">${escapeHtml(post.author_username || post.author_uid)} ${talentBadge}</div>
           <div class="post-meta">${locationParts ? escapeHtml(locationParts) + " · " : ""}${post.category} · ${timeAgo(post.created_at)}</div>
         </div>
       </div>
@@ -302,6 +303,29 @@ function renderPost(post) {
         <button class="action-btn gem-btn" data-action="gem"><i class="fa-solid fa-gem"></i></button>
       </div>
     `;
+
+    div.querySelectorAll(".profile-tap").forEach(el => {
+        el.addEventListener("click", () => openProfile(el.dataset.uid));
+    });
+
+    const me = getCachedUser();
+    if (me && post.author_uid !== me.uid) {
+        const connectRow = document.createElement("div");
+        connectRow.className = "card-connect-row";
+        connectRow.innerHTML = `
+          <button class="secondary-btn card-connect-btn" data-action="klique"><i class="fa-solid fa-handshake"></i> Klique</button>
+          <button class="secondary-btn card-connect-btn" data-action="follow"><i class="fa-solid fa-user-plus"></i> Follow</button>
+        `;
+        div.insertBefore(connectRow, div.querySelector(".action-row"));
+        connectRow.querySelector('[data-action="klique"]').addEventListener("click", async (e) => {
+            const btn = e.currentTarget;
+            try { await api.kliqueRequest(post.author_uid); btn.textContent = "Requested"; btn.disabled = true; } catch (err) { alert(err.message); }
+        });
+        connectRow.querySelector('[data-action="follow"]').addEventListener("click", async (e) => {
+            const btn = e.currentTarget;
+            try { await api.followUser(post.author_uid); btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Following ✓'; btn.disabled = true; } catch (err) { alert(err.message); }
+        });
+    }
 
     wireCarousel(div);
     const gemBtn = div.querySelector(".gem-btn");
@@ -443,17 +467,22 @@ export function initFeed() {
     const btn = document.getElementById("btn-create-post");
     if (!btn) return;
 
-    const mediaInput = document.getElementById("post-media-input");
-    const attachBtn = document.getElementById("btn-attach-media");
     const voiceBtn = document.getElementById("btn-record-voice");
 
-    if (attachBtn && mediaInput) {
-        attachBtn.addEventListener("click", () => mediaInput.click());
-        mediaInput.addEventListener("change", () => {
-            if (mediaInput.files.length) handleMediaFiles(Array.from(mediaInput.files));
-            mediaInput.value = "";
+    function wireFileButton(btnId, inputId) {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(inputId);
+        if (!btn || !input) return;
+        btn.addEventListener("click", () => input.click());
+        input.addEventListener("change", () => {
+            if (input.files.length) handleMediaFiles(Array.from(input.files));
+            input.value = "";
         });
     }
+    wireFileButton("btn-take-photo", "post-photo-input");
+    wireFileButton("btn-attach-image", "post-image-input");
+    wireFileButton("btn-attach-video", "post-video-input");
+
     if (voiceBtn) voiceBtn.addEventListener("click", () => toggleVoiceRecording(voiceBtn));
 
     btn.addEventListener("click", async () => {

@@ -9,6 +9,7 @@ import { initSettings } from "./settings.js";
 import { connectMessageSocket } from "./socket.js";
 import { initCategories } from "./categories.js";
 import { initStatus, loadStatusFeed } from "./status.js";
+import { initProfile } from "./profile.js";
 
 function initGigButton() {
   const btn = document.getElementById("btn-open-gig");
@@ -60,6 +61,7 @@ function boot() {
   initCategories();
   initStatus();
   initGigButton();
+  initProfile();
   initBottomNav();
 
   window.addEventListener("himate:authed", enterApp);

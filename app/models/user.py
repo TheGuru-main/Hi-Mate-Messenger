@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Integer, DateTime, Boolean
+from sqlalchemy import Column, String, Integer, DateTime, Boolean, Date
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
@@ -30,6 +30,7 @@ class User(Base):
 
     # Optional profile fields
     marital_status = Column(String, nullable=True)
+    date_of_birth = Column(Date, nullable=True)
     religion = Column(String, nullable=True)
     feed_preferences = Column(String, nullable=True)  # comma-separated for simplicity; move to array/table later
 

@@ -95,6 +95,12 @@ export const api = {
   addComment: (postId, payload) => request(`/posts/${postId}/comments`, { method: "POST", body: payload }),
   reactToComment: (commentId, emoji) => request(`/comments/${commentId}/react`, { method: "POST", body: { emoji } }),
 
+  getUserProfile: (uid) => request(`/users/${uid}/profile`),
+  getUserPosts: (uid) => request(`/users/${uid}/posts`),
+  getUserLikedPosts: (uid) => request(`/users/${uid}/liked-posts`),
+  getUserSharedPosts: (uid) => request(`/users/${uid}/shared-posts`),
+  followUser: (uid) => request(`/follow/${uid}`, { method: "POST" }),
+
   createGroup: (payload) => request("/groups", { method: "POST", body: payload }),
   matchContacts: (phone_numbers) => request("/contacts/match", { method: "POST", body: { phone_numbers } }),
 

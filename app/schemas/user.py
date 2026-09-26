@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
@@ -15,6 +15,7 @@ class UserOut(BaseModel):
     language: Optional[str] = None
     business_role: Optional[str] = None
     interest: Optional[str] = None
+    date_of_birth: Optional[date] = None
     start_row: int
     created_at: datetime
 
@@ -30,6 +31,7 @@ class UserUpdate(BaseModel):
     interest: Optional[str] = None
     marital_status: Optional[str] = None
     religion: Optional[str] = None
+    date_of_birth: Optional[date] = None
 
 
 class ContactMatchRequest(BaseModel):
