@@ -1,4 +1,5 @@
 import { api, getCachedUser } from "./api.js";
+import { compressImage } from "./media-utils.js";
 
 let statusGroups = [];
 
@@ -109,6 +110,11 @@ async function openStatusComposer() {
           <button class="icon-btn status-viewer-close"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <textarea class="input-box" id="status-content" placeholder="What's happening?"></textarea>
+        <div id="status-media-preview" class="post-media-preview"></div>
+        <div class="composer-toolbar">
+          <button class="icon-btn" id="status-attach-media" type="button"><i class="fa-solid fa-image"></i></button>
+          <input type="file" id="status-media-input" accept="image/*,video/*" hidden>
+        </div>
         <label class="form-section label">Duration</label>
         <select class="input-box" id="status-duration">
           <option value="">Select duration…</option>
@@ -131,6 +137,30 @@ async function openStatusComposer() {
     document.body.appendChild(overlay);
     overlay.querySelector(".status-viewer-close").addEventListener("click", closeModal);
 
+    let statusMediaRef = null;
+    const mediaInput = overlay.querySelector("#status-media-input");
+    const mediaPreview = overlay.querySelector("#status-media-preview");
+    overlay.querySelector("#status-attach-media").addEventListener("click", () => mediaInput.click());
+    mediaInput.addEventListener("change", async () => {
+        if (!mediaInput.files.length) return;
+        const file = mediaInput.files[0];
+        mediaPreview.innerHTML = '<div class="media-chip">Uploading…</div>';
+        try {
+            const toUpload = await compressImage(file);
+            const res = await api.uploadMedia(toUpload);
+            statusMediaRef = res.media_ref;
+            const isVideo = file.type.startsWith("video/");
+            mediaPreview.innerHTML = `<div class="media-chip"><span>${isVideo ? "🎬 video" : "🖼️ image"} attached</span><button type="button" id="status-media-remove">&times;</button></div>`;
+            mediaPreview.querySelector("#status-media-remove").addEventListener("click", () => {
+                statusMediaRef = null;
+                mediaPreview.innerHTML = "";
+            });
+        } catch (e) {
+            mediaPreview.innerHTML = `<div class="error-text">Upload failed: ${e.message}</div>`;
+        }
+        mediaInput.value = "";
+    });
+
     const visSelect = overlay.querySelector("#status-visibility");
     const recipientsBox = overlay.querySelector("#status-recipients");
     visSelect.addEventListener("change", () => {
@@ -144,7 +174,7 @@ async function openStatusComposer() {
         const duration = overlay.querySelector("#status-duration").value;
         const visibility = visSelect.value;
 
-        if (!content) { errEl.textContent = "Write something first."; return; }
+        if (!content && !statusMediaRef) { errEl.textContent = "Write something or attach media first."; return; }
         if (!duration) { errEl.textContent = "Please choose a duration."; return; }
 
         let recipient_uids = [];
@@ -154,7 +184,7 @@ async function openStatusComposer() {
         }
 
         try {
-            await api.createStatus({ content, duration, visibility, recipient_uids });
+            await api.createStatus({ content, media_ref: statusMediaRef, duration, visibility, recipient_uids });
             closeModal();
             loadStatusFeed();
         } catch (e) {

@@ -347,41 +347,7 @@ function renderMediaPreview() {
     });
 }
 
-const MAX_DIMENSION = 1600; // long-edge cap — large enough to look sharp full-screen, small enough to keep uploads fast
-const JPEG_QUALITY = 0.9;   // high quality, still meaningfully smaller than an uncompressed phone photo
-
-function compressImage(file) {
-    return new Promise((resolve) => {
-        if (!file.type.startsWith("image/") || file.type === "image/gif") {
-            resolve(file); // don't touch GIFs (would break animation) or non-images
-            return;
-        }
-        const img = new Image();
-        const reader = new FileReader();
-        reader.onload = (e) => { img.src = e.target.result; };
-        img.onload = () => {
-            let { width, height } = img;
-            if (width <= MAX_DIMENSION && height <= MAX_DIMENSION) {
-                resolve(file); // already small enough, skip re-encoding entirely
-                return;
-            }
-            const scale = MAX_DIMENSION / Math.max(width, height);
-            width = Math.round(width * scale);
-            height = Math.round(height * scale);
-
-            const canvas = document.createElement("canvas");
-            canvas.width = width;
-            canvas.height = height;
-            canvas.getContext("2d").drawImage(img, 0, 0, width, height);
-            canvas.toBlob((blob) => {
-                if (!blob) { resolve(file); return; }
-                resolve(new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }));
-            }, "image/jpeg", JPEG_QUALITY);
-        };
-        img.onerror = () => resolve(file);
-        reader.readAsDataURL(file);
-    });
-}
+import { compressImage } from "./media-utils.js";
 
 async function handleMediaFiles(files) {
     for (const file of files) {
