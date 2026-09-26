@@ -411,7 +411,35 @@ async function toggleVoiceRecording(btn) {
     }
 }
 
+function initPromoCarousel() {
+    const track = document.getElementById("promo-track");
+    const dotsBox = document.getElementById("promo-dots");
+    if (!track || !dotsBox) return;
+
+    const slides = track.querySelectorAll(".promo-slide");
+    dotsBox.innerHTML = Array.from(slides).map((_, i) => `<span class="dot${i === 0 ? " active" : ""}"></span>`).join("");
+    const dots = dotsBox.querySelectorAll(".dot");
+
+    function goTo(idx) {
+        track.scrollTo({ left: track.clientWidth * idx, behavior: "smooth" });
+    }
+
+    let current = 0;
+    const autoAdvance = setInterval(() => {
+        current = (current + 1) % slides.length;
+        goTo(current);
+    }, 4000);
+
+    track.addEventListener("scroll", () => {
+        current = Math.round(track.scrollLeft / track.clientWidth);
+        dots.forEach((d, i) => d.classList.toggle("active", i === current));
+    });
+
+    track.addEventListener("touchstart", () => clearInterval(autoAdvance), { passive: true, once: true });
+}
+
 export function initFeed() {
+    initPromoCarousel();
     const btn = document.getElementById("btn-create-post");
     if (!btn) return;
 

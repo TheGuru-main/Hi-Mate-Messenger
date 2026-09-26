@@ -267,3 +267,16 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   border-color: var(--neon-blue);
   box-shadow: 0 0 0 3px rgba(0,229,255,.12);
 }
+
+/* ---------- Feed promo carousel ---------- */
+.promo-carousel{ position:relative; width:100%; margin-bottom:10px; border-radius:14px; overflow:hidden; }
+.promo-track{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+.promo-track::-webkit-scrollbar{ display:none; }
+.promo-slide{
+  flex:0 0 100%; scroll-snap-align:center; min-height:56px; display:flex; align-items:center; justify-content:center;
+  gap:10px; font-size:13.5px; font-weight:600; color:#050718;
+  background:linear-gradient(90deg, var(--neon-blue), var(--neon-purple-2));
+}
+.promo-dots{ position:absolute; bottom:6px; left:0; right:0; display:flex; justify-content:center; gap:5px; }
+.promo-dots .dot{ width:5px; height:5px; border-radius:50%; background:rgba(255,255,255,.5); }
+.promo-dots .dot.active{ background:#050718; }
