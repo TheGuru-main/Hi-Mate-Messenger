@@ -247,3 +247,5 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .comment-reply-context button{ background:none; border:none; color:var(--text-faint); cursor:pointer; }
 .comment-input-row{ display:flex; gap:8px; }
 .comment-input-row .input-box{ flex:1; border-radius:20px; }
+.voice-timer{ font-size:12px; color:var(--danger); align-self:center; font-variant-numeric:tabular-nums; }
+.voice-timer.hidden{ display:none; }

@@ -359,6 +359,16 @@ async function handleMediaFiles(files) {
     renderMediaPreview();
 }
 
+let recordingTimerInterval = null;
+let recordingStartedAt = null;
+
+function formatDuration(ms) {
+    const totalSec = Math.floor(ms / 1000);
+    const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+    const ss = String(totalSec % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+}
+
 async function toggleVoiceRecording(btn) {
     if (mediaRecorder && mediaRecorder.state === "recording") {
         mediaRecorder.stop();
@@ -369,11 +379,26 @@ async function toggleVoiceRecording(btn) {
         recordedChunks = [];
         mediaRecorder = new MediaRecorder(stream);
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+
+        const timerLabel = document.getElementById("voice-timer");
+        recordingStartedAt = Date.now();
+        if (timerLabel) {
+            timerLabel.classList.remove("hidden");
+            timerLabel.textContent = "00:00";
+            recordingTimerInterval = setInterval(() => {
+                timerLabel.textContent = formatDuration(Date.now() - recordingStartedAt);
+            }, 250);
+        }
+
         mediaRecorder.onstop = async () => {
             btn.classList.remove("recording");
+            clearInterval(recordingTimerInterval);
+            const finalDuration = formatDuration(Date.now() - recordingStartedAt);
+            if (timerLabel) { timerLabel.textContent = ""; timerLabel.classList.add("hidden"); }
             stream.getTracks().forEach(t => t.stop());
             const blob = new Blob(recordedChunks, { type: "audio/webm" });
             const file = new File([blob], `voice-${Date.now()}.webm`, { type: "audio/webm" });
+            file.durationLabel = finalDuration;
             await handleMediaFiles([file]);
         };
         mediaRecorder.start();
