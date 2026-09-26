@@ -8,7 +8,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.message import Message, Group
-from app.schemas.message import MessageCreate, MessageOut, GroupCreate, GroupOut
+from app.schemas.message import MessageCreate, MessageOut, GroupCreate, GroupOut, GroupUpdate
 from app.services import placement
 from app.sockets.manager import manager
 
@@ -110,6 +110,8 @@ async def create_group(
     group = Group(
         group_id=group_id,
         name=payload.name,
+        description=payload.description,
+        purpose=payload.purpose,
         L=p["L"],
         S=p["S"],
         start_row=p["start_row"],
@@ -117,6 +119,35 @@ async def create_group(
         created_by_uid=current_user.uid,
     )
     db.add(group)
+    db.commit()
+    db.refresh(group)
+    return group
+
+
+@router.get("/groups/{group_id}", response_model=GroupOut)
+async def get_group(group_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    group = db.query(Group).filter(Group.group_id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    if current_user.uid not in group.member_uids:
+        raise HTTPException(status_code=403, detail="Not a member of this group")
+    return group
+
+
+@router.patch("/groups/{group_id}", response_model=GroupOut)
+async def update_group(
+    group_id: str,
+    payload: GroupUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    group = db.query(Group).filter(Group.group_id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    if group.created_by_uid != current_user.uid:
+        raise HTTPException(status_code=403, detail="Only the group creator can edit its details")
+    for field_name, value in payload.model_dump(exclude_unset=True).items():
+        setattr(group, field_name, value)
     db.commit()
     db.refresh(group)
     return group

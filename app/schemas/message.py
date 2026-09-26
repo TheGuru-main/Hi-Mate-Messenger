@@ -36,6 +36,14 @@ class MessageOut(BaseModel):
 class GroupCreate(BaseModel):
     name: str
     member_uids: list[str]
+    description: str | None = None
+    purpose: str | None = None
+
+
+class GroupUpdate(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    purpose: str | None = None
 
 
 class GroupOut(BaseModel):
@@ -43,7 +51,10 @@ class GroupOut(BaseModel):
 
     group_id: str
     name: str
+    description: str | None = None
+    purpose: str | None = None
     member_uids: list[str]
+    created_by_uid: str
     start_row: int
     created_at: datetime
 

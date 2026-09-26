@@ -13,6 +13,8 @@ class Group(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     group_id = Column(String, unique=True, nullable=False)  # generated: creator_uid + timestamp hash
     name = Column(String, nullable=False)
+    description = Column(Text, nullable=True)  # intro/narration
+    purpose = Column(String, nullable=True)
 
     # GSP placement for the group's own shared identity
     L = Column(Integer, nullable=False)
