@@ -8,6 +8,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.post import Post, Comment, Reaction, FEED_CATEGORIES, VALID_REACTIONS
 from app.services.crawler import crawl, Candidate
+from app.services import storage
 
 router = APIRouter(tags=["posts"])
 
@@ -29,11 +30,18 @@ class CommentCreate(BaseModel):
 
 
 def serialize_post(post: Post, author: User | None, comment_count: int) -> dict:
-    media_list = []
+    raw_refs = []
     if post.media_refs:
-        media_list = [m for m in post.media_refs.split(",") if m]
+        raw_refs = [m for m in post.media_refs.split(",") if m]
     elif post.media_ref:
-        media_list = [post.media_ref]
+        raw_refs = [post.media_ref]
+
+    media_list = []
+    for ref in raw_refs:
+        try:
+            media_list.append(storage.get_signed_url(ref))
+        except Exception:
+            media_list.append(ref)  # fall back to the raw ref rather than dropping it entirely
     return {
         "id": str(post.id),
         "author_uid": post.author_uid,

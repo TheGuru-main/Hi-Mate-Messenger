@@ -10,6 +10,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.klique import KliqueRequest
 from app.models.status import Status, StatusRecipient, DURATION_SECONDS
+from app.services import storage
 
 router = APIRouter(tags=["status"])
 
@@ -121,7 +122,7 @@ async def get_status_feed(
                 {
                     "id": str(s.id),
                     "content": s.content,
-                    "media_ref": s.media_ref,
+                    "media_ref": (storage.get_signed_url(s.media_ref) if s.media_ref else None),
                     "visibility": s.visibility,
                     "created_at": s.created_at.isoformat(),
                     "expires_at": s.expires_at.isoformat(),
