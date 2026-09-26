@@ -1,5 +1,7 @@
 import { api } from "./api.js";
+import { openProfile } from "./profile.js";
 import { openChat } from "./chat.js";
+import { talentLabel, businessLabel } from "./categories.js";
 
 let currentSearchMode = "username";
 
@@ -11,12 +13,66 @@ function escapeHtml(str) {
 
 function renderUserResult(user) {
     const div = document.createElement("div");
-    div.className = "list-item";
+    div.className = "card search-result-card";
+
+    const initials = (user.username || "?").slice(0, 2).toUpperCase();
+    const locationParts = [user.locality, user.region, user.country].filter(Boolean).join(", ");
+    const talentBadge = user.talent_category ? `<span class="talent-badge">${escapeHtml(talentLabel(user.talent_category))}</span>` : "";
+    const businessBadge = user.business_category ? `<span class="talent-badge">${escapeHtml(businessLabel(user.business_category))}</span>` : "";
+
+    const kliqueLabel = user.klique_status === "accepted" ? "Klique ✓" : user.klique_status === "pending" ? "Requested" : "Klique";
+    const kliqueDisabled = user.klique_status ? "disabled" : "";
+    const followLabel = user.is_following ? "Following ✓" : "Follow";
+    const followDisabled = user.is_following ? "disabled" : "";
+
     div.innerHTML = `
-      <div class="avatar">${(user.username || "?").slice(0, 2).toUpperCase()}</div>
-      <div><div class="name">${user.username}</div><div class="sub">${user.uid}</div></div>
+      <div class="post-header">
+        <div class="avatar profile-tap" data-uid="${user.uid}">${initials}</div>
+        <div class="post-header-text">
+          <div class="post-author-name profile-tap" data-uid="${user.uid}">${escapeHtml(user.username)} ${talentBadge} ${businessBadge}</div>
+          <div class="post-meta">${locationParts ? escapeHtml(locationParts) : "Location not set"}</div>
+        </div>
+      </div>
+      ${user.is_me ? "" : `
+        <div class="card-connect-row">
+          <button class="secondary-btn card-connect-btn" data-action="message"><i class="fa-solid fa-paper-plane"></i> Message</button>
+          <button class="secondary-btn card-connect-btn" data-action="klique" ${kliqueDisabled}><i class="fa-solid fa-handshake"></i> ${kliqueLabel}</button>
+          <button class="secondary-btn card-connect-btn" data-action="follow" ${followDisabled}><i class="fa-solid fa-user-plus"></i> ${followLabel}</button>
+        </div>
+      `}
     `;
-    div.addEventListener("click", () => openChat(user.uid, user.username));
+
+    div.querySelectorAll(".profile-tap").forEach(el => {
+        el.addEventListener("click", () => openProfile(el.dataset.uid));
+    });
+
+    const messageBtn = div.querySelector('[data-action="message"]');
+    if (messageBtn) {
+        messageBtn.addEventListener("click", () => openChat(user.uid, user.username));
+    }
+
+    const kliqueBtn = div.querySelector('[data-action="klique"]');
+    if (kliqueBtn && !user.klique_status) {
+        kliqueBtn.addEventListener("click", async () => {
+            try {
+                await api.kliqueRequest(user.uid);
+                kliqueBtn.textContent = "Requested";
+                kliqueBtn.disabled = true;
+            } catch (e) { alert(e.message); }
+        });
+    }
+
+    const followBtn = div.querySelector('[data-action="follow"]');
+    if (followBtn && !user.is_following) {
+        followBtn.addEventListener("click", async () => {
+            try {
+                await api.followUser(user.uid);
+                followBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Following ✓';
+                followBtn.disabled = true;
+            } catch (e) { alert(e.message); }
+        });
+    }
+
     return div;
 }
 
