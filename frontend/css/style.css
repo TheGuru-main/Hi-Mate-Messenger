@@ -322,3 +322,9 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .profile-avatar-edit{ position:absolute; bottom:-2px; right:-2px; width:28px; height:28px; }
 .hidden{ display:none !important; }
 .delete-post-btn{ margin-left:auto; color:var(--danger); }
+
+/* ---------- Notifications ---------- */
+.notif-badge{ position:absolute; top:2px; right:2px; background:var(--danger); color:#fff; font-size:9px; font-weight:700; border-radius:8px; padding:1px 4px; min-width:14px; text-align:center; }
+#btn-open-notifications{ position:relative; }
+.notif-item.unread{ border-left:3px solid var(--neon-blue); }
+.profile-bio{ max-width:320px; }

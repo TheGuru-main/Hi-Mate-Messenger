@@ -102,6 +102,16 @@ export const api = {
   getUserSharedPosts: (uid) => request(`/users/${uid}/shared-posts`),
   followUser: (uid) => request(`/follow/${uid}`, { method: "POST" }),
 
+  getNotifications: () => request("/notifications"),
+  markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: "POST" }),
+  markAllNotificationsRead: () => request("/notifications/read-all", { method: "POST" }),
+  getUnreadNotificationCount: () => request("/notifications/unread-count"),
+  getMyGroups: () => request("/groups/mine"),
+  addGroupMembers: (groupId, member_uids) => request(`/groups/${groupId}/members`, { method: "POST", body: { member_uids } }),
+  joinGroupByLink: (groupId) => request(`/groups/${groupId}/join`, { method: "POST" }),
+  createGroupEvent: (groupId, payload) => request(`/groups/${groupId}/events`, { method: "POST", body: payload }),
+  getGroupEvents: (groupId) => request(`/groups/${groupId}/events`),
+
   createGroup: (payload) => request("/groups", { method: "POST", body: payload }),
   getGroup: (groupId) => request(`/groups/${groupId}`),
   updateGroup: (groupId, payload) => request(`/groups/${groupId}`, { method: "PATCH", body: payload }),

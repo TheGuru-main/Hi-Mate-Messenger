@@ -10,6 +10,7 @@ import { connectMessageSocket } from "./socket.js";
 import { initCategories } from "./categories.js";
 import { initStatus, loadStatusFeed } from "./status.js";
 import { initProfile } from "./profile.js";
+import { initNotifications } from "./notifications.js";
 
 function initGoLiveButton() {
   const btn = document.getElementById("btn-go-live");
@@ -72,6 +73,7 @@ function boot() {
   initGigButton();
   initGoLiveButton();
   initProfile();
+  initNotifications();
   initBottomNav();
 
   window.addEventListener("himate:authed", enterApp);
