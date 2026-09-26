@@ -94,6 +94,55 @@ function renderActions(profile) {
     });
 }
 
+function renderEditButton(profile) {
+    const existing = document.getElementById("profile-edit-btn");
+    if (existing) existing.remove();
+    if (!profile.is_me) return;
+    const btn = document.createElement("button");
+    btn.id = "profile-edit-btn";
+    btn.className = "secondary-btn profile-action-btn";
+    btn.innerHTML = '<i class="fa-solid fa-pen"></i> Edit Profile';
+    btn.addEventListener("click", () => openEditProfileModal(profile));
+    document.getElementById("profile-actions").appendChild(btn);
+}
+
+function openEditProfileModal(profile) {
+    const overlay = document.createElement("div");
+    overlay.className = "klique-modal-overlay feed-modal-overlay";
+    overlay.innerHTML = `
+      <div class="status-composer">
+        <div class="status-viewer-header">
+          <div class="status-viewer-name">Edit Profile</div>
+          <button class="icon-btn edit-profile-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <label class="form-section label">Bio</label>
+        <textarea class="input-box" id="edit-bio">${escapeHtml(profile.bio || "")}</textarea>
+        <label class="form-section label">Education Level</label>
+        <input class="input-box" id="edit-education" value="${escapeHtml(profile.education_level || "")}" placeholder="e.g. Bachelor's, Diploma, Self-taught">
+        <label class="form-section label">Date of Birth</label>
+        <input class="input-box" type="date" id="edit-dob" value="${profile.date_of_birth || ""}">
+        <button class="primary-btn" id="save-profile-btn">Save</button>
+        <div class="error-text" id="edit-profile-error"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".edit-profile-close").addEventListener("click", () => overlay.remove());
+    overlay.querySelector("#save-profile-btn").addEventListener("click", async () => {
+        const errEl = overlay.querySelector("#edit-profile-error");
+        try {
+            await api.updateMe({
+                bio: overlay.querySelector("#edit-bio").value.trim(),
+                education_level: overlay.querySelector("#edit-education").value.trim(),
+                date_of_birth: overlay.querySelector("#edit-dob").value || null,
+            });
+            overlay.remove();
+            if (currentProfileUid) openProfile(currentProfileUid);
+        } catch (e) {
+            errEl.textContent = e.message;
+        }
+    });
+}
+
 export async function openProfile(uid) {
     currentProfileUid = uid;
     currentTab = "posts";
