@@ -25,7 +25,7 @@ function initBottomNav() {
       showTab(tab);
       if (tab === "feed") loadFeed();
       if (tab === "matches") loadLiveMatches();
-      if (tab === "chats") loadKliqueList();
+      if (tab === "chats") { loadKliqueList(); loadStatusFeed(); }
     };
   });
 }
@@ -35,6 +35,7 @@ async function enterApp() {
   showTab("feed");
   connectMessageSocket();
   loadFeed();
+  loadStatusFeed();
 
   // Refresh cached user in case something changed server-side
   try {
