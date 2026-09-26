@@ -64,6 +64,7 @@ export const api = {
 
   getFeed: () => request("/feed"),
   createPost: (payload) => request("/posts", { method: "POST", body: payload }),
+  deletePost: (postId) => request(`/posts/${postId}`, { method: "DELETE" }),
   react: (postId, emoji) => request(`/posts/${postId}/react`, { method: "POST", body: { emoji } }),
 
   search: (q, type) => request(`/search?q=${encodeURIComponent(q)}&type=${type}`),

@@ -321,3 +321,4 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .profile-avatar{ position:relative; background-size:cover; background-position:center; border:3px solid var(--deep-blue-2); }
 .profile-avatar-edit{ position:absolute; bottom:-2px; right:-2px; width:28px; height:28px; }
 .hidden{ display:none !important; }
+.delete-post-btn{ margin-left:auto; color:var(--danger); }

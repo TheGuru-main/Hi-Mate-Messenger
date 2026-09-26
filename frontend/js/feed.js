@@ -298,6 +298,21 @@ function renderPost(post) {
       </div>
     `;
 
+    const me0 = getCachedUser();
+    if (me0 && post.author_uid === me0.uid) {
+        const delBtn = document.createElement("button");
+        delBtn.className = "action-btn delete-post-btn";
+        delBtn.innerHTML = '<i class="fa-solid fa-trash"></i>';
+        delBtn.addEventListener("click", async () => {
+            if (!confirm("Delete this post?")) return;
+            try {
+                await api.deletePost(post.id);
+                div.remove();
+            } catch (e) { alert(e.message); }
+        });
+        div.querySelector(".action-row").appendChild(delBtn);
+    }
+
     div.querySelectorAll(".profile-tap").forEach(el => {
         el.addEventListener("click", () => openProfile(el.dataset.uid));
     });

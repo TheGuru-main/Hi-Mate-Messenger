@@ -119,6 +119,20 @@ async def get_feed(db: Session = Depends(get_db), current_user: User = Depends(g
     return [serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0)) for p in posts]
 
 
+@router.delete("/posts/{post_id}")
+async def delete_post(post_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.author_uid != current_user.uid:
+        raise HTTPException(status_code=403, detail="You can only delete your own posts")
+    db.query(Reaction).filter(Reaction.post_id == post_id).delete()
+    db.query(Comment).filter(Comment.post_id == post_id).delete()
+    db.delete(post)
+    db.commit()
+    return {"status": "deleted"}
+
+
 @router.post("/posts/{post_id}/react")
 async def react_to_post(post_id: str, payload: ReactionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if payload.emoji not in VALID_REACTIONS:
