@@ -2,6 +2,7 @@ import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { openChat } from "./chat.js";
 import { talentLabel, businessLabel } from "./categories.js";
+import { timeAgo } from "./media-utils.js";
 
 let currentProfileUid = null;
 let currentTab = "posts";
