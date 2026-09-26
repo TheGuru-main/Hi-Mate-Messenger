@@ -59,6 +59,28 @@ class GroupOut(BaseModel):
     created_at: datetime
 
 
+class GroupMembersAdd(BaseModel):
+    member_uids: list[str]
+
+
+class EventCreate(BaseModel):
+    title: str
+    description: str | None = None
+    start_time: datetime
+
+
+class EventOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    group_id: str
+    title: str
+    description: str | None = None
+    start_time: datetime
+    created_by_uid: str
+    created_at: datetime
+
+
 class KliqueRequestCreate(BaseModel):
     to_uid: str
 

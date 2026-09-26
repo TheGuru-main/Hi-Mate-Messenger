@@ -184,6 +184,10 @@ function getCountryByISO(iso) {
     return countries.find(country => country.iso === iso);
 }
 
+function getCountryByName(name) {
+    return countries.find(country => country.name === name);
+}
+
 
 // ==========================================
 // PHONE VALIDATION

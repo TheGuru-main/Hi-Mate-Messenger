@@ -26,6 +26,18 @@ class Group(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
 
+class GroupEvent(Base):
+    __tablename__ = "group_events"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_id = Column(String, ForeignKey("groups.group_id"), nullable=False, index=True)
+    title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)
+    start_time = Column(DateTime, nullable=False)
+    created_by_uid = Column(String, ForeignKey("users.uid"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
 class Message(Base):
     __tablename__ = "messages"
 

@@ -5,6 +5,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.klique import KliqueRequest, Follow, Fan, Block
+from app.models.notification import Notification
 from app.schemas.message import KliqueRequestCreate, KliqueActionRequest
 
 router = APIRouter(tags=["klique"])
@@ -29,6 +30,10 @@ async def send_klique_request(
 
     request = KliqueRequest(from_uid=current_user.uid, to_uid=payload.to_uid)
     db.add(request)
+    db.add(Notification(
+        recipient_uid=payload.to_uid, actor_uid=current_user.uid, type="klique_request",
+        message=f"{current_user.username} sent you a Klique request",
+    ))
     db.commit()
     return {"status": "pending", "request_id": str(request.id)}
 
@@ -43,6 +48,10 @@ async def accept_klique_request(
     if not request or request.to_uid != current_user.uid:
         raise HTTPException(status_code=404, detail="Request not found")
     request.status = "accepted"
+    db.add(Notification(
+        recipient_uid=request.from_uid, actor_uid=current_user.uid, type="klique_accepted",
+        message=f"{current_user.username} accepted your Klique request",
+    ))
     db.commit()
     return {"status": "accepted"}
 
@@ -82,6 +91,10 @@ async def follow_user(
         return {"status": "following"}  # already following — idempotent
     follow = Follow(follower_uid=current_user.uid, followee_uid=uid)
     db.add(follow)
+    db.add(Notification(
+        recipient_uid=uid, actor_uid=current_user.uid, type="follow",
+        message=f"{current_user.username} followed you",
+    ))
     db.commit()
     return {"status": "following"}
 

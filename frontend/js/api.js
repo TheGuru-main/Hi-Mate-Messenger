@@ -103,6 +103,8 @@ export const api = {
   followUser: (uid) => request(`/follow/${uid}`, { method: "POST" }),
 
   createGroup: (payload) => request("/groups", { method: "POST", body: payload }),
+  getGroup: (groupId) => request(`/groups/${groupId}`),
+  updateGroup: (groupId, payload) => request(`/groups/${groupId}`, { method: "PATCH", body: payload }),
   matchContacts: (phone_numbers) => request("/contacts/match", { method: "POST", body: { phone_numbers } }),
 
   createStatus: (payload) => request("/status", { method: "POST", body: payload }),

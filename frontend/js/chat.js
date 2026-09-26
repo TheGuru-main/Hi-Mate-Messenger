@@ -3,7 +3,8 @@ import { showPage } from "./router.js";
 import { onMessage } from "./socket.js";
 
 let activeConversationUid = null;
-let activeConversationType = "user"; // "user" | "group"
+let activeConversationType = "user";
+let activeGroup = null;
 
 function renderKliqueEntry(k, myUid) {
     const otherUid = k.from_uid === myUid ? k.to_uid : k.from_uid;
@@ -61,21 +62,31 @@ async function loadIntoRoom(conversationId) {
     }
 }
 
+function updateGroupSettingsVisibility() {
+    const btn = document.getElementById("btn-group-settings");
+    if (!btn) return;
+    btn.classList.toggle("hidden", activeConversationType !== "group");
+}
+
 export async function openChat(uid, displayName) {
     activeConversationUid = uid;
     activeConversationType = "user";
+    activeGroup = null;
     const titleEl = document.getElementById("chat-room-title");
     if (titleEl) titleEl.textContent = displayName || uid;
     showPage("chat-room");
+    updateGroupSettingsVisibility();
     await loadIntoRoom(uid);
 }
 
 export async function openGroupChat(group) {
     activeConversationUid = group.group_id;
     activeConversationType = "group";
+    activeGroup = group;
     const titleEl = document.getElementById("chat-room-title");
     if (titleEl) titleEl.textContent = group.name;
     showPage("chat-room");
+    updateGroupSettingsVisibility();
     await loadIntoRoom(group.group_id);
 }
 
@@ -125,6 +136,8 @@ async function openCreateGroupModal() {
           <button class="icon-btn klique-modal-close"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <input class="input-box" id="group-name-input" placeholder="Group name">
+        <textarea class="input-box" id="group-description-input" placeholder="Introduction / narration — what's this group about?"></textarea>
+        <input class="input-box" id="group-purpose-input" placeholder="Purpose (e.g. Business, Tech, Casual, Punditry)">
         <div class="section-title">Add members</div>
         <div class="status-recipients">${options || '<div class="section-title">No Kliques yet</div>'}</div>
         <button class="primary-btn" id="group-create-btn">Create</button>
@@ -137,16 +150,76 @@ async function openCreateGroupModal() {
     overlay.querySelector("#group-create-btn").addEventListener("click", async () => {
         const errEl = overlay.querySelector("#group-create-error");
         const name = overlay.querySelector("#group-name-input").value.trim();
+        const description = overlay.querySelector("#group-description-input").value.trim();
+        const purpose = overlay.querySelector("#group-purpose-input").value.trim();
         const member_uids = Array.from(overlay.querySelectorAll(".status-recipient-option input:checked")).map(el => el.value);
         if (!name) { errEl.textContent = "Give the group a name."; return; }
         try {
-            const group = await api.createGroup({ name, member_uids });
+            const group = await api.createGroup({ name, description, purpose, member_uids });
             closeKliqueModal();
             openGroupChat(group);
         } catch (e) {
             errEl.textContent = e.message;
         }
     });
+}
+
+async function openGroupSettingsModal() {
+    if (!activeGroup) return;
+    closeKliqueModal();
+    const overlay = document.createElement("div");
+    overlay.className = "klique-modal-overlay feed-modal-overlay";
+
+    let group = activeGroup;
+    try { group = await api.getGroup(activeGroup.group_id); } catch (e) { /* fall back to cached */ }
+
+    const me = getCachedUser();
+    const canEdit = me && group.created_by_uid === me.uid;
+
+    overlay.innerHTML = `
+      <div class="status-composer">
+        <div class="status-viewer-header">
+          <div class="status-viewer-name">Group Settings</div>
+          <button class="icon-btn klique-modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <label class="form-section label">Name</label>
+        <input class="input-box" id="group-settings-name" value="${group.name || ""}" ${canEdit ? "" : "disabled"}>
+        <label class="form-section label">Introduction / Narration</label>
+        <textarea class="input-box" id="group-settings-description" ${canEdit ? "" : "disabled"}>${group.description || ""}</textarea>
+        <label class="form-section label">Purpose</label>
+        <input class="input-box" id="group-settings-purpose" value="${group.purpose || ""}" ${canEdit ? "" : "disabled"}>
+        <div class="section-title">${group.member_uids.length} members</div>
+        ${canEdit ? '<button class="primary-btn" id="group-settings-save">Save Changes</button>' : '<div class="section-title">Only the group creator can edit these details.</div>'}
+        <div class="error-text" id="group-settings-error"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".klique-modal-close").addEventListener("click", closeKliqueModal);
+
+    if (canEdit) {
+        overlay.querySelector("#group-settings-save").addEventListener("click", async () => {
+            const errEl = overlay.querySelector("#group-settings-error");
+            try {
+                const updated = await api.updateGroup(group.group_id, {
+                    name: overlay.querySelector("#group-settings-name").value.trim(),
+                    description: overlay.querySelector("#group-settings-description").value.trim(),
+                    purpose: overlay.querySelector("#group-settings-purpose").value.trim(),
+                });
+                activeGroup = updated;
+                document.getElementById("chat-room-title").textContent = updated.name;
+                closeKliqueModal();
+            } catch (e) {
+                errEl.textContent = e.message;
+            }
+        });
+    }
+}
+
+function normalizePhoneForMatch(raw, myDialCode) {
+    let cleaned = raw.replace(/[^\d+]/g, "");
+    if (cleaned.startsWith("+")) return cleaned;
+    cleaned = cleaned.replace(/^0+/, "");
+    return (myDialCode || "") + cleaned;
 }
 
 function renderContactMatches(body, matches) {
@@ -185,13 +258,18 @@ async function openContactsModal() {
     overlay.querySelector(".klique-modal-close").addEventListener("click", closeKliqueModal);
     const body = overlay.querySelector("#contacts-body");
 
+    const me = getCachedUser();
+    const myCountry = me ? window.getCountryByName?.(me.country) : null;
+    const myDialCode = myCountry ? myCountry.dial_code : "";
+
     if (navigator.contacts && navigator.contacts.select) {
         body.innerHTML = `<button class="primary-btn" id="pick-contacts-btn">Pick Contacts</button>`;
         overlay.querySelector("#pick-contacts-btn").addEventListener("click", async () => {
             try {
                 const contacts = await navigator.contacts.select(["tel"], { multiple: true });
-                const phoneNumbers = contacts.flatMap(c => c.tel || []);
-                if (!phoneNumbers.length) { body.innerHTML = '<div class="section-title">No phone numbers found.</div>'; return; }
+                const rawNumbers = contacts.flatMap(c => c.tel || []);
+                if (!rawNumbers.length) { body.innerHTML = '<div class="section-title">No phone numbers found.</div>'; return; }
+                const phoneNumbers = rawNumbers.map(n => normalizePhoneForMatch(n, myDialCode));
                 body.innerHTML = '<div class="section-title">Matching…</div>';
                 const res = await api.matchContacts(phoneNumbers);
                 renderContactMatches(body, res.matches);
@@ -201,14 +279,15 @@ async function openContactsModal() {
         });
     } else {
         body.innerHTML = `
-          <div class="section-title">Contact picker isn't supported on this browser — paste numbers instead, one per line.</div>
-          <textarea class="input-box" id="manual-numbers" placeholder="+2348012345678"></textarea>
+          <div class="section-title">Contact picker isn't supported on this browser — paste numbers instead, one per line. Local format (e.g. 0803...) works too.</div>
+          <textarea class="input-box" id="manual-numbers" placeholder="0803xxxxxxx or +2348xxxxxxx"></textarea>
           <button class="primary-btn" id="manual-match-btn">Match</button>
         `;
         overlay.querySelector("#manual-match-btn").addEventListener("click", async () => {
             const raw = overlay.querySelector("#manual-numbers").value;
-            const phoneNumbers = raw.split("\n").map(s => s.trim()).filter(Boolean);
-            if (!phoneNumbers.length) return;
+            const rawNumbers = raw.split("\n").map(s => s.trim()).filter(Boolean);
+            if (!rawNumbers.length) return;
+            const phoneNumbers = rawNumbers.map(n => normalizePhoneForMatch(n, myDialCode));
             body.innerHTML = '<div class="section-title">Matching…</div>';
             try {
                 const res = await api.matchContacts(phoneNumbers);
@@ -235,6 +314,9 @@ export function initChat() {
 
     const addContactsBtn = document.getElementById("btn-add-contacts");
     if (addContactsBtn) addContactsBtn.addEventListener("click", openContactsModal);
+
+    const groupSettingsBtn = document.getElementById("btn-group-settings");
+    if (groupSettingsBtn) groupSettingsBtn.addEventListener("click", openGroupSettingsModal);
 
     onMessage((data) => {
         if (data.type !== "message") return;
