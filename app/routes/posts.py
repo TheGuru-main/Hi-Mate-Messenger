@@ -12,6 +12,8 @@ from app.services import storage
 
 router = APIRouter(tags=["posts"])
 
+GEM_EMOJI = "💎"
+
 
 class PostCreate(BaseModel):
     category: str
@@ -29,7 +31,26 @@ class CommentCreate(BaseModel):
     parent_comment_id: str | None = None
 
 
-def serialize_post(post: Post, author: User | None, comment_count: int) -> dict:
+def bulk_reaction_data(db: Session, post_ids: list, viewer_uid: str) -> dict:
+    """Returns {post_id: {'counts': {emoji: n}, 'my_reaction': str|None, 'my_gem': bool}}"""
+    if not post_ids:
+        return {}
+    rows = db.query(Reaction).filter(Reaction.post_id.in_(post_ids)).all()
+    result = {pid: {"counts": {}, "my_reaction": None, "my_gem": False} for pid in post_ids}
+    for r in rows:
+        entry = result.get(r.post_id)
+        if entry is None:
+            continue
+        entry["counts"][r.emoji] = entry["counts"].get(r.emoji, 0) + 1
+        if r.uid == viewer_uid:
+            if r.emoji == GEM_EMOJI:
+                entry["my_gem"] = True
+            else:
+                entry["my_reaction"] = r.emoji
+    return result
+
+
+def serialize_post(post: Post, author: User | None, comment_count: int, reaction_data: dict | None = None) -> dict:
     raw_refs = []
     if post.media_refs:
         raw_refs = [m for m in post.media_refs.split(",") if m]
@@ -41,7 +62,12 @@ def serialize_post(post: Post, author: User | None, comment_count: int) -> dict:
         try:
             media_list.append(storage.get_signed_url(ref))
         except Exception:
-            media_list.append(ref)  # fall back to the raw ref rather than dropping it entirely
+            media_list.append(ref)
+
+    rd = reaction_data or {"counts": {}, "my_reaction": None, "my_gem": False}
+    gem_count = rd["counts"].get(GEM_EMOJI, 0)
+    emoji_counts = {k: v for k, v in rd["counts"].items() if k != GEM_EMOJI}
+
     return {
         "id": str(post.id),
         "author_uid": post.author_uid,
@@ -53,20 +79,11 @@ def serialize_post(post: Post, author: User | None, comment_count: int) -> dict:
         "content": post.content,
         "media_refs": media_list,
         "comment_count": comment_count,
+        "reaction_counts": emoji_counts,
+        "my_reaction": rd["my_reaction"],
+        "gem_count": gem_count,
+        "my_gem": rd["my_gem"],
         "created_at": post.created_at.isoformat() if post.created_at else None,
-    }
-
-
-def serialize_comment(comment: Comment, author: User | None) -> dict:
-    return {
-        "id": str(comment.id),
-        "post_id": str(comment.post_id),
-        "parent_comment_id": str(comment.parent_comment_id) if comment.parent_comment_id else None,
-        "author_uid": comment.author_uid,
-        "author_username": author.username if author else comment.author_uid,
-        "content": comment.content,
-        "media_ref": comment.media_ref,
-        "created_at": comment.created_at.isoformat() if comment.created_at else None,
     }
 
 
@@ -83,6 +100,20 @@ async def create_post(payload: PostCreate, db: Session = Depends(get_db), curren
     db.commit()
     db.refresh(post)
     return serialize_post(post, current_user, 0)
+
+
+@router.delete("/posts/{post_id}")
+async def delete_post(post_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    post = db.query(Post).filter(Post.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    if post.author_uid != current_user.uid:
+        raise HTTPException(status_code=403, detail="You can only delete your own posts")
+    db.query(Reaction).filter(Reaction.post_id == post_id).delete()
+    db.query(Comment).filter(Comment.post_id == post_id).delete()
+    db.delete(post)
+    db.commit()
+    return {"status": "deleted"}
 
 
 @router.get("/feed")
@@ -116,35 +147,55 @@ async def get_feed(db: Session = Depends(get_db), current_user: User = Depends(g
     comment_counts = dict(
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_(post_ids)).group_by(Comment.post_id).all()
     )
-    return [serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0)) for p in posts]
+    reaction_data = bulk_reaction_data(db, post_ids, current_user.uid)
 
-
-@router.delete("/posts/{post_id}")
-async def delete_post(post_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    post = db.query(Post).filter(Post.id == post_id).first()
-    if not post:
-        raise HTTPException(status_code=404, detail="Post not found")
-    if post.author_uid != current_user.uid:
-        raise HTTPException(status_code=403, detail="You can only delete your own posts")
-    db.query(Reaction).filter(Reaction.post_id == post_id).delete()
-    db.query(Comment).filter(Comment.post_id == post_id).delete()
-    db.delete(post)
-    db.commit()
-    return {"status": "deleted"}
+    return [
+        serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0), reaction_data.get(p.id))
+        for p in posts
+    ]
 
 
 @router.post("/posts/{post_id}/react")
-async def react_to_post(post_id: str, payload: ReactionCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def react_to_post(
+    post_id: str,
+    payload: ReactionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     if payload.emoji not in VALID_REACTIONS:
         raise HTTPException(status_code=400, detail=f"Emoji must be one of {sorted(VALID_REACTIONS)}")
-    existing = db.query(Reaction).filter(Reaction.post_id == post_id, Reaction.uid == current_user.uid).first()
-    if existing:
+
+    is_gem = payload.emoji == GEM_EMOJI
+
+    # Gem and regular emoji reactions occupy SEPARATE slots — a user can have
+    # at most one regular emoji reaction AND independently one gem, at the same time.
+    if is_gem:
+        existing = db.query(Reaction).filter(
+            Reaction.post_id == post_id, Reaction.uid == current_user.uid, Reaction.emoji == GEM_EMOJI
+        ).first()
+    else:
+        existing = db.query(Reaction).filter(
+            Reaction.post_id == post_id, Reaction.uid == current_user.uid, Reaction.emoji != GEM_EMOJI
+        ).first()
+
+    if existing and existing.emoji == payload.emoji:
+        # Re-tapping the SAME reaction removes it (toggle off)
+        db.delete(existing)
+        db.commit()
+        return {"status": "removed"}
+    elif existing:
+        # Switching to a different (non-gem) reaction
         existing.emoji = payload.emoji
         existing.identity_version = current_user.identity_version
+        db.commit()
+        return {"status": "reacted"}
     else:
-        db.add(Reaction(post_id=post_id, uid=current_user.uid, emoji=payload.emoji, identity_version=current_user.identity_version))
-    db.commit()
-    return {"status": "reacted"}
+        db.add(Reaction(
+            post_id=post_id, uid=current_user.uid, emoji=payload.emoji,
+            identity_version=current_user.identity_version,
+        ))
+        db.commit()
+        return {"status": "reacted"}
 
 
 @router.post("/posts/{post_id}/comments")
@@ -157,7 +208,13 @@ async def comment_on_post(post_id: str, payload: CommentCreate, db: Session = De
     db.add(comment)
     db.commit()
     db.refresh(comment)
-    return serialize_comment(comment, current_user)
+    return {
+        "id": str(comment.id), "post_id": str(comment.post_id),
+        "parent_comment_id": str(comment.parent_comment_id) if comment.parent_comment_id else None,
+        "author_uid": comment.author_uid, "author_username": current_user.username,
+        "content": comment.content, "media_ref": comment.media_ref,
+        "created_at": comment.created_at.isoformat() if comment.created_at else None,
+    }
 
 
 @router.get("/posts/{post_id}/comments")
@@ -165,7 +222,17 @@ async def list_comments(post_id: str, db: Session = Depends(get_db), current_use
     comments = db.query(Comment).filter(Comment.post_id == post_id).order_by(Comment.created_at.asc()).all()
     author_uids = list({c.author_uid for c in comments})
     authors = {u.uid: u for u in db.query(User).filter(User.uid.in_(author_uids)).all()} if author_uids else {}
-    return [serialize_comment(c, authors.get(c.author_uid)) for c in comments]
+    return [
+        {
+            "id": str(c.id), "post_id": str(c.post_id),
+            "parent_comment_id": str(c.parent_comment_id) if c.parent_comment_id else None,
+            "author_uid": c.author_uid,
+            "author_username": authors[c.author_uid].username if authors.get(c.author_uid) else c.author_uid,
+            "content": c.content, "media_ref": c.media_ref,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+        }
+        for c in comments
+    ]
 
 
 @router.post("/comments/{comment_id}/react")
@@ -176,10 +243,16 @@ async def react_to_comment(comment_id: str, payload: ReactionCreate, db: Session
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
     existing = db.query(Reaction).filter(Reaction.comment_id == comment_id, Reaction.uid == current_user.uid).first()
-    if existing:
+    if existing and existing.emoji == payload.emoji:
+        db.delete(existing)
+        db.commit()
+        return {"status": "removed"}
+    elif existing:
         existing.emoji = payload.emoji
         existing.identity_version = current_user.identity_version
+        db.commit()
+        return {"status": "reacted"}
     else:
         db.add(Reaction(comment_id=comment_id, uid=current_user.uid, emoji=payload.emoji, identity_version=current_user.identity_version))
-    db.commit()
-    return {"status": "reacted"}
+        db.commit()
+        return {"status": "reacted"}
