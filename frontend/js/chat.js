@@ -116,18 +116,28 @@ function closeKliqueModal() {
     if (existing) existing.remove();
 }
 
+async function getKliqueAndFollowerOptions() {
+    const me = getCachedUser();
+    let kliques = [];
+    let followers = [];
+    try { kliques = await api.kliqueList(); } catch (e) {}
+    try { followers = await api.getFollowers(); } catch (e) {}
+
+    const kliqueUids = kliques.map(k => k.from_uid === (me ? me.uid : null) ? k.to_uid : k.from_uid);
+    const combined = new Map();
+    kliqueUids.forEach(uid => combined.set(uid, { uid, label: `${uid} · Klique` }));
+    followers.forEach(f => { if (!combined.has(f.uid)) combined.set(f.uid, { uid: f.uid, label: `${f.username} · Follower` }); });
+
+    return Array.from(combined.values());
+}
+
 async function openCreateGroupModal() {
     closeKliqueModal();
     const overlay = document.createElement("div");
     overlay.className = "klique-modal-overlay feed-modal-overlay";
 
-    let kliques = [];
-    try { kliques = await api.kliqueList(); } catch (e) { /* ignore */ }
-    const me = getCachedUser();
-    const options = kliques.map(k => {
-        const otherUid = k.from_uid === (me ? me.uid : null) ? k.to_uid : k.from_uid;
-        return `<label class="status-recipient-option"><input type="checkbox" value="${otherUid}"> ${otherUid}</label>`;
-    }).join("");
+    const people = await getKliqueAndFollowerOptions();
+    const options = people.map(p => `<label class="status-recipient-option"><input type="checkbox" value="${p.uid}"> ${p.label}</label>`).join("");
 
     overlay.innerHTML = `
       <div class="status-composer">
@@ -138,8 +148,12 @@ async function openCreateGroupModal() {
         <input class="input-box" id="group-name-input" placeholder="Group name">
         <textarea class="input-box" id="group-description-input" placeholder="Introduction / narration — what's this group about?"></textarea>
         <input class="input-box" id="group-purpose-input" placeholder="Purpose (e.g. Business, Tech, Casual, Punditry)">
-        <div class="section-title">Add members</div>
-        <div class="status-recipients">${options || '<div class="section-title">No Kliques yet</div>'}</div>
+        <select class="input-box" id="group-visibility-input">
+          <option value="private">Private — invite only / admin add</option>
+          <option value="public">Public — anyone can search and join</option>
+        </select>
+        <div class="section-title">Add members (Kliques & Followers)</div>
+        <div class="status-recipients">${options || '<div class="section-title">No Kliques or Followers yet</div>'}</div>
         <button class="primary-btn" id="group-create-btn">Create</button>
         <div class="error-text" id="group-create-error"></div>
       </div>
@@ -164,6 +178,137 @@ async function openCreateGroupModal() {
     });
 }
 
+export async function openMyGroupsModal() {
+    closeKliqueModal();
+    const overlay = document.createElement("div");
+    overlay.className = "klique-modal-overlay feed-modal-overlay";
+    overlay.innerHTML = `
+      <div class="status-composer">
+        <div class="status-viewer-header">
+          <div class="status-viewer-name">My Groups</div>
+          <button class="icon-btn klique-modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="my-groups-list" class="scroll-list"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".klique-modal-close").addEventListener("click", closeKliqueModal);
+
+    const list = overlay.querySelector("#my-groups-list");
+    list.innerHTML = '<div class="section-title">Loading…</div>';
+    try {
+        const groups = await api.getMyGroups();
+        list.innerHTML = groups.length ? "" : '<div class="section-title">You haven\'t created or joined any groups yet.</div>';
+        groups.forEach(g => {
+            const item = document.createElement("div");
+            item.className = "list-item";
+            item.innerHTML = `
+              <div class="avatar">${g.name.slice(0, 2).toUpperCase()}</div>
+              <div><div class="name">${g.name}</div><div class="sub">${g.member_uids.length} members · ${g.visibility}</div></div>
+            `;
+            item.addEventListener("click", () => { closeKliqueModal(); openGroupChat(g); });
+            list.appendChild(item);
+        });
+    } catch (e) {
+        list.innerHTML = `<div class="error-text">${e.message}</div>`;
+    }
+}
+
+async function openAddMemberModal() {
+    if (!activeGroup) return;
+    closeKliqueModal();
+    const overlay = document.createElement("div");
+    overlay.className = "klique-modal-overlay feed-modal-overlay";
+
+    const people = await getKliqueAndFollowerOptions();
+    const options = people.map(p => `<label class="status-recipient-option"><input type="checkbox" value="${p.uid}"> ${p.label}</label>`).join("");
+
+    overlay.innerHTML = `
+      <div class="status-composer">
+        <div class="status-viewer-header">
+          <div class="status-viewer-name">Add Members</div>
+          <button class="icon-btn klique-modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="status-recipients">${options || '<div class="section-title">No Kliques or Followers yet</div>'}</div>
+        <button class="primary-btn" id="add-member-btn">Add Selected</button>
+        <div class="error-text" id="add-member-error"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".klique-modal-close").addEventListener("click", closeKliqueModal);
+
+    overlay.querySelector("#add-member-btn").addEventListener("click", async () => {
+        const errEl = overlay.querySelector("#add-member-error");
+        const uids = Array.from(overlay.querySelectorAll(".status-recipient-option input:checked")).map(el => el.value);
+        if (!uids.length) { errEl.textContent = "Select at least one person."; return; }
+        try {
+            const updated = await api.addGroupMembers(activeGroup.group_id, uids);
+            activeGroup = updated;
+            closeKliqueModal();
+        } catch (e) {
+            errEl.textContent = e.message;
+        }
+    });
+}
+
+function groupInviteLink(groupId) {
+    return `${window.location.origin}${window.location.pathname}?join_group=${groupId}`;
+}
+
+async function openShareGroupLinkModal() {
+    if (!activeGroup) return;
+    closeKliqueModal();
+    const link = groupInviteLink(activeGroup.group_id);
+    const overlay = document.createElement("div");
+    overlay.className = "klique-modal-overlay feed-modal-overlay";
+
+    const people = await getKliqueAndFollowerOptions();
+    const options = people.map(p => `<label class="status-recipient-option"><input type="checkbox" value="${p.uid}"> ${p.label}</label>`).join("");
+
+    overlay.innerHTML = `
+      <div class="status-composer">
+        <div class="status-viewer-header">
+          <div class="status-viewer-name">Invite to ${activeGroup.name}</div>
+          <button class="icon-btn klique-modal-close"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <button class="secondary-btn" id="copy-link-btn"><i class="fa-solid fa-link"></i> Copy Group Link</button>
+        <button class="secondary-btn" id="share-external-btn"><i class="fa-solid fa-up-right-from-square"></i> Share Externally</button>
+        <button class="secondary-btn" id="share-feed-btn"><i class="fa-solid fa-arrow-rotate-right"></i> Post Invite to Feed</button>
+        <div class="section-title">Or send directly to Kliques / Followers</div>
+        <div class="status-recipients">${options || '<div class="section-title">No Kliques or Followers yet</div>'}</div>
+        <button class="primary-btn" id="send-invite-btn">Send Invite</button>
+        <div class="error-text" id="invite-error"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector(".klique-modal-close").addEventListener("click", closeKliqueModal);
+
+    overlay.querySelector("#copy-link-btn").addEventListener("click", async () => {
+        try { await navigator.clipboard.writeText(link); alert("Link copied"); } catch (e) {}
+    });
+    overlay.querySelector("#share-external-btn").addEventListener("click", async () => {
+        if (navigator.share) { try { await navigator.share({ text: `Join ${activeGroup.name} on Hi-Mate: ${link}` }); } catch (e) {} }
+        else { try { await navigator.clipboard.writeText(link); alert("Link copied"); } catch (e) {} }
+    });
+    overlay.querySelector("#share-feed-btn").addEventListener("click", async () => {
+        try {
+            await api.createPost({ category: "Personal", content: `Join my group "${activeGroup.name}" on Hi-Mate: ${link}`, media_refs: [] });
+            closeKliqueModal();
+        } catch (e) { alert(e.message); }
+    });
+    overlay.querySelector("#send-invite-btn").addEventListener("click", async () => {
+        const errEl = overlay.querySelector("#invite-error");
+        const uids = Array.from(overlay.querySelectorAll(".status-recipient-option input:checked")).map(el => el.value);
+        if (!uids.length) { errEl.textContent = "Select at least one person."; return; }
+        try {
+            await Promise.all(uids.map(uid => api.sendMessage({ receiver_uid: uid, type: "text", content: `Join my group "${activeGroup.name}" on Hi-Mate: ${link}` })));
+            closeKliqueModal();
+        } catch (e) {
+            errEl.textContent = e.message;
+        }
+    });
+}
+
 async function openGroupSettingsModal() {
     if (!activeGroup) return;
     closeKliqueModal();
@@ -171,10 +316,27 @@ async function openGroupSettingsModal() {
     overlay.className = "klique-modal-overlay feed-modal-overlay";
 
     let group = activeGroup;
-    try { group = await api.getGroup(activeGroup.group_id); } catch (e) { /* fall back to cached */ }
+    try { group = await api.getGroup(activeGroup.group_id); } catch (e) {}
 
     const me = getCachedUser();
     const canEdit = me && group.created_by_uid === me.uid;
+
+    let pendingHtml = "";
+    if (canEdit && group.pending_uids && group.pending_uids.length) {
+        try {
+            const pending = await api.getPendingMembers(group.group_id);
+            pendingHtml = `
+              <div class="section-title">Pending Approval (${pending.length})</div>
+              ${pending.map(p => `
+                <div class="list-item" data-pending-uid="${p.uid}">
+                  <div class="avatar">${p.username.slice(0, 2).toUpperCase()}</div>
+                  <div><div class="name">${p.username}</div></div>
+                  <button class="secondary-btn approve-btn" data-uid="${p.uid}">Approve</button>
+                </div>
+              `).join("")}
+            `;
+        } catch (e) {}
+    }
 
     overlay.innerHTML = `
       <div class="status-composer">
@@ -188,9 +350,25 @@ async function openGroupSettingsModal() {
         <textarea class="input-box" id="group-settings-description" ${canEdit ? "" : "disabled"}>${group.description || ""}</textarea>
         <label class="form-section label">Purpose</label>
         <input class="input-box" id="group-settings-purpose" value="${group.purpose || ""}" ${canEdit ? "" : "disabled"}>
+        <label class="form-section label">Visibility</label>
+        <select class="input-box" id="group-settings-visibility" ${canEdit ? "" : "disabled"}>
+          <option value="private" ${group.visibility === "private" ? "selected" : ""}>Private — invite only / admin add</option>
+          <option value="public" ${group.visibility === "public" ? "selected" : ""}>Public — searchable, anyone can join</option>
+        </select>
         <div class="section-title">${group.member_uids.length} members</div>
-        ${canEdit ? '<button class="primary-btn" id="group-settings-save">Save Changes</button>' : '<div class="section-title">Only the group creator can edit these details.</div>'}
+        ${canEdit ? '<button class="primary-btn" id="group-settings-save">Save Changes</button>' : ""}
         <div class="error-text" id="group-settings-error"></div>
+
+        <div class="settings-action-row">
+          <button class="secondary-btn" id="settings-add-member"><i class="fa-solid fa-user-plus"></i> Add Member</button>
+          <button class="secondary-btn" id="settings-invite-link"><i class="fa-solid fa-link"></i> Invite / Share Link</button>
+        </div>
+        <div class="settings-action-row">
+          <button class="secondary-btn" id="settings-video-call"><i class="fa-solid fa-video"></i> Video Call</button>
+          <button class="secondary-btn" id="settings-voice-call"><i class="fa-solid fa-phone"></i> Voice Call</button>
+        </div>
+
+        ${pendingHtml}
       </div>
     `;
     document.body.appendChild(overlay);
@@ -204,6 +382,7 @@ async function openGroupSettingsModal() {
                     name: overlay.querySelector("#group-settings-name").value.trim(),
                     description: overlay.querySelector("#group-settings-description").value.trim(),
                     purpose: overlay.querySelector("#group-settings-purpose").value.trim(),
+                    visibility: overlay.querySelector("#group-settings-visibility").value,
                 });
                 activeGroup = updated;
                 document.getElementById("chat-room-title").textContent = updated.name;
@@ -212,7 +391,33 @@ async function openGroupSettingsModal() {
                 errEl.textContent = e.message;
             }
         });
+
+        overlay.querySelectorAll(".approve-btn").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                try {
+                    await api.approveMember(group.group_id, btn.dataset.uid);
+                    btn.closest(".list-item").remove();
+                } catch (e) { alert(e.message); }
+            });
+        });
     }
+
+    overlay.querySelector("#settings-add-member").addEventListener("click", openAddMemberModal);
+    overlay.querySelector("#settings-invite-link").addEventListener("click", openShareGroupLinkModal);
+
+    // Video/Voice Call: routes through the existing group call entry point already
+    // wired in the chat-room top bar — this is NOT a new call system, just a
+    // shortcut into what's already there. True multi-party scale still depends
+    // on the underlying signaling-only WebRTC setup.
+    overlay.querySelector("#settings-video-call").addEventListener("click", () => {
+        closeKliqueModal();
+        const callBtn = document.getElementById("btn-start-group-call");
+        if (callBtn) callBtn.click();
+    });
+    overlay.querySelector("#settings-voice-call").addEventListener("click", () => {
+        closeKliqueModal();
+        alert("Voice-only calling needs to be confirmed against the existing call system before this button does something distinct from Video Call.");
+    });
 }
 
 function normalizePhoneForMatch(raw, myDialCode) {
@@ -311,6 +516,9 @@ export function initChat() {
 
     const createGroupBtn = document.getElementById("btn-create-group");
     if (createGroupBtn) createGroupBtn.addEventListener("click", openCreateGroupModal);
+
+    const myGroupsBtn = document.getElementById("btn-my-groups");
+    if (myGroupsBtn) myGroupsBtn.addEventListener("click", openMyGroupsModal);
 
     const addContactsBtn = document.getElementById("btn-add-contacts");
     if (addContactsBtn) addContactsBtn.addEventListener("click", openContactsModal);

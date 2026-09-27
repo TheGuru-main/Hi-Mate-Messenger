@@ -106,6 +106,10 @@ export const api = {
   markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: "POST" }),
   markAllNotificationsRead: () => request("/notifications/read-all", { method: "POST" }),
   getUnreadNotificationCount: () => request("/notifications/unread-count"),
+  getFollowers: () => request("/followers"),
+  getPendingMembers: (groupId) => request(`/groups/${groupId}/pending`),
+  approveMember: (groupId, uid) => request(`/groups/${groupId}/approve/${uid}`, { method: "POST" }),
+
   getMyGroups: () => request("/groups/mine"),
   addGroupMembers: (groupId, member_uids) => request(`/groups/${groupId}/members`, { method: "POST", body: { member_uids } }),
   joinGroupByLink: (groupId) => request(`/groups/${groupId}/join`, { method: "POST" }),
