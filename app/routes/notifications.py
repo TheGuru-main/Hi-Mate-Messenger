@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -36,6 +37,19 @@ async def mark_all_read(db: Session = Depends(get_db), current_user: User = Depe
     db.query(Notification).filter(Notification.recipient_uid == current_user.uid, Notification.is_read == False).update({"is_read": True})
     db.commit()
     return {"status": "ok"}
+
+
+class NotifyRequest(BaseModel):
+    recipient_uid: str
+    type: str
+    message: str
+
+
+@router.post("/send")
+async def send_notification(payload: NotifyRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    db.add(Notification(recipient_uid=payload.recipient_uid, actor_uid=current_user.uid, type=payload.type, message=payload.message))
+    db.commit()
+    return {"status": "sent"}
 
 
 @router.get("/unread-count")
