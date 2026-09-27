@@ -1,4 +1,5 @@
 from datetime import datetime
+from uuid import UUID
 from typing import Optional, Literal
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -23,7 +24,7 @@ class MessageCreate(BaseModel):
 class MessageOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: UUID
     sender_uid: str
     receiver_uid: Optional[str] = None
     group_id: Optional[str] = None
