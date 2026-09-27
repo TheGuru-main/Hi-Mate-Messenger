@@ -22,6 +22,10 @@ class Group(Base):
     start_row = Column(Integer, nullable=False, index=True)
 
     member_uids = Column(ARRAY(String), default=list)
+    pending_uids = Column(ARRAY(String), default=list)
+    visibility = Column(String, default="private")  # "public" | "private"
+    pending_uids = Column(ARRAY(String), default=list)
+    visibility = Column(String, default="private")  # "public" | "private"
     created_by_uid = Column(String, ForeignKey("users.uid"), nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 

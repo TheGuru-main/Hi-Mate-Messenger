@@ -152,8 +152,44 @@ async def join_group_by_link(
     group = db.query(Group).filter(Group.group_id == group_id).first()
     if not group:
         raise HTTPException(status_code=404, detail="Group not found")
-    if current_user.uid not in group.member_uids:
+    if current_user.uid in group.member_uids or current_user.uid in group.pending_uids:
+        return group
+    if group.visibility == "public":
         group.member_uids = group.member_uids + [current_user.uid]
+    else:
+        group.pending_uids = group.pending_uids + [current_user.uid]
+    db.commit()
+    db.refresh(group)
+    return group
+
+
+@router.get("/groups/{group_id}/pending")
+async def list_pending_members(
+    group_id: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    group = db.query(Group).filter(Group.group_id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    if group.created_by_uid != current_user.uid:
+        raise HTTPException(status_code=403, detail="Only the group creator can view pending requests")
+    if not group.pending_uids:
+        return []
+    users = db.query(User).filter(User.uid.in_(group.pending_uids)).all()
+    return [{"uid": u.uid, "username": u.username} for u in users]
+
+
+@router.post("/groups/{group_id}/approve/{uid}", response_model=GroupOut)
+async def approve_pending_member(
+    group_id: str, uid: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user),
+):
+    group = db.query(Group).filter(Group.group_id == group_id).first()
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    if group.created_by_uid != current_user.uid:
+        raise HTTPException(status_code=403, detail="Only the group creator can approve members")
+    if uid in group.pending_uids:
+        group.pending_uids = [u for u in group.pending_uids if u != uid]
+        group.member_uids = group.member_uids + [uid]
         db.commit()
         db.refresh(group)
     return group

@@ -78,6 +78,16 @@ async def list_kliques(
     ).all()
 
 
+@router.get("/followers")
+async def list_my_followers(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    rows = db.query(Follow).filter(Follow.followee_uid == current_user.uid).all()
+    uids = [r.follower_uid for r in rows]
+    if not uids:
+        return []
+    users = db.query(User).filter(User.uid.in_(uids)).all()
+    return [{"uid": u.uid, "username": u.username} for u in users]
+
+
 @router.post("/follow/{uid}")
 async def follow_user(
     uid: str,

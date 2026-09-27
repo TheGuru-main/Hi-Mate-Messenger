@@ -44,6 +44,7 @@ class GroupUpdate(BaseModel):
     name: str | None = None
     description: str | None = None
     purpose: str | None = None
+    visibility: str | None = None
 
 
 class GroupOut(BaseModel):
@@ -54,6 +55,8 @@ class GroupOut(BaseModel):
     description: str | None = None
     purpose: str | None = None
     member_uids: list[str]
+    pending_uids: list[str] = []
+    visibility: str = "private"
     created_by_uid: str
     start_row: int
     created_at: datetime
