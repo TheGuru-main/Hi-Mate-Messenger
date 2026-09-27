@@ -106,6 +106,7 @@ export const api = {
   getNotifications: () => request("/notifications"),
   markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: "POST" }),
   markAllNotificationsRead: () => request("/notifications/read-all", { method: "POST" }),
+  sendNotification: (payload) => request("/notifications/send", { method: "POST", body: payload }),
   getUnreadNotificationCount: () => request("/notifications/unread-count"),
   getFollowers: () => request("/followers"),
   getPendingMembers: (groupId) => request(`/groups/${groupId}/pending`),

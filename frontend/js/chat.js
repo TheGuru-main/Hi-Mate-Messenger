@@ -301,7 +301,10 @@ async function openShareGroupLinkModal() {
         const uids = Array.from(overlay.querySelectorAll(".status-recipient-option input:checked")).map(el => el.value);
         if (!uids.length) { errEl.textContent = "Select at least one person."; return; }
         try {
-            await Promise.all(uids.map(uid => api.sendMessage({ receiver_uid: uid, type: "text", content: `Join my group "${activeGroup.name}" on Hi-Mate: ${link}` })));
+            await Promise.all(uids.map(uid => Promise.all([
+                api.sendMessage({ receiver_uid: uid, type: "text", content: `Join my group "${activeGroup.name}" on Hi-Mate: ${link}` }),
+                api.sendNotification({ recipient_uid: uid, type: "group_invite", message: `You're invited to join "${activeGroup.name}"` }),
+            ])));
             closeKliqueModal();
         } catch (e) {
             errEl.textContent = e.message;
