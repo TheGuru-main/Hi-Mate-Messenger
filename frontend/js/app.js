@@ -11,6 +11,7 @@ import { initCategories } from "./categories.js";
 import { initStatus, loadStatusFeed } from "./status.js";
 import { initProfile } from "./profile.js";
 import { initNotifications } from "./notifications.js";
+import { attachWavyBubble } from "./wavy-bubble.js";
 
 function initGoLiveButton() {
   const btn = document.getElementById("btn-go-live");
@@ -89,4 +90,10 @@ function boot() {
   }
 }
 
-document.addEventListener("DOMContentLoaded", boot);
+document.addEventListener("DOMContentLoaded", () => {
+  boot();
+  const splashHeader = document.querySelector("#splash .glass-header");
+  if (splashHeader) attachWavyBubble(splashHeader, { baseRadius: 90, waveAmplitude: 14 });
+  const homeBrand = document.querySelector("#home .top-bar .brand");
+  if (homeBrand) attachWavyBubble(homeBrand, { baseRadius: 40, waveAmplitude: 8, numPoints: 8 });
+});

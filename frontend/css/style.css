@@ -330,3 +330,9 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .profile-bio{ max-width:320px; }
 .settings-action-row{ display:flex; gap:8px; margin-top:8px; }
 .settings-action-row .secondary-btn{ flex:1; font-size:12px; margin-top:0; display:flex; align-items:center; justify-content:center; gap:6px; }
+
+/* ---------- Wavy animated logo bubble ---------- */
+.wavy-bubble-wrapper{ position:absolute; inset:0; z-index:-1; display:flex; align-items:center; justify-content:center; pointer-events:none; overflow:visible; }
+.wavy-bubble-svg{ width:140%; height:140%; }
+.glass-header{ position:relative; overflow:visible; }
+.top-bar .brand{ position:relative; }
