@@ -191,6 +191,7 @@ export async function openProfile(uid) {
         document.getElementById("profile-joined").textContent = profile.joined_at ? `Joined ${new Date(profile.joined_at).toLocaleDateString()} · ${profile.post_count} posts` : "";
 
         renderActions(profile);
+        renderEditButton(profile);
         await loadTab(uid, "posts");
     } catch (e) {
         document.getElementById("profile-username").textContent = "Couldn't load profile";
