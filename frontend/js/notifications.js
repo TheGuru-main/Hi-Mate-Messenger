@@ -20,7 +20,7 @@ async function refreshBadge() {
     } catch (e) { /* ignore */ }
 }
 
-async function openNotificationsPanel() {
+export async function openNotificationsPanel() {
     const existing = document.querySelector(".notif-modal-overlay");
     if (existing) { existing.remove(); return; }
 
