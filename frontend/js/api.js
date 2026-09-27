@@ -101,6 +101,7 @@ export const api = {
   getUserLikedPosts: (uid) => request(`/users/${uid}/liked-posts`),
   getUserSharedPosts: (uid) => request(`/users/${uid}/shared-posts`),
   followUser: (uid) => request(`/follow/${uid}`, { method: "POST" }),
+  updateMe: (payload) => request("/users/me", { method: "PATCH", body: payload }),
 
   getNotifications: () => request("/notifications"),
   markNotificationRead: (id) => request(`/notifications/${id}/read`, { method: "POST" }),
