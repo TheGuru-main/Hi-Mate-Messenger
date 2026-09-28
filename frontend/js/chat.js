@@ -97,7 +97,8 @@ async function sendCurrentMessage() {
     input.value = "";
 
     const container = document.getElementById("chat-messages");
-    container.appendChild(renderBubble(content, true));
+    const bubbleRow = renderBubble(content, true);
+    container.appendChild(bubbleRow);
     container.scrollTop = container.scrollHeight;
 
     const payload = activeConversationType === "group"
@@ -107,6 +108,7 @@ async function sendCurrentMessage() {
     try {
         await api.sendMessage(payload);
     } catch (e) {
+        bubbleRow.remove();
         alert(e.message);
     }
 }

@@ -344,3 +344,22 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .gem-btn.active i{ color:var(--neon-blue); text-shadow:0 0 8px rgba(0,229,255,.6); }
 .react-btn, .gem-btn{ user-select:none; -webkit-user-select:none; }
 .convo-preview{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px; }
+
+/* ---------- Promo cards ---------- */
+.promo-slide{ padding:0 16px; text-align:center; min-height:76px; line-height:1.3; }
+.promo-slide i{ font-size:20px; }
+.promo-expose,.promo-gig,.promo-gem,.promo-hire,.promo-jobs,.promo-scout,.promo-orgs,.promo-agents,.promo-global{ color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.4); }
+.promo-expose{ background:linear-gradient(135deg,#FF416C,#FF4B2B); }
+.promo-gig{ background:linear-gradient(135deg,#0BAB64,#3BB78F); }
+.promo-gem{ background:linear-gradient(135deg,#0F9BD8,#7C3AED); }
+.promo-hire{ background:linear-gradient(135deg,#134E5E,#71B280); }
+.promo-jobs{ background:linear-gradient(135deg,#396AFC,#2948FF); }
+.promo-scout{ background:linear-gradient(135deg,#B45309,#F59E0B); }
+.promo-orgs{ background:linear-gradient(135deg,#3A1C71,#D76D77); }
+.promo-agents{ background:linear-gradient(135deg,#0F2027,#2C5364); }
+.promo-global{ background:linear-gradient(135deg,#FC466B,#3F5EFB); }
+
+/* ---------- Connect buttons, notifications ---------- */
+.card-connect-btn.on{ border-color:var(--neon-blue); color:var(--neon-blue); }
+.profile-connect-row{ padding:0; width:100%; }
+.notif-accept-btn{ width:auto; height:32px; padding:0 12px; margin-top:0; font-size:12px; }

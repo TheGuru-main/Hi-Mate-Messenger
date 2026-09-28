@@ -169,3 +169,55 @@ async def fetch_fixture_stats(fixture_id: int) -> dict | None:
     if data:
         _set_cached(cache_key, data)
     return data
+
+
+async def fetch_upcoming_fixtures(days: int = 7) -> list[dict]:
+    """Fixtures that have not kicked off yet, next `days` days (UTC). 5-minute cache."""
+    from datetime import datetime, timedelta, timezone
+
+    cache_key = f"sportmonk:upcoming:{days}"
+    cached = _get_cached(cache_key, ttl_seconds=300)
+    if cached is not None:
+        return cached
+    if not settings.SPORTMONK_API_KEY:
+        return []
+
+    now = datetime.now(timezone.utc)
+    start = now.date().isoformat()
+    end = (now + timedelta(days=days)).date().isoformat()
+    url = f"{settings.SPORTMONK_BASE_URL}/fixtures/between/{start}/{end}"
+    params = {"api_token": settings.SPORTMONK_API_KEY, "include": "participants;league", "per_page": 50}
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.get(url, params=params)
+        if response.status_code != 200:
+            return []
+        fixtures = response.json().get("data", [])
+
+    results = []
+    for m in fixtures:
+        try:
+            kickoff = datetime.strptime(m.get("starting_at"), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+        except (TypeError, ValueError):
+            continue
+        if kickoff <= now:
+            continue
+        participants = m.get("participants", [])
+        home = next((p.get("name") for p in participants if p.get("meta", {}).get("location") == "home"), None)
+        away = next((p.get("name") for p in participants if p.get("meta", {}).get("location") == "away"), None)
+        results.append({
+            "fixture_id": m.get("id"),
+            "name": m.get("name") or f"{home} vs {away}",
+            "home_team": home,
+            "away_team": away,
+            "home_score": 0,
+            "away_score": 0,
+            "minute": None,
+            "state": m.get("state_id"),
+            "starting_at": kickoff.isoformat(),
+            "league": (m.get("league") or {}).get("name"),
+            "upcoming": True,
+        })
+    results.sort(key=lambda r: r["starting_at"])
+    _set_cached(cache_key, results)
+    return results

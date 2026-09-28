@@ -11,8 +11,8 @@ function renderMatchListItem(m) {
   div.innerHTML = `
     <div class="avatar">⚽</div>
     <div style="flex:1">
-      <div class="name">${m.home_team || "?"} ${m.home_score ?? 0} - ${m.away_score ?? 0} ${m.away_team || "?"}</div>
-      <div class="sub">${m.minute ? m.minute + "'" : "LIVE"} ${m.has_room ? "· room active" : ""}</div>
+    <div class="name">${m.upcoming ? `${m.home_team || "?"} vs ${m.away_team || "?"}` : `${m.home_team || "?"} ${m.home_score ?? 0} - ${m.away_score ?? 0} ${m.away_team || "?"}`}</div>
+    <div class="sub">${m.upcoming ? `Kickoff ${new Date(m.starting_at).toLocaleString([], { weekday: "short", hour: "2-digit", minute: "2-digit" })}${m.league ? " · " + m.league : ""}` : (m.minute ? m.minute + "'" : "LIVE")} ${m.has_room ? "· room active" : ""}</div>
     </div>
   `;
   div.onclick = () => openMatchRoom(m);
@@ -22,17 +22,18 @@ function renderMatchListItem(m) {
 export async function loadLiveMatches() {
   const list = document.getElementById("matches-list");
   list.innerHTML = `<div class="section-title">Loading…</div>`;
-  try {
-    const matches = await api.getLiveMatches();
-    list.innerHTML = "";
-    if (!matches.length) {
-      list.innerHTML = `<div class="section-title">No live matches right now — check back during kickoff.</div>`;
-      return;
-    }
-    matches.forEach((m) => list.appendChild(renderMatchListItem(m)));
-  } catch (e) {
-    list.innerHTML = `<div class="error-text">${e.message}</div>`;
-  }
+  let liveError = null;
+  const [live, upcoming] = await Promise.all([
+    api.getLiveMatches().catch((e) => { liveError = e.message; return []; }),
+    api.getUpcomingMatches().catch(() => []),
+  ]);
+  list.innerHTML = `<div class="section-title">🔴 Live now</div>`;
+  if (liveError) list.insertAdjacentHTML("beforeend", `<div class="error-text">${liveError}</div>`);
+  else if (!live.length) list.insertAdjacentHTML("beforeend", `<div class="sub" style="padding:6px 2px;">No live matches right now.</div>`);
+  live.forEach((m) => list.appendChild(renderMatchListItem(m)));
+  list.insertAdjacentHTML("beforeend", `<div class="section-title">📅 Upcoming</div>`);
+  if (!upcoming.length) list.insertAdjacentHTML("beforeend", `<div class="sub" style="padding:6px 2px;">No upcoming fixtures found.</div>`);
+  upcoming.forEach((m) => list.appendChild(renderMatchListItem(m)));
 }
 
 function renderScoreboard(m) {
@@ -40,7 +41,7 @@ function renderScoreboard(m) {
   el.innerHTML = `
     <div class="teams">${m.home_team || "?"} vs ${m.away_team || "?"}</div>
     <div class="score">${m.home_score ?? 0} - ${m.away_score ?? 0}</div>
-    <div class="minute">${m.minute ? m.minute + "' " : ""}${m.state ? "· LIVE" : ""}</div>
+    <div class="minute">${m.minute ? m.minute + "' " : ""}${m.state && !m.upcoming ? "· LIVE" : ""}</div>
   `;
 }
 

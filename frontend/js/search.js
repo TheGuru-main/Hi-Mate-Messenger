@@ -1,6 +1,7 @@
 import { api } from "./api.js";
 import { openProfile } from "./profile.js";
 import { openChat } from "./chat.js";
+import { buildConnectRow } from "./connect-utils.js";
 import { talentLabel, businessLabel } from "./categories.js";
 
 let currentSearchMode = "username";
@@ -20,11 +21,6 @@ function renderUserResult(user) {
     const talentBadge = user.talent_category ? `<span class="talent-badge">${escapeHtml(talentLabel(user.talent_category))}</span>` : "";
     const businessBadge = user.business_category ? `<span class="talent-badge">${escapeHtml(businessLabel(user.business_category))}</span>` : "";
 
-    const kliqueLabel = user.klique_status === "accepted" ? "Klique ✓" : user.klique_status === "pending" ? "Requested" : "Klique";
-    const kliqueDisabled = user.klique_status ? "disabled" : "";
-    const followLabel = user.is_following ? "Following ✓" : "Follow";
-    const followDisabled = user.is_following ? "disabled" : "";
-
     div.innerHTML = `
       <div class="post-header">
         <div class="avatar profile-tap" data-uid="${user.uid}">${initials}</div>
@@ -33,46 +29,21 @@ function renderUserResult(user) {
           <div class="post-meta">${locationParts ? escapeHtml(locationParts) : "Location not set"}</div>
         </div>
       </div>
-      ${user.is_me ? "" : `
-        <div class="card-connect-row">
-          <button class="secondary-btn card-connect-btn" data-action="message"><i class="fa-solid fa-paper-plane"></i> Message</button>
-          <button class="secondary-btn card-connect-btn" data-action="klique" ${kliqueDisabled}><i class="fa-solid fa-handshake"></i> ${kliqueLabel}</button>
-          <button class="secondary-btn card-connect-btn" data-action="follow" ${followDisabled}><i class="fa-solid fa-user-plus"></i> ${followLabel}</button>
-        </div>
-      `}
     `;
-
     div.querySelectorAll(".profile-tap").forEach(el => {
         el.addEventListener("click", () => openProfile(el.dataset.uid));
     });
 
-    const messageBtn = div.querySelector('[data-action="message"]');
-    if (messageBtn) {
-        messageBtn.addEventListener("click", () => openChat(user.uid, user.username));
+    if (!user.is_me) {
+        const canDm = user.klique_status === "accepted" || user.is_contact;
+        div.appendChild(buildConnectRow({
+            uid: user.uid,
+            kliqueStatus: user.klique_status,
+            isFollowing: user.is_following,
+            messageLabel: canDm ? "Message" : "Message Request",
+            onMessage: () => openChat(user.uid, user.username),
+        }));
     }
-
-    const kliqueBtn = div.querySelector('[data-action="klique"]');
-    if (kliqueBtn && !user.klique_status) {
-        kliqueBtn.addEventListener("click", async () => {
-            try {
-                await api.kliqueRequest(user.uid);
-                kliqueBtn.textContent = "Requested";
-                kliqueBtn.disabled = true;
-            } catch (e) { alert(e.message); }
-        });
-    }
-
-    const followBtn = div.querySelector('[data-action="follow"]');
-    if (followBtn && !user.is_following) {
-        followBtn.addEventListener("click", async () => {
-            try {
-                await api.followUser(user.uid);
-                followBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Following ✓';
-                followBtn.disabled = true;
-            } catch (e) { alert(e.message); }
-        });
-    }
-
     return div;
 }
 

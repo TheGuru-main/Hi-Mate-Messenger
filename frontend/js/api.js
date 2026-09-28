@@ -62,7 +62,7 @@ export const api = {
   login: (payload) => request("/auth/login", { method: "POST", body: payload, auth: false }),
   getMe: () => request("/users/me"),
 
-  getFeed: () => request("/feed"),
+  getFeed: (media) => request(media ? `/feed?media=${media}` : "/feed"),
   createPost: (payload) => request("/posts", { method: "POST", body: payload }),
   deletePost: (postId) => request(`/posts/${postId}`, { method: "DELETE" }),
   react: (postId, emoji) => request(`/posts/${postId}/react`, { method: "POST", body: { emoji } }),
@@ -101,6 +101,7 @@ export const api = {
   getUserLikedPosts: (uid) => request(`/users/${uid}/liked-posts`),
   getUserSharedPosts: (uid) => request(`/users/${uid}/shared-posts`),
   followUser: (uid) => request(`/follow/${uid}`, { method: "POST" }),
+  getUpcomingMatches: () => request("/matches/upcoming"),
   unfollowUser: (uid) => request(`/follow/${uid}`, { method: "DELETE" }),
   removeKlique: (uid) => request(`/klique/${uid}`, { method: "DELETE" }),
   getConversations: () => request("/conversations"),

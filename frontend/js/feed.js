@@ -1,5 +1,6 @@
 import { api, getCachedUser } from "./api.js";
 import { openProfile } from "./profile.js";
+import { buildConnectRow } from "./connect-utils.js";
 import { talentLabel, businessLabel } from "./categories.js";
 
 const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "✅", "🙏", "🙋", "👏", "🚀", "🎓", "📍", "💪", "💎"];
@@ -297,7 +298,7 @@ function openReactionPicker(anchorBtn, onPicked) {
     setTimeout(() => document.addEventListener("click", closeReactionPopover, { once: true }), 0);
 }
 
-function renderPost(post) {
+export function renderPost(post, opts) {
     const div = document.createElement("div");
     div.className = "card feed-card";
     const initials = (post.author_username || "?").slice(0, 2).toUpperCase();
@@ -342,22 +343,13 @@ function renderPost(post) {
     });
 
     const me = getCachedUser();
-    if (me && post.author_uid !== me.uid) {
-        const connectRow = document.createElement("div");
-        connectRow.className = "card-connect-row";
-        connectRow.innerHTML = `
-          <button class="secondary-btn card-connect-btn" data-action="klique"><i class="fa-solid fa-handshake"></i> Klique</button>
-          <button class="secondary-btn card-connect-btn" data-action="follow"><i class="fa-solid fa-user-plus"></i> Follow</button>
-        `;
+    if (!(opts && opts.hideConnect) && me && post.author_uid !== me.uid) {
+        const connectRow = buildConnectRow({
+            uid: post.author_uid,
+            kliqueStatus: post.author_klique_status,
+            isFollowing: post.author_is_following,
+        });
         div.insertBefore(connectRow, div.querySelector(".action-row"));
-        connectRow.querySelector('[data-action="klique"]').addEventListener("click", async (e) => {
-            const btn = e.currentTarget;
-            try { await api.kliqueRequest(post.author_uid); btn.textContent = "Requested"; btn.disabled = true; } catch (err) { alert(err.message); }
-        });
-        connectRow.querySelector('[data-action="follow"]').addEventListener("click", async (e) => {
-            const btn = e.currentTarget;
-            try { await api.followUser(post.author_uid); btn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Following ✓'; btn.disabled = true; } catch (err) { alert(err.message); }
-        });
     }
 
     wireCarousel(div);
@@ -581,6 +573,23 @@ function initPromoCarousel() {
     });
 
     track.addEventListener("touchstart", () => clearInterval(autoAdvance), { passive: true, once: true });
+}
+
+export async function loadVideoFeed() {
+    const list = document.getElementById("video-feed-list");
+    if (!list) return;
+    list.innerHTML = '<div class="section-title">Loading…</div>';
+    try {
+        const posts = await api.getFeed("video");
+        list.innerHTML = "";
+        if (!posts.length) {
+            list.innerHTML = '<div class="section-title">No videos yet. Post a reel or short from the composer.</div>';
+            return;
+        }
+        posts.forEach(p => list.appendChild(renderPost(p)));
+    } catch (e) {
+        list.innerHTML = `<div class="error-text">${e.message}</div>`;
+    }
 }
 
 export function initFeed() {

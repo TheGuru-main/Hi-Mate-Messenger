@@ -21,7 +21,10 @@ async def list_live_matches(db: Session = Depends(get_db), current_user: User = 
     Each entry flags whether a room already exists (has_room), so the
     frontend knows whether tapping it opens an existing chat or creates one.
     """
-    live = await news.fetch_live_fixtures()
+    try:
+        live = await news.fetch_live_fixtures()
+    except Exception:
+        raise HTTPException(status_code=502, detail="Live scores provider unavailable. Check SPORTMONK_BASE_URL and the API key.")
     fixture_ids = [m["fixture_id"] for m in live if m.get("fixture_id")]
     existing_rooms = {
         r.fixture_id: r.group_id
@@ -32,6 +35,24 @@ async def list_live_matches(db: Session = Depends(get_db), current_user: User = 
         m["has_room"] = m["fixture_id"] in existing_rooms
         m["group_id"] = existing_rooms.get(m["fixture_id"])
     return live
+
+
+@router.get("/upcoming")
+async def list_upcoming_matches(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    try:
+        upcoming = await news.fetch_upcoming_fixtures()
+    except Exception:
+        raise HTTPException(status_code=502, detail="Sports data provider unavailable")
+    ids = [m["fixture_id"] for m in upcoming if m.get("fixture_id")]
+    rooms = {
+        r.fixture_id: r.group_id
+        for r in db.query(MatchRoom).filter(MatchRoom.fixture_id.in_(ids)).all()
+    } if ids else {}
+    for m in upcoming:
+        m["has_room"] = m["fixture_id"] in rooms
+        m["group_id"] = rooms.get(m["fixture_id"])
+    return upcoming
+
 
 
 @router.post("/{fixture_id}/join")
@@ -49,6 +70,7 @@ async def join_match_room(
 
     if not room:
         live = await news.fetch_live_fixtures()
+        live = live + await news.fetch_upcoming_fixtures()
         match = next((m for m in live if m.get("fixture_id") == fixture_id), None)
         if not match:
             raise HTTPException(status_code=404, detail="Match not currently live")

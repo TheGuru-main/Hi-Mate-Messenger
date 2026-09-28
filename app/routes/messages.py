@@ -5,6 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from sqlalchemy import or_
+from app.models.klique import KliqueRequest
+from app.models.contact_link import ContactLink
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.message import Message, Group, GroupEvent
@@ -16,17 +19,52 @@ from app.sockets.manager import manager
 router = APIRouter(tags=["messages"])
 
 
+def check_dm_allowed(db: Session, sender: User, receiver: User) -> bool:
+    """True = normal DM. False = first-contact 'message request'. Raises 403 if one is already waiting."""
+    a, b = sender.uid, receiver.uid
+    if a == b:
+        return True
+    connected = db.query(KliqueRequest).filter(
+        KliqueRequest.status == "accepted",
+        or_(
+            (KliqueRequest.from_uid == a) & (KliqueRequest.to_uid == b),
+            (KliqueRequest.from_uid == b) & (KliqueRequest.to_uid == a),
+        ),
+    ).first()
+    if connected:
+        return True
+    in_contacts = db.query(ContactLink).filter(
+        or_(
+            (ContactLink.owner_uid == a) & (ContactLink.contact_uid == b),
+            (ContactLink.owner_uid == b) & (ContactLink.contact_uid == a),
+        )
+    ).first()
+    if in_contacts:
+        return True
+    if db.query(Message).filter(Message.sender_uid == b, Message.receiver_uid == a).first():
+        return True
+    if db.query(Message).filter(Message.sender_uid == a, Message.receiver_uid == b).first():
+        raise HTTPException(
+            status_code=403,
+            detail="Message request sent. You can send more once they reply or you connect (Klique or contacts).",
+        )
+    return False
+
+
+
 @router.post("/messages", response_model=MessageOut)
 async def send_message(
     payload: MessageCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    is_request = False
     if payload.receiver_uid:
         receiver = db.query(User).filter(User.uid == payload.receiver_uid).first()
         if not receiver:
             raise HTTPException(status_code=404, detail="Receiver not found")
         cell_row = receiver.start_row
+        is_request = check_dm_allowed(db, current_user, receiver)
     else:
         group = db.query(Group).filter(Group.group_id == payload.group_id).first()
         if not group:
@@ -49,6 +87,12 @@ async def send_message(
     db.add(message)
     db.commit()
     db.refresh(message)
+    if payload.receiver_uid and is_request:
+        db.add(Notification(
+            recipient_uid=payload.receiver_uid, actor_uid=current_user.uid, type="message_request",
+            message=f"{current_user.username} sent you a message request",
+        ))
+        db.commit()
 
     # Real-time push — payload matches MessageOut shape so the client can
     # render it directly without a re-fetch.

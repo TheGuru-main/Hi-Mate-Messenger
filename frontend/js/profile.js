@@ -1,6 +1,8 @@
 import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { openChat } from "./chat.js";
+import { buildConnectRow } from "./connect-utils.js";
+import { renderPost } from "./feed.js";
 import { talentLabel, businessLabel } from "./categories.js";
 import { timeAgo, compressImage } from "./media-utils.js";
 
@@ -40,7 +42,7 @@ async function loadTab(uid, tab) {
             grid.innerHTML = `<div class="section-title">Nothing here yet.</div>`;
             return;
         }
-        posts.forEach(p => grid.appendChild(renderPostCard(p)));
+        posts.forEach(p => grid.appendChild(renderPost(p, { hideConnect: true })));
     } catch (e) {
         grid.innerHTML = `<div class="error-text">${e.message}</div>`;
     }
@@ -48,50 +50,18 @@ async function loadTab(uid, tab) {
 
 function renderActions(profile) {
     const box = document.getElementById("profile-actions");
-    if (profile.is_me) {
-        box.innerHTML = "";
-        return;
-    }
-
-    const kliqueLabel = profile.klique_status === "accepted" ? "Klique ✓"
-        : profile.klique_status === "pending" ? "Requested"
-        : "Request Klique";
-    const kliqueDisabled = profile.klique_status ? "disabled" : "";
-
-    const followLabel = profile.is_following ? "Following ✓" : "Follow";
-    const followDisabled = profile.is_following ? "disabled" : "";
-
-    box.innerHTML = `
-      <button class="secondary-btn profile-action-btn" id="profile-klique-btn" ${kliqueDisabled}><i class="fa-solid fa-handshake"></i> ${kliqueLabel}</button>
-      <button class="secondary-btn profile-action-btn" id="profile-follow-btn" ${followDisabled}><i class="fa-solid fa-user-plus"></i> ${followLabel}</button>
-      <button class="primary-btn profile-action-btn" id="profile-message-btn"><i class="fa-solid fa-paper-plane"></i> Send Message</button>
-    `;
-
-    const kliqueBtn = box.querySelector("#profile-klique-btn");
-    if (kliqueBtn && !profile.klique_status) {
-        kliqueBtn.addEventListener("click", async () => {
-            try {
-                await api.kliqueRequest(profile.uid);
-                kliqueBtn.textContent = "Requested";
-                kliqueBtn.disabled = true;
-            } catch (e) { alert(e.message); }
-        });
-    }
-
-    const followBtn = box.querySelector("#profile-follow-btn");
-    if (followBtn && !profile.is_following) {
-        followBtn.addEventListener("click", async () => {
-            try {
-                await api.followUser(profile.uid);
-                followBtn.innerHTML = '<i class="fa-solid fa-user-plus"></i> Following ✓';
-                followBtn.disabled = true;
-            } catch (e) { alert(e.message); }
-        });
-    }
-
-    box.querySelector("#profile-message-btn").addEventListener("click", () => {
-        openChat(profile.uid, profile.username);
+    box.innerHTML = "";
+    if (profile.is_me) return;
+    const canDm = profile.klique_status === "accepted" || profile.is_contact;
+    const row = buildConnectRow({
+        uid: profile.uid,
+        kliqueStatus: profile.klique_status,
+        isFollowing: profile.is_following,
+        messageLabel: canDm ? "Message" : "Message Request",
+        onMessage: () => openChat(profile.uid, profile.username),
     });
+    row.classList.add("profile-connect-row");
+    box.appendChild(row);
 }
 
 function renderEditButton(profile) {

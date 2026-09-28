@@ -6,6 +6,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.klique import KliqueRequest, Follow
+from app.models.contact_link import ContactLink
 from app.services import placement
 from app.services.crawler import crawl, Candidate
 
@@ -34,6 +35,13 @@ def _serialize_user_results(db: Session, users: list[User], viewer: User) -> lis
         ).all()
     }
 
+    contact_rows = db.query(ContactLink).filter(
+        or_(
+            (ContactLink.owner_uid == viewer.uid) & (ContactLink.contact_uid.in_(uids)),
+            (ContactLink.contact_uid == viewer.uid) & (ContactLink.owner_uid.in_(uids)),
+        )
+    ).all()
+    contact_uids = {(r.contact_uid if r.owner_uid == viewer.uid else r.owner_uid) for r in contact_rows}
     return [
         {
             "uid": u.uid,
@@ -45,6 +53,7 @@ def _serialize_user_results(db: Session, users: list[User], viewer: User) -> lis
             "locality": u.locality,
             "klique_status": klique_status_by_uid.get(u.uid),
             "is_following": u.uid in following_uids,
+            "is_contact": u.uid in contact_uids,
             "is_me": u.uid == viewer.uid,
         }
         for u in users

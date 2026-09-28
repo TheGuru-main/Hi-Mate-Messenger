@@ -1,7 +1,7 @@
 import { getToken, getCachedUser, api, setCachedUser } from "./api.js";
 import { showPage, showTab } from "./router.js";
 import { initAuth } from "./auth.js";
-import { initFeed, loadFeed } from "./feed.js";
+import { initFeed, loadFeed, loadVideoFeed } from "./feed.js";
 import { initSearch } from "./search.js";
 import { initChat, loadKliqueList } from "./chat.js";
 import { initMatches, loadLiveMatches } from "./matches.js";
@@ -38,6 +38,7 @@ function initBottomNav() {
       showTab(tab);
       if (tab === "feed") loadFeed();
       if (tab === "matches") loadLiveMatches();
+      if (tab === "videos") loadVideoFeed();
       if (tab === "chats") { loadKliqueList(); loadStatusFeed(); loadConversations(); }
     };
   });

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.database import get_db
 from app.dependencies import get_current_user
@@ -9,6 +9,7 @@ from app.models.user import User
 from app.models.post import Post, Comment, Reaction, FEED_CATEGORIES, VALID_REACTIONS
 from app.services.crawler import crawl, Candidate
 from app.services import storage
+from app.models.klique import KliqueRequest, Follow
 
 router = APIRouter(tags=["posts"])
 
@@ -50,7 +51,41 @@ def bulk_reaction_data(db: Session, post_ids: list, viewer_uid: str) -> dict:
     return result
 
 
-def serialize_post(post: Post, author: User | None, comment_count: int, reaction_data: dict | None = None) -> dict:
+def _is_video_ref(ref: str) -> bool:
+    return ref.lower().split("?")[0].endswith((".mp4", ".mov", ".m4v"))
+
+
+def _post_has_video(post: Post) -> bool:
+    refs = [m for m in (post.media_refs or "").split(",") if m]
+    if not refs and post.media_ref:
+        refs = [post.media_ref]
+    return any(_is_video_ref(r) for r in refs)
+
+
+def bulk_relation_data(db: Session, author_uids: list, viewer_uid: str) -> dict:
+    """{author_uid: {'klique_status': str|None, 'is_following': bool}} from the viewer's side."""
+    uids = [u for u in set(author_uids) if u != viewer_uid]
+    result = {u: {"klique_status": None, "is_following": False} for u in uids}
+    if not uids:
+        return result
+    klique_rows = db.query(KliqueRequest).filter(
+        or_(
+            (KliqueRequest.from_uid == viewer_uid) & (KliqueRequest.to_uid.in_(uids)),
+            (KliqueRequest.to_uid == viewer_uid) & (KliqueRequest.from_uid.in_(uids)),
+        )
+    ).all()
+    for row in klique_rows:
+        other = row.to_uid if row.from_uid == viewer_uid else row.from_uid
+        if other in result:
+            result[other]["klique_status"] = row.status
+    for rel in db.query(Follow).filter(Follow.follower_uid == viewer_uid, Follow.followee_uid.in_(uids)).all():
+        if rel.followee_uid in result:
+            result[rel.followee_uid]["is_following"] = True
+    return result
+
+
+
+def serialize_post(post: Post, author: User | None, comment_count: int, reaction_data: dict | None = None, relation: dict | None = None) -> dict:
     raw_refs = []
     if post.media_refs:
         raw_refs = [m for m in post.media_refs.split(",") if m]
@@ -83,6 +118,8 @@ def serialize_post(post: Post, author: User | None, comment_count: int, reaction
         "my_reaction": rd["my_reaction"],
         "gem_count": gem_count,
         "my_gem": rd["my_gem"],
+        "author_klique_status": (relation or {}).get("klique_status"),
+        "author_is_following": bool((relation or {}).get("is_following")),
         "created_at": post.created_at.isoformat() if post.created_at else None,
     }
 
@@ -117,7 +154,7 @@ async def delete_post(post_id: str, db: Session = Depends(get_db), current_user:
 
 
 @router.get("/feed")
-async def get_feed(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_feed(media: str | None = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     def fetch_at_row(row: int) -> list[Candidate]:
         users_at_row = db.query(User).filter(User.start_row == row).all()
         candidates = []
@@ -139,6 +176,8 @@ async def get_feed(db: Session = Depends(get_db), current_user: User = Depends(g
 
     author_uids = [r.candidate.id for r in results]
     posts = db.query(Post).filter(Post.author_uid.in_(author_uids)).order_by(Post.created_at.desc()).all()
+    if media == "video":
+        posts = [p for p in posts if _post_has_video(p)]
     if not posts:
         return []
 
@@ -148,9 +187,10 @@ async def get_feed(db: Session = Depends(get_db), current_user: User = Depends(g
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_(post_ids)).group_by(Comment.post_id).all()
     )
     reaction_data = bulk_reaction_data(db, post_ids, current_user.uid)
+    relations = bulk_relation_data(db, author_uids, current_user.uid)
 
     return [
-        serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0), reaction_data.get(p.id))
+        serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0), reaction_data.get(p.id), relations.get(p.author_uid))
         for p in posts
     ]
 

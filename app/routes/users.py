@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.post import Post, Comment, Reaction
 from app.models.klique import KliqueRequest, Follow
+from app.models.contact_link import ContactLink
 from app.schemas.user import UserOut, UserUpdate, ContactMatchRequest, ContactMatchResponse, ContactMatch
 from app.services import placement
-from app.routes.posts import serialize_post
+from app.routes.posts import serialize_post, bulk_reaction_data
 from app.services import storage
 
 router = APIRouter(tags=["users"])
@@ -61,6 +62,15 @@ async def match_contacts(
         user = db.query(User).filter(User.uid == uid).first()
         if user:
             matches.append(ContactMatch(phone=phone, uid=user.uid, username=user.username))
+    for m in matches:
+        if m.uid == current_user.uid:
+            continue
+        already = db.query(ContactLink).filter(
+            ContactLink.owner_uid == current_user.uid, ContactLink.contact_uid == m.uid
+        ).first()
+        if not already:
+            db.add(ContactLink(owner_uid=current_user.uid, contact_uid=m.uid))
+    db.commit()
     return ContactMatchResponse(matches=matches)
 
 
@@ -113,6 +123,7 @@ async def get_user_profile(uid: str, db: Session = Depends(get_db), current_user
         "klique_status": klique_status,
         "is_following": is_following,
         "is_me": target.uid == current_user.uid,
+        "is_contact": db.query(ContactLink).filter(or_((ContactLink.owner_uid == current_user.uid) & (ContactLink.contact_uid == uid), (ContactLink.owner_uid == uid) & (ContactLink.contact_uid == current_user.uid))).first() is not None,
     }
 
 
@@ -128,7 +139,8 @@ async def get_user_posts(uid: str, db: Session = Depends(get_db), current_user: 
     comment_counts = dict(
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_(post_ids)).group_by(Comment.post_id).all()
     )
-    return [serialize_post(p, target, comment_counts.get(p.id, 0)) for p in posts]
+    rd = bulk_reaction_data(db, [p.id for p in posts], current_user.uid)
+    return [serialize_post(p, target, comment_counts.get(p.id, 0), rd.get(p.id)) for p in posts]
 
 
 @router.get("/users/{uid}/liked-posts")
@@ -143,7 +155,8 @@ async def get_user_liked_posts(uid: str, db: Session = Depends(get_db), current_
     comment_counts = dict(
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_([p.id for p in posts])).group_by(Comment.post_id).all()
     )
-    return [serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0)) for p in posts]
+    rd = bulk_reaction_data(db, [p.id for p in posts], current_user.uid)
+    return [serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0), rd.get(p.id)) for p in posts]
 
 
 @router.get("/users/{uid}/shared-posts")
@@ -158,4 +171,5 @@ async def get_user_shared_posts(uid: str, db: Session = Depends(get_db), current
     comment_counts = dict(
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_(post_ids)).group_by(Comment.post_id).all()
     )
-    return [serialize_post(p, target, comment_counts.get(p.id, 0)) for p in posts]
+    rd = bulk_reaction_data(db, [p.id for p in posts], current_user.uid)
+    return [serialize_post(p, target, comment_counts.get(p.id, 0), rd.get(p.id)) for p in posts]

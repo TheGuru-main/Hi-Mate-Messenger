@@ -16,3 +16,4 @@ __all__ = [
     "MediaAsset", "MatchRoom",
 ]
 from app.models.notification import Notification
+from app.models.contact_link import ContactLink  # noqa: F401

@@ -51,6 +51,26 @@ export async function openNotificationsPanel() {
               `).join("")
             : '<div class="section-title">No notifications yet.</div>';
 
+        notifications.forEach(n => {
+            if (n.type !== "klique_request") return;
+            const row = list.querySelector(`.notif-item[data-id="${n.id}"]`);
+            if (!row) return;
+            const btn = document.createElement("button");
+            btn.className = "secondary-btn notif-accept-btn";
+            btn.textContent = "Accept";
+            btn.addEventListener("click", async (ev) => {
+                ev.stopPropagation();
+                try {
+                    const pending = await api.kliquePending();
+                    const match = pending.find(p => p.from_uid === n.actor_uid);
+                    if (!match) { alert("This request is no longer pending."); return; }
+                    await api.kliqueAccept(match.id);
+                    btn.textContent = "Accepted ✓";
+                    btn.disabled = true;
+                } catch (e) { alert(e.message); }
+            });
+            row.appendChild(btn);
+        });
         list.querySelectorAll(".notif-item").forEach(item => {
             item.addEventListener("click", async () => {
                 try { await api.markNotificationRead(item.dataset.id); item.classList.remove("unread"); refreshBadge(); } catch (e) {}
