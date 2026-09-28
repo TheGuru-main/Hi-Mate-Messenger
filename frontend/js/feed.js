@@ -178,7 +178,6 @@ async function openCommentBox(postId) {
             });
         });
         listEl.querySelectorAll(".comment-react-btn").forEach(btn => {
-            wireLongPress(btn, listEl.querySelectorAll(".comment-react-btn").length ? null : null, null); // placeholder, replaced below
         });
         listEl.querySelectorAll(".comment-react-btn").forEach(btn => {
             const item = btn.closest(".comment-item");
@@ -274,6 +273,30 @@ async function openSharePicker(post) {
     });
 }
 
+function openReactionPicker(anchorBtn, onPicked) {
+    closeReactionPopover();
+    const popover = document.createElement("div");
+    popover.className = "reaction-popover";
+    popover.innerHTML = REACTIONS.filter(e => e !== "💎").map(e => `<button class="reaction-pick" data-emoji="${e}">${e}</button>`).join("");
+    document.body.appendChild(popover);
+
+    const rect = anchorBtn.getBoundingClientRect();
+    const maxLeft = window.innerWidth - popover.offsetWidth - 8;
+    popover.style.left = Math.min(Math.max(8, rect.left - 20), Math.max(8, maxLeft)) + "px";
+    let top = rect.top - popover.offsetHeight - 10 + window.scrollY;
+    if (top < window.scrollY + 8) top = rect.bottom + 10 + window.scrollY;
+    popover.style.top = top + "px";
+
+    popover.querySelectorAll(".reaction-pick").forEach(btn => {
+        btn.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            closeReactionPopover();
+            onPicked(btn.dataset.emoji);
+        });
+    });
+    setTimeout(() => document.addEventListener("click", closeReactionPopover, { once: true }), 0);
+}
+
 function renderPost(post) {
     const div = document.createElement("div");
     div.className = "card feed-card";
@@ -292,6 +315,7 @@ function renderPost(post) {
       ${post.content ? `<div class="content">${escapeHtml(post.content)}</div>` : ""}
       ${renderCarousel(post.media_refs)}
       <div class="action-row">
+        <button class="action-btn react-btn" data-action="react"><i class="fa-regular fa-heart"></i></button>
         <button class="action-btn" data-action="comment"><i class="fa-regular fa-comment"></i> ${post.comment_count || ""}</button>
         <button class="action-btn" data-action="share"><i class="fa-solid fa-share"></i></button>
         <button class="action-btn gem-btn" data-action="gem"><i class="fa-solid fa-gem"></i></button>
@@ -337,8 +361,96 @@ function renderPost(post) {
     }
 
     wireCarousel(div);
+    const reactBtn = div.querySelector(".react-btn");
     const gemBtn = div.querySelector(".gem-btn");
-    wireLongPress(gemBtn, post.id, (emoji) => { gemBtn.innerHTML = emoji; gemBtn.classList.add("active"); });
+    const reactState = {
+        counts: Object.assign({}, post.reaction_counts || {}),
+        myReaction: post.my_reaction || null,
+        gemCount: post.gem_count || 0,
+        myGem: !!post.my_gem,
+    };
+
+    function renderReactionButtons() {
+        const total = Object.values(reactState.counts).reduce((a, b) => a + b, 0);
+        const top = Object.entries(reactState.counts).sort((a, b) => b[1] - a[1]).slice(0, 3).map(e => e[0]).join("");
+        reactBtn.innerHTML = `<span class="react-main">${reactState.myReaction || '<i class="fa-regular fa-heart"></i>'}</span>` +
+            (total ? `<span class="react-top">${top}</span><span class="react-count">${total}</span>` : "");
+        reactBtn.classList.toggle("active", !!reactState.myReaction);
+        gemBtn.innerHTML = '<i class="fa-solid fa-gem"></i>' + (reactState.gemCount ? `<span class="react-count">${reactState.gemCount}</span>` : "");
+        gemBtn.classList.toggle("active", reactState.myGem);
+    }
+
+    function bump(emoji, delta) {
+        const next = (reactState.counts[emoji] || 0) + delta;
+        if (next > 0) reactState.counts[emoji] = next; else delete reactState.counts[emoji];
+    }
+
+    async function applyReaction(emoji) {
+        const prevCounts = Object.assign({}, reactState.counts);
+        const prevMine = reactState.myReaction;
+        if (prevMine === emoji) {
+            bump(emoji, -1);
+            reactState.myReaction = null;
+        } else {
+            if (prevMine) bump(prevMine, -1);
+            bump(emoji, 1);
+            reactState.myReaction = emoji;
+        }
+        renderReactionButtons();
+        try {
+            await api.react(post.id, emoji);
+        } catch (e) {
+            reactState.counts = prevCounts;
+            reactState.myReaction = prevMine;
+            renderReactionButtons();
+            alert(e.message);
+        }
+    }
+
+    async function toggleGem() {
+        const prevCount = reactState.gemCount;
+        const prevMine = reactState.myGem;
+        reactState.myGem = !prevMine;
+        reactState.gemCount = Math.max(0, prevCount + (prevMine ? -1 : 1));
+        renderReactionButtons();
+        try {
+            await api.react(post.id, "💎");
+        } catch (e) {
+            reactState.gemCount = prevCount;
+            reactState.myGem = prevMine;
+            renderReactionButtons();
+            alert(e.message);
+        }
+    }
+
+    let lastTap = 0;
+    let pressTimer = null;
+    let longPressed = false;
+    const startPress = () => {
+        longPressed = false;
+        pressTimer = setTimeout(() => {
+            longPressed = true;
+            openReactionPicker(reactBtn, applyReaction);
+        }, LONG_PRESS_MS);
+    };
+    const cancelPress = () => clearTimeout(pressTimer);
+    reactBtn.addEventListener("touchstart", startPress, { passive: true });
+    reactBtn.addEventListener("touchend", cancelPress);
+    reactBtn.addEventListener("touchmove", cancelPress);
+    reactBtn.addEventListener("mousedown", startPress);
+    reactBtn.addEventListener("mouseup", cancelPress);
+    reactBtn.addEventListener("mouseleave", cancelPress);
+    reactBtn.addEventListener("contextmenu", (e) => e.preventDefault());
+    reactBtn.addEventListener("click", () => {
+        if (longPressed) { longPressed = false; return; }
+        const now = Date.now();
+        const isDoubleTap = now - lastTap < 300;
+        lastTap = now;
+        if (isDoubleTap && reactState.myReaction) { applyReaction(reactState.myReaction); return; }
+        if (!reactState.myReaction) applyReaction("❤️");
+    });
+    gemBtn.addEventListener("click", toggleGem);
+    renderReactionButtons();
 
     div.querySelector('[data-action="comment"]').addEventListener("click", () => openCommentBox(post.id));
     div.querySelector('[data-action="share"]').addEventListener("click", () => openSharePicker(post));

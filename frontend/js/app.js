@@ -12,6 +12,7 @@ import { initStatus, loadStatusFeed } from "./status.js";
 import { initProfile } from "./profile.js";
 import { initNotifications } from "./notifications.js";
 import { attachWavyBubble } from "./wavy-bubble.js";
+import { initConversations, loadConversations } from "./conversations.js";
 
 function initGoLiveButton() {
   const btn = document.getElementById("btn-go-live");
@@ -37,7 +38,7 @@ function initBottomNav() {
       showTab(tab);
       if (tab === "feed") loadFeed();
       if (tab === "matches") loadLiveMatches();
-      if (tab === "chats") { loadKliqueList(); loadStatusFeed(); }
+      if (tab === "chats") { loadKliqueList(); loadStatusFeed(); loadConversations(); }
     };
   });
 }
@@ -75,6 +76,7 @@ function boot() {
   initGoLiveButton();
   initProfile();
   initNotifications();
+  initConversations();
   initBottomNav();
 
   window.addEventListener("himate:authed", enterApp);

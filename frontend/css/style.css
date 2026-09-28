@@ -336,3 +336,11 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .wavy-bubble-svg{ width:140%; height:140%; }
 .glass-header{ position:relative; overflow:visible; }
 .top-bar .brand{ position:relative; }
+
+/* ---------- Reaction + gem buttons ---------- */
+.react-btn .react-main{ font-size:17px; }
+.react-btn .react-top{ font-size:12px; margin-left:4px; letter-spacing:-2px; }
+.react-btn .react-count, .gem-btn .react-count{ font-size:12px; color:var(--text-secondary); margin-left:4px; }
+.gem-btn.active i{ color:var(--neon-blue); text-shadow:0 0 8px rgba(0,229,255,.6); }
+.react-btn, .gem-btn{ user-select:none; -webkit-user-select:none; }
+.convo-preview{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:200px; }

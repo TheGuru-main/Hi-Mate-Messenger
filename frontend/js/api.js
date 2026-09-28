@@ -101,6 +101,9 @@ export const api = {
   getUserLikedPosts: (uid) => request(`/users/${uid}/liked-posts`),
   getUserSharedPosts: (uid) => request(`/users/${uid}/shared-posts`),
   followUser: (uid) => request(`/follow/${uid}`, { method: "POST" }),
+  unfollowUser: (uid) => request(`/follow/${uid}`, { method: "DELETE" }),
+  removeKlique: (uid) => request(`/klique/${uid}`, { method: "DELETE" }),
+  getConversations: () => request("/conversations"),
   updateMe: (payload) => request("/users/me", { method: "PATCH", body: payload }),
 
   getNotifications: () => request("/notifications"),

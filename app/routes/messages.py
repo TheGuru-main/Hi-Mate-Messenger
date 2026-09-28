@@ -75,6 +75,36 @@ async def send_message(
     return message
 
 
+@router.get("/conversations")
+async def list_conversations(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    msgs = (
+        db.query(Message)
+        .filter(Message.group_id.is_(None))
+        .filter((Message.sender_uid == current_user.uid) | (Message.receiver_uid == current_user.uid))
+        .order_by(Message.created_at.desc())
+        .limit(500)
+        .all()
+    )
+    latest = {}
+    for m in msgs:
+        other = m.receiver_uid if m.sender_uid == current_user.uid else m.sender_uid
+        if other and other not in latest:
+            latest[other] = m
+    if not latest:
+        return []
+    users = {u.uid: u for u in db.query(User).filter(User.uid.in_(list(latest.keys()))).all()}
+    return [
+        {
+            "uid": uid,
+            "username": users[uid].username if uid in users else uid,
+            "last_message": m.content if m.type == "text" else f"[{m.type}]",
+            "last_message_at": m.created_at.isoformat() if m.created_at else None,
+            "sent_by_me": m.sender_uid == current_user.uid,
+        }
+        for uid, m in latest.items()
+    ]
+
+
 @router.get("/messages/{conversation_id}", response_model=list[MessageOut])
 async def get_messages(
     conversation_id: str,
