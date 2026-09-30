@@ -227,6 +227,17 @@
 
   <div class="tab-content hidden" id="tab-matches">
     <div class="section-title">🔴 Live Matches</div>
+    <div class="matches-filter-bar">
+      <input class="input-box small" id="matches-filter-country" placeholder="Country / league">
+      <select class="input-box small" id="matches-filter-sport"><option value="football">Football</option></select>
+      <select class="input-box small" id="matches-filter-hours">
+        <option value="12">Next 12h</option>
+        <option value="34" selected>Next 34h</option>
+        <option value="72">Next 3 days</option>
+        <option value="168">Next 7 days</option>
+      </select>
+      <button class="secondary-btn" id="matches-filter-apply" style="margin-top:0;">Apply</button>
+    </div>
     <div id="matches-list" class="scroll-list"></div>
   </div>
 

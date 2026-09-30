@@ -21,19 +21,30 @@ function renderMatchListItem(m) {
 
 export async function loadLiveMatches() {
   const list = document.getElementById("matches-list");
+  const hoursEl = document.getElementById("matches-filter-hours");
+  const countryEl = document.getElementById("matches-filter-country");
+  const hours = hoursEl ? hoursEl.value : 34;
+  const country = countryEl ? countryEl.value.trim() : "";
+
   list.innerHTML = `<div class="section-title">Loading…</div>`;
   let liveError = null;
   const [live, upcoming] = await Promise.all([
     api.getLiveMatches().catch((e) => { liveError = e.message; return []; }),
-    api.getUpcomingMatches().catch(() => []),
+    api.getUpcomingMatches({ hours, country: country || undefined }).catch(() => []),
   ]);
   list.innerHTML = `<div class="section-title">🔴 Live now</div>`;
   if (liveError) list.insertAdjacentHTML("beforeend", `<div class="error-text">${liveError}</div>`);
   else if (!live.length) list.insertAdjacentHTML("beforeend", `<div class="sub" style="padding:6px 2px;">No live matches right now.</div>`);
   live.forEach((m) => list.appendChild(renderMatchListItem(m)));
-  list.insertAdjacentHTML("beforeend", `<div class="section-title">📅 Upcoming</div>`);
-  if (!upcoming.length) list.insertAdjacentHTML("beforeend", `<div class="sub" style="padding:6px 2px;">No upcoming fixtures found.</div>`);
+  list.insertAdjacentHTML("beforeend", `<div class="section-title">📅 Upcoming (next ${hours}h)</div>`);
+  if (!upcoming.length) list.insertAdjacentHTML("beforeend", `<div class="sub" style="padding:6px 2px;">No upcoming fixtures found for this filter.</div>`);
   upcoming.forEach((m) => list.appendChild(renderMatchListItem(m)));
+
+  const applyBtn = document.getElementById("matches-filter-apply");
+  if (applyBtn && !applyBtn.dataset.wired) {
+    applyBtn.dataset.wired = "1";
+    applyBtn.addEventListener("click", () => loadLiveMatches());
+  }
 }
 
 function renderScoreboard(m) {

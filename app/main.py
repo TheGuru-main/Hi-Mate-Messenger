@@ -77,6 +77,7 @@ async def on_startup():
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS education_level TEXT;"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS pending_uids TEXT[] DEFAULT '{}';"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'private';"))
+        conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS creator_group_uid TEXT;"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS pending_uids TEXT[] DEFAULT '{}';"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'private';"))
         conn.commit()

@@ -38,9 +38,9 @@ async def list_live_matches(db: Session = Depends(get_db), current_user: User = 
 
 
 @router.get("/upcoming")
-async def list_upcoming_matches(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def list_upcoming_matches(hours: int = 34, country: str | None = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     try:
-        upcoming = await news.fetch_upcoming_fixtures()
+        upcoming = await news.fetch_upcoming_fixtures(hours=hours)
     except Exception:
         raise HTTPException(status_code=502, detail="Sports data provider unavailable")
     ids = [m["fixture_id"] for m in upcoming if m.get("fixture_id")]
@@ -48,6 +48,8 @@ async def list_upcoming_matches(db: Session = Depends(get_db), current_user: Use
         r.fixture_id: r.group_id
         for r in db.query(MatchRoom).filter(MatchRoom.fixture_id.in_(ids)).all()
     } if ids else {}
+    if country:
+        upcoming = [m for m in upcoming if (m.get("league") or "").lower().find(country.lower()) != -1]
     for m in upcoming:
         m["has_room"] = m["fixture_id"] in rooms
         m["group_id"] = rooms.get(m["fixture_id"])

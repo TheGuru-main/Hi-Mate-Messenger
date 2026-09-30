@@ -23,6 +23,7 @@ class Group(Base):
     start_row = Column(Integer, nullable=False, index=True)
 
     member_uids = Column(ARRAY(String), default=list)
+    creator_group_uid = Column(String, unique=True, nullable=True)  # the 8-digit UID the creator chose — feeds placement S
     pending_uids = Column(ARRAY(String), default=list)
     visibility = Column(String, default="private")  # "public" | "private"
     pending_uids = Column(ARRAY(String), default=list)

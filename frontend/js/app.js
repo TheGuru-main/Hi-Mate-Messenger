@@ -12,6 +12,7 @@ import { initStatus, loadStatusFeed } from "./status.js";
 import { initProfile } from "./profile.js";
 import { initNotifications } from "./notifications.js";
 import { attachWavyBubble } from "./wavy-bubble.js";
+import { startLiveTimestamps } from "./media-utils.js";
 import { initConversations, loadConversations } from "./conversations.js";
 
 function initGoLiveButton() {
@@ -95,6 +96,7 @@ function boot() {
 
 document.addEventListener("DOMContentLoaded", () => {
   boot();
+  startLiveTimestamps();
   const splashHeader = document.querySelector("#splash .glass-header");
   if (splashHeader) attachWavyBubble(splashHeader, { baseRadius: 90, waveAmplitude: 14 });
   const homeBrand = document.querySelector("#home .top-bar .brand");

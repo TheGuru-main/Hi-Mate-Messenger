@@ -310,7 +310,7 @@ export function renderPost(post, opts) {
         <div class="avatar profile-tap" data-uid="${post.author_uid}">${initials}</div>
         <div class="post-header-text">
           <div class="post-author-name profile-tap" data-uid="${post.author_uid}">${escapeHtml(post.author_username || post.author_uid)} ${talentBadge}</div>
-          <div class="post-meta">${locationParts ? escapeHtml(locationParts) + " · " : ""}${post.category} · ${timeAgo(post.created_at)}</div>
+          <div class="post-meta" data-ts="${post.created_at}">${locationParts ? escapeHtml(locationParts) + " · " : ""}${post.category} · ${timeAgo(post.created_at)}</div>
         </div>
       </div>
       ${post.content ? `<div class="content">${escapeHtml(post.content)}</div>` : ""}

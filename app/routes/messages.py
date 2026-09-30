@@ -175,10 +175,16 @@ async def create_group(
     current_user: User = Depends(get_current_user),
 ):
     # group_id = creator_uid + timestamp hash, per locked spec
+    if not payload.group_uid.isdigit() or len(payload.group_uid) != 8:
+        raise HTTPException(status_code=400, detail="group_uid must be exactly 8 digits")
+    if db.query(Group).filter(Group.creator_group_uid == payload.group_uid).first():
+        raise HTTPException(status_code=400, detail="That group UID is already taken — pick another 8-digit number")
+
+
     raw = f"{current_user.uid}-{time.time()}"
     group_id = hashlib.sha256(raw.encode()).hexdigest()[:16]
 
-    p = placement.compute_placement(payload.name, group_id)
+    p = placement.compute_placement(payload.name, payload.group_uid)
 
     members = list(set(payload.member_uids + [current_user.uid]))
 
@@ -192,6 +198,7 @@ async def create_group(
         start_row=p["start_row"],
         member_uids=members,
         created_by_uid=current_user.uid,
+        creator_group_uid=payload.group_uid,
     )
     db.add(group)
     db.commit()

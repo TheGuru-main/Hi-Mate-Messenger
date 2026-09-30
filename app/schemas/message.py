@@ -37,6 +37,7 @@ class MessageOut(BaseModel):
 class GroupCreate(BaseModel):
     name: str
     member_uids: list[str]
+    group_uid: str  # 8 digits, chosen by the creator — feeds the placement S value
     description: str | None = None
     purpose: str | None = None
 

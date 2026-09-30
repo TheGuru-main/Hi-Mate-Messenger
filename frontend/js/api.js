@@ -101,7 +101,10 @@ export const api = {
   getUserLikedPosts: (uid) => request(`/users/${uid}/liked-posts`),
   getUserSharedPosts: (uid) => request(`/users/${uid}/shared-posts`),
   followUser: (uid) => request(`/follow/${uid}`, { method: "POST" }),
-  getUpcomingMatches: () => request("/matches/upcoming"),
+  getUpcomingMatches: (params) => {
+    const qs = new URLSearchParams(params || {}).toString();
+    return request(`/matches/upcoming${qs ? "?" + qs : ""}`);
+  },
   unfollowUser: (uid) => request(`/follow/${uid}`, { method: "DELETE" }),
   removeKlique: (uid) => request(`/klique/${uid}`, { method: "DELETE" }),
   getConversations: () => request("/conversations"),

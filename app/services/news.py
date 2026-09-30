@@ -171,11 +171,11 @@ async def fetch_fixture_stats(fixture_id: int) -> dict | None:
     return data
 
 
-async def fetch_upcoming_fixtures(days: int = 7) -> list[dict]:
+async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
     """Fixtures that have not kicked off yet, next `days` days (UTC). 5-minute cache."""
     from datetime import datetime, timedelta, timezone
 
-    cache_key = f"sportmonk:upcoming:{days}"
+    cache_key = f"sportmonk:upcoming:{hours}"
     cached = _get_cached(cache_key, ttl_seconds=300)
     if cached is not None:
         return cached
@@ -184,7 +184,7 @@ async def fetch_upcoming_fixtures(days: int = 7) -> list[dict]:
 
     now = datetime.now(timezone.utc)
     start = now.date().isoformat()
-    end = (now + timedelta(days=days)).date().isoformat()
+    end = (now + timedelta(hours=hours)).date().isoformat()
     url = f"{settings.SPORTMONK_BASE_URL}/fixtures/between/{start}/{end}"
     params = {"api_token": settings.SPORTMONK_API_KEY, "include": "participants;league", "per_page": 50}
 
@@ -200,7 +200,7 @@ async def fetch_upcoming_fixtures(days: int = 7) -> list[dict]:
             kickoff = datetime.strptime(m.get("starting_at"), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
         except (TypeError, ValueError):
             continue
-        if kickoff <= now:
+        if kickoff <= now or kickoff > now + timedelta(hours=hours):
             continue
         participants = m.get("participants", [])
         home = next((p.get("name") for p in participants if p.get("meta", {}).get("location") == "home"), None)

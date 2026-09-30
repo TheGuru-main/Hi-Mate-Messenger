@@ -23,7 +23,7 @@ function renderPostCard(post) {
     div.innerHTML = `
       ${media ? `<img src="${media}" class="profile-post-thumb">` : ""}
       ${post.content ? `<div class="content">${escapeHtml(post.content)}</div>` : ""}
-      <div class="post-meta">${post.category} · ${timeAgo(post.created_at)}</div>
+      <div class="post-meta" data-ts="${post.created_at}">${post.category} · ${timeAgo(post.created_at)}</div>
     `;
     return div;
 }

@@ -46,3 +46,14 @@ export function timeAgo(dateStr) {
     const remHr = hr % 24;
     return remHr ? `${day}d ${remHr}h ago` : `${day}d ago`;
 }
+
+
+export function startLiveTimestamps(root = document) {
+    function tick() {
+        root.querySelectorAll("[data-ts]").forEach(el => {
+            el.textContent = timeAgo(el.dataset.ts);
+        });
+    }
+    tick();
+    return setInterval(tick, 30000);
+}

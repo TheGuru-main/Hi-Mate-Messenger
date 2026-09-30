@@ -148,6 +148,7 @@ async function openCreateGroupModal() {
           <button class="icon-btn klique-modal-close"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <input class="input-box" id="group-name-input" placeholder="Group name">
+        <input class="input-box" id="group-uid-input" placeholder="Pick an 8-digit Group UID" inputmode="numeric" maxlength="8">
         <textarea class="input-box" id="group-description-input" placeholder="Introduction / narration — what's this group about?"></textarea>
         <input class="input-box" id="group-purpose-input" placeholder="Purpose (e.g. Business, Tech, Casual, Punditry)">
         <select class="input-box" id="group-visibility-input">
@@ -166,12 +167,14 @@ async function openCreateGroupModal() {
     overlay.querySelector("#group-create-btn").addEventListener("click", async () => {
         const errEl = overlay.querySelector("#group-create-error");
         const name = overlay.querySelector("#group-name-input").value.trim();
+        const group_uid = overlay.querySelector("#group-uid-input").value.trim();
         const description = overlay.querySelector("#group-description-input").value.trim();
         const purpose = overlay.querySelector("#group-purpose-input").value.trim();
         const member_uids = Array.from(overlay.querySelectorAll(".status-recipient-option input:checked")).map(el => el.value);
         if (!name) { errEl.textContent = "Give the group a name."; return; }
+        if (!/^\d{8}$/.test(group_uid)) { errEl.textContent = "Group UID must be exactly 8 digits."; return; }
         try {
-            const group = await api.createGroup({ name, description, purpose, member_uids });
+            const group = await api.createGroup({ name, description, purpose, member_uids, group_uid });
             closeKliqueModal();
             openGroupChat(group);
         } catch (e) {
