@@ -162,6 +162,19 @@ export async function openProfile(uid) {
 
         renderActions(profile);
         renderEditButton(profile);
+        document.querySelectorAll(".profile-bio, .profile-edu").forEach(el => el.remove());
+        if (profile.bio) {
+            const bioEl = document.createElement("div");
+            bioEl.className = "profile-meta profile-bio";
+            bioEl.textContent = profile.bio;
+            document.getElementById("profile-meta").insertAdjacentElement("afterend", bioEl);
+        }
+        if (profile.education_level) {
+            const eduEl = document.createElement("div");
+            eduEl.className = "profile-meta profile-edu";
+            eduEl.textContent = "🎓 " + profile.education_level;
+            document.getElementById("profile-joined").insertAdjacentElement("beforebegin", eduEl);
+        }
         await loadTab(uid, "posts");
     } catch (e) {
         document.getElementById("profile-username").textContent = "Couldn't load profile";
