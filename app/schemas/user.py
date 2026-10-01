@@ -16,6 +16,16 @@ class UserOut(BaseModel):
     business_role: Optional[str] = None
     interest: Optional[str] = None
     date_of_birth: Optional[date] = None
+    profile_image_ref: Optional[str] = None
+    cover_image_ref: Optional[str] = None
+    bio: Optional[str] = None
+    education_level: Optional[str] = None
+    edu_class: Optional[str] = None
+    edu_stage: Optional[str] = None
+    edu_school_name: Optional[str] = None
+    edu_student_id: Optional[str] = None
+    edu_school_link_id: Optional[str] = None
+    edu_display_name: Optional[str] = None
     start_row: int
     created_at: datetime
 
@@ -36,6 +46,12 @@ class UserUpdate(BaseModel):
     cover_image_ref: Optional[str] = None
     bio: Optional[str] = None
     education_level: Optional[str] = None
+    edu_class: Optional[str] = None
+    edu_stage: Optional[str] = None
+    edu_school_name: Optional[str] = None
+    edu_student_id: Optional[str] = None
+    edu_school_link_id: Optional[str] = None
+    edu_display_name: Optional[str] = None
 
 
 class ContactMatchRequest(BaseModel):
