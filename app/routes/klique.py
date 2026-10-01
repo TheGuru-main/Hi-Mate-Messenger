@@ -6,6 +6,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.klique import KliqueRequest, Follow, Fan, Block
 from app.models.notification import Notification
+from app.services.push import send_push_to_user
 from app.schemas.message import KliqueRequestCreate, KliqueActionRequest
 
 router = APIRouter(tags=["klique"])
@@ -34,6 +35,7 @@ async def send_klique_request(
         recipient_uid=payload.to_uid, actor_uid=current_user.uid, type="klique_request",
         message=f"{current_user.username} sent you a Klique request",
     ))
+    send_push_to_user(db, payload.to_uid, "New Klique request", f"{current_user.username} wants to connect")
     db.commit()
     return {"status": "pending", "request_id": str(request.id)}
 
@@ -52,6 +54,7 @@ async def accept_klique_request(
         recipient_uid=request.from_uid, actor_uid=current_user.uid, type="klique_accepted",
         message=f"{current_user.username} accepted your Klique request",
     ))
+    send_push_to_user(db, request.from_uid, "Klique accepted", f"{current_user.username} accepted your request")
     db.commit()
     return {"status": "accepted"}
 
@@ -105,6 +108,7 @@ async def follow_user(
         recipient_uid=uid, actor_uid=current_user.uid, type="follow",
         message=f"{current_user.username} followed you",
     ))
+    send_push_to_user(db, uid, "New follower", f"{current_user.username} followed you")
     db.commit()
     return {"status": "following"}
 

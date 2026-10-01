@@ -12,6 +12,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.message import Message, Group, GroupEvent
 from app.models.notification import Notification
+from app.services.push import send_push_to_user
 from app.schemas.message import MessageCreate, MessageOut, GroupCreate, GroupOut, GroupUpdate, GroupMembersAdd, EventCreate, EventOut
 from app.services import placement
 from app.sockets.manager import manager
@@ -244,6 +245,7 @@ async def join_group_by_link(
             recipient_uid=group.created_by_uid, actor_uid=current_user.uid, type="group_join_request",
             message=f"{current_user.username} wants to join \"{group.name}\"",
         ))
+        send_push_to_user(db, group.created_by_uid, "Group join request", f"{current_user.username} wants to join {group.name}")
     db.commit()
     db.refresh(group)
     return group
@@ -280,6 +282,7 @@ async def approve_pending_member(
             recipient_uid=uid, actor_uid=current_user.uid, type="group_approved",
             message=f"You were approved to join \"{group.name}\"",
         ))
+        send_push_to_user(db, uid, "Approved", f"You were approved to join {group.name}")
         db.commit()
         db.refresh(group)
     return group

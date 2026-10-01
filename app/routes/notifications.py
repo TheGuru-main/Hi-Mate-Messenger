@@ -6,6 +6,8 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.notification import Notification
+from app.services.push import send_push_to_user
+from app.models.push_subscription import PushSubscription
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -49,7 +51,27 @@ class NotifyRequest(BaseModel):
 async def send_notification(payload: NotifyRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     db.add(Notification(recipient_uid=payload.recipient_uid, actor_uid=current_user.uid, type=payload.type, message=payload.message))
     db.commit()
+    send_push_to_user(db, payload.recipient_uid, "Hi-Mate", payload.message)
     return {"status": "sent"}
+
+
+class PushSubscribeRequest(BaseModel):
+    endpoint: str
+    p256dh: str
+    auth: str
+
+
+@router.post("/push-subscribe")
+async def push_subscribe(payload: PushSubscribeRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    existing = db.query(PushSubscription).filter(PushSubscription.endpoint == payload.endpoint).first()
+    if existing:
+        existing.uid = current_user.uid
+        existing.p256dh = payload.p256dh
+        existing.auth = payload.auth
+    else:
+        db.add(PushSubscription(uid=current_user.uid, endpoint=payload.endpoint, p256dh=payload.p256dh, auth=payload.auth))
+    db.commit()
+    return {"status": "subscribed"}
 
 
 @router.get("/unread-count")
