@@ -512,6 +512,10 @@ async function openContactsModal() {
     }
 }
 
+export function getActiveConversation() {
+    return { uid: activeConversationUid, type: activeConversationType, group: activeGroup };
+}
+
 export function initChat() {
     const backBtn = document.getElementById("btn-back-from-chat");
     if (backBtn) backBtn.addEventListener("click", () => { activeConversationUid = null; showPage("home"); });

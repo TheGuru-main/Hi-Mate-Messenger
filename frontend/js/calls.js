@@ -7,8 +7,13 @@
 // media server (SFU) to scale beyond that — flagged here, not solved.
 // ==========================================
 
+import { getCachedUser } from "./api.js";
+import { showPage } from "./router.js";
+import { connectCallSocket, onCallSignal, sendCallSignal } from "./socket.js";
+import { getActiveConversation } from "./chat.js";
+
 let localStream = null;
-let peerConnections = {}; // uid -> RTCPeerConnection
+let peerConnections = {};
 let currentCallGroupMembers = [];
 let myCallUid = null;
 
@@ -27,14 +32,11 @@ async function startGroupCall(memberUids) {
     }
 
     const localVideo = document.getElementById("local-video");
-    if (localVideo) {
-        localVideo.srcObject = localStream;
-    }
+    if (localVideo) localVideo.srcObject = localStream;
 
     connectCallSocket();
-    goToPage("call-room");
+    showPage("call-room");
 
-    // Offer a connection to every other member (mesh — each pair gets its own RTCPeerConnection)
     memberUids.filter(uid => uid !== myCallUid).forEach(uid => createOfferTo(uid));
 }
 
@@ -108,19 +110,23 @@ function endCall() {
     }
     const grid = document.getElementById("call-video-grid");
     if (grid) grid.innerHTML = "";
-    goToPage("home");
+    showPage("home");
 }
 
-function initCalls() {
+export function initCalls() {
     const endBtn = document.getElementById("btn-end-call");
     if (endBtn) endBtn.addEventListener("click", endCall);
 
     const startCallBtn = document.getElementById("btn-start-group-call");
     if (startCallBtn) {
         startCallBtn.addEventListener("click", () => {
-            // For a Klique chat, this starts a 1:1 "group" of 2; wiring a
-            // real group-member picker is a follow-up UI piece.
-            if (activeConversationUid) startGroupCall([myCallUidSafe(), activeConversationUid]);
+            const me = getCachedUser();
+            const active = getActiveConversation();
+            if (!active.uid || !me) return;
+            const members = active.type === "group" && active.group
+                ? active.group.member_uids
+                : [me.uid, active.uid];
+            startGroupCall(members);
         });
     }
 
@@ -136,10 +142,3 @@ function initCalls() {
         }
     });
 }
-
-function myCallUidSafe() {
-    const me = getCachedUser();
-    return me ? me.uid : null;
-}
-
-window.addEventListener("load", initCalls);

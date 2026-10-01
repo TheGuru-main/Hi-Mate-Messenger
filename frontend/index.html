@@ -161,6 +161,7 @@
     <span id="own-username-label" class="own-username-label"></span>
     <button class="icon-btn" id="btn-open-own-profile" title="Profile"><i class="fa-solid fa-circle-user"></i></button>
     <button class="icon-btn" id="btn-go-live" title="Go Live"><i class="fa-solid fa-tower-broadcast"></i></button>
+    <button class="icon-btn" id="btn-open-edu" title="Edu"><i class="fa-solid fa-graduation-cap"></i></button>
     <button class="icon-btn" id="btn-open-notifications" title="Notifications"><i class="fa-solid fa-bell"></i><span id="notif-badge" class="notif-badge hidden">0</span></button>
     <button class="icon-btn" id="btn-open-settings">⚙</button>
   </div>
@@ -361,6 +362,36 @@
   <div id="profile-post-grid" class="scroll-list"></div>
 </section>
 
+<!-- ========================================== -->
+<!-- EDU -->
+<!-- ========================================== -->
+<section id="edu-page" class="page hidden">
+  <div class="top-bar">
+    <button class="icon-btn" id="btn-back-from-edu">←</button>
+    <div class="brand">Edu</div>
+  </div>
+
+  <div class="form-container">
+    <div class="section-title">Education Details</div>
+    <input class="input-box" id="edu-class-input" placeholder="Class (e.g. SS2, 400 Level)">
+    <input class="input-box" id="edu-stage-input" placeholder="Stage (e.g. Secondary, Undergraduate)">
+    <input class="input-box" id="edu-school-input" placeholder="School name">
+    <input class="input-box" id="edu-student-id-input" placeholder="Student ID">
+    <input class="input-box" id="edu-link-id-input" placeholder="School-student-link ID (optional)">
+    <input class="input-box" id="edu-display-name-input" placeholder="Display name for Edu (optional)">
+    <button class="primary-btn" id="edu-save-btn">Save Education Details</button>
+    <div class="error-text" id="edu-setup-error"></div>
+  </div>
+
+  <div class="form-container">
+    <div class="section-title">Personal Learning Journal</div>
+    <textarea class="input-box" id="edu-journal-input" placeholder="What did you learn or improve today?"></textarea>
+    <button class="secondary-btn" id="edu-journal-add-btn">Add Entry</button>
+    <div id="edu-journal-list" class="scroll-list"></div>
+  </div>
+</section>
+
+
 <section id="settings" class="page hidden">
   <div class="top-bar">
     <button class="icon-btn" id="btn-back-from-settings">←</button>
@@ -375,7 +406,6 @@
 <script src="js/navigation.js"></script>
 <script src="js/gsp.js"></script>
 <script src="js/otp.js"></script>
-<script src="js/calls.js"></script>
 <script type="module" src="js/api.js"></script>
 <script type="module" src="js/media-utils.js"></script>
 <script type="module" src="js/categories.js"></script>
@@ -385,10 +415,12 @@
 <script type="module" src="js/feed.js"></script>
 <script type="module" src="js/search.js"></script>
 <script type="module" src="js/chat.js"></script>
+<script type="module" src="js/calls.js"></script>
 <script type="module" src="js/matches.js"></script>
 <script type="module" src="js/status.js"></script>
 <script type="module" src="js/profile.js"></script>
 <script type="module" src="js/notifications.js"></script>
+<script type="module" src="js/edu.js"></script>
 <script type="module" src="js/settings.js"></script>
 <script type="module" src="js/wavy-bubble.js"></script>
 <script type="module" src="js/app.js"></script>

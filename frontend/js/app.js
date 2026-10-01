@@ -11,6 +11,8 @@ import { initCategories } from "./categories.js";
 import { initStatus, loadStatusFeed } from "./status.js";
 import { initProfile } from "./profile.js";
 import { initNotifications } from "./notifications.js";
+import { initEdu } from "./edu.js";
+import { initCalls } from "./calls.js";
 import { attachWavyBubble } from "./wavy-bubble.js";
 import { startLiveTimestamps } from "./media-utils.js";
 import { initConversations, loadConversations } from "./conversations.js";
@@ -78,6 +80,8 @@ function boot() {
   initGoLiveButton();
   initProfile();
   initNotifications();
+  initEdu();
+  initCalls();
   initConversations();
   initBottomNav();
 

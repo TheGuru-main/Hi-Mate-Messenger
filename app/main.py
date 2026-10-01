@@ -8,7 +8,7 @@ from app.config import get_settings
 from app.routes import (
     auth, users, messages, klique, posts, search, news, smart_search,
     pairwise, location, reccord, elastic_search, media, settings as settings_route,
-    match_room, status, notifications,
+    match_room, status, notifications, edu,
 )
 from app.sockets.routes import router as ws_router
 from app.sockets.calls import router as calls_ws_router
@@ -52,6 +52,7 @@ app.include_router(settings_route.router, prefix="/v1")
 app.include_router(match_room.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
+app.include_router(edu.router, prefix="/v1")
 app.include_router(ws_router)
 app.include_router(calls_ws_router)
 
@@ -75,6 +76,12 @@ async def on_startup():
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS purpose TEXT;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS education_level TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_class TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_stage TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_school_name TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_student_id TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_school_link_id TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_display_name TEXT;"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS pending_uids TEXT[] DEFAULT '{}';"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'private';"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS creator_group_uid TEXT;"))

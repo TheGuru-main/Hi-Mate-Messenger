@@ -29,7 +29,7 @@ export function connectMessageSocket() {
     };
 }
 
-function connectCallSocket() {
+export function connectCallSocket() {
     const token = getToken();
     if (!token) return;
     if (callSocket && callSocket.readyState === WebSocket.OPEN) return;
@@ -54,11 +54,11 @@ export function onMessage(handler) {
     messageHandlers.push(handler);
 }
 
-function onCallSignal(handler) {
+export function onCallSignal(handler) {
     callHandlers.push(handler);
 }
 
-function sendCallSignal(payload) {
+export function sendCallSignal(payload) {
     if (callSocket && callSocket.readyState === WebSocket.OPEN) {
         callSocket.send(JSON.stringify(payload));
     }

@@ -35,6 +35,12 @@ class User(Base):
     cover_image_ref = Column(String, nullable=True)
     bio = Column(String, nullable=True)
     education_level = Column(String, nullable=True)
+    edu_class = Column(String, nullable=True)
+    edu_stage = Column(String, nullable=True)
+    edu_school_name = Column(String, nullable=True)
+    edu_student_id = Column(String, nullable=True)
+    edu_school_link_id = Column(String, nullable=True)
+    edu_display_name = Column(String, nullable=True)
     religion = Column(String, nullable=True)
     feed_preferences = Column(String, nullable=True)  # comma-separated for simplicity; move to array/table later
 
