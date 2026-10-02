@@ -487,6 +487,8 @@ function renderMediaPreview() {
 import { compressImage, timeAgo } from "./media-utils.js";
 import { reviewFiles } from "./media-editor.js";
 import { showToast, updateToast, dismissToast } from "./toast.js";
+import { reviewFiles } from "./media-editor.js";
+import { showToast, updateToast, dismissToast } from "./toast.js";
 
 async function handleMediaFiles(files) {
     const reviewed = await reviewFiles(files);
