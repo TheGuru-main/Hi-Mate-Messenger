@@ -278,7 +278,7 @@ function openReactionPicker(anchorBtn, onPicked) {
     closeReactionPopover();
     const popover = document.createElement("div");
     popover.className = "reaction-popover";
-    popover.innerHTML = REACTIONS.filter(e => e !== "💎").map(e => `<button class="reaction-pick" data-emoji="${e}">${e}</button>`).join("");
+    popover.innerHTML = REACTIONS.map(e => `<button class="reaction-pick" data-emoji="${e}">${e}</button>`).join("");
     document.body.appendChild(popover);
 
     const rect = anchorBtn.getBoundingClientRect();
@@ -422,7 +422,7 @@ export function renderPost(post, opts) {
         longPressed = false;
         pressTimer = setTimeout(() => {
             longPressed = true;
-            openReactionPicker(reactBtn, applyReaction);
+            openReactionPicker(reactBtn, (emoji) => { if (emoji === "💎") toggleGem(); else applyReaction(emoji); });
         }, LONG_PRESS_MS);
     };
     const cancelPress = () => clearTimeout(pressTimer);
@@ -485,18 +485,32 @@ function renderMediaPreview() {
 }
 
 import { compressImage, timeAgo } from "./media-utils.js";
+import { reviewFiles } from "./media-editor.js";
+import { showToast, updateToast, dismissToast } from "./toast.js";
 
 async function handleMediaFiles(files) {
-    for (const file of files) {
+    const reviewed = await reviewFiles(files);
+    if (!reviewed.length) return;
+
+    const toast = showToast(`Uploading ${reviewed.length > 1 ? reviewed.length + " files" : "file"}…`, { sticky: true });
+    let failed = 0;
+    for (const file of reviewed) {
         try {
             const toUpload = await compressImage(file);
             const res = await api.uploadMedia(toUpload);
             pendingMediaRefs.push(res.media_ref);
         } catch (e) {
-            alert(`Upload failed: ${e.message}`);
+            failed++;
         }
     }
     renderMediaPreview();
+    if (failed) {
+        updateToast(toast, `${failed} upload${failed > 1 ? "s" : ""} failed`);
+        setTimeout(() => dismissToast(toast), 2500);
+    } else {
+        updateToast(toast, "Uploaded ✓");
+        setTimeout(() => dismissToast(toast), 1200);
+    }
 }
 
 let recordingTimerInterval = null;
@@ -617,18 +631,29 @@ export function initFeed() {
 
     btn.addEventListener("click", async () => {
         const category = document.getElementById("post-category").value;
-        const content = document.getElementById("post-content").value.trim();
+        const postContent = document.getElementById("post-content").value.trim();
         if (!category) return alert("Pick a category first.");
-        if (!content && !pendingMediaRefs.length) return alert("Write something or attach media first.");
+        if (!postContent && !pendingMediaRefs.length) return alert("Write something or attach media first.");
+
+        const toast = showToast("Posting…", { sticky: true });
         try {
-            await api.createPost({ category, content, media_refs: pendingMediaRefs });
+            const newPost = await api.createPost({ category, content: postContent, media_refs: pendingMediaRefs });
             document.getElementById("post-content").value = "";
             document.getElementById("post-category").value = "";
             pendingMediaRefs = [];
             renderMediaPreview();
-            loadFeed();
+            updateToast(toast, "Posted ✓");
+            setTimeout(() => dismissToast(toast), 1200);
+
+            const list = document.getElementById("feed-list");
+            if (list) {
+                const emptyState = list.querySelector(".section-title");
+                if (emptyState && list.children.length === 1) list.innerHTML = "";
+                list.insertBefore(renderPost(newPost), list.firstChild);
+            }
         } catch (e) {
-            alert(e.message);
+            updateToast(toast, `Failed: ${e.message}`);
+            setTimeout(() => dismissToast(toast), 2500);
         }
     });
 }
