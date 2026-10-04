@@ -428,3 +428,23 @@
 </body>
 </html>
 
+
+<script>
+/* Hi-Mate startup safety: never leave the splash screen locked. */
+window.setTimeout(() => {
+    const splash = document.getElementById("splash");
+    const authPhone = document.getElementById("auth-phone");
+
+    if (splash && !splash.classList.contains("hidden")) {
+        splash.classList.add("hidden");
+
+        if (authPhone) {
+            authPhone.classList.remove("hidden");
+        }
+
+        console.warn(
+            "Hi-Mate startup fallback: splash was still visible after boot timeout."
+        );
+    }
+}, 1500);
+</script>
