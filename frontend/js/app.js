@@ -99,10 +99,14 @@ function boot() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  boot();
-  startLiveTimestamps();
-  const splashHeader = document.querySelector("#splash .glass-header");
-  if (splashHeader) attachWavyBubble(splashHeader, { baseRadius: 90, waveAmplitude: 14 });
-  const homeBrand = document.querySelector("#home .top-bar .brand");
-  if (homeBrand) attachWavyBubble(homeBrand, { baseRadius: 40, waveAmplitude: 8, numPoints: 8 });
+  try {
+    boot();
+    startLiveTimestamps();
+    const splashHeader = document.querySelector("#splash .glass-header");
+    if (splashHeader) attachWavyBubble(splashHeader, { baseRadius: 90, waveAmplitude: 14 });
+    const homeBrand = document.querySelector("#home .top-bar .brand");
+    if (homeBrand) attachWavyBubble(homeBrand, { baseRadius: 40, waveAmplitude: 8, numPoints: 8 });
+  } catch (e) {
+    alert("STARTUP CRASH:\n" + e.message + "\n\n" + (e.stack || ""));
+  }
 });
