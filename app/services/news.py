@@ -1,9 +1,9 @@
 """
-News/Sports feed integration — GNews for general news, Sportmonk for
-football/league data, including live scores. Powers the "News"/"Sports"
-Feed Categories plus the match watch-room feature.
+News/Sports feed integration — GNews for general news, AllSportsAPI for
+football/league data, including live scores and upcoming fixtures.
 """
 import time
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import httpx
@@ -60,164 +60,101 @@ async def fetch_general_news(topic: str = "general", country: str = "ng", limit:
     return results
 
 
-async def fetch_football_fixtures(league_id: int | None = None, limit: int = 20) -> list[dict]:
-    cache_key = f"sportmonk:fixtures:{league_id}"
-    cached = _get_cached(cache_key)
-    if cached is not None:
-        return cached
+def _parse_result(result_str: str | None) -> tuple[int, int]:
+    """'1 - 2' -> (1, 2). Returns (0, 0) if missing/unparseable."""
+    if not result_str or "-" not in result_str:
+        return (0, 0)
+    try:
+        home, away = [p.strip() for p in result_str.split("-", 1)]
+        return (int(home), int(away))
+    except (ValueError, TypeError):
+        return (0, 0)
 
-    if not settings.SPORTMONK_API_KEY:
+
+def _map_event(ev: dict, upcoming: bool = False) -> dict:
+    home_score, away_score = _parse_result(ev.get("event_final_result"))
+    return {
+        "fixture_id": ev.get("event_key"),
+        "name": f"{ev.get('event_home_team')} vs {ev.get('event_away_team')}",
+        "home_team": ev.get("event_home_team"),
+        "away_team": ev.get("event_away_team"),
+        "home_score": home_score,
+        "away_score": away_score,
+        "minute": None if upcoming else ev.get("event_status"),
+        "state": ev.get("event_status"),
+        "starting_at": f"{ev.get('event_date')}T{ev.get('event_time')}:00",
+        "league": ev.get("league_name"),
+        "country": ev.get("country_name"),
+        "upcoming": upcoming,
+    }
+
+
+async def _allsports_request(params: dict) -> list[dict]:
+    if not settings.ALLSPORTS_API_KEY:
         return []
-
-    url = f"{settings.SPORTMONK_BASE_URL}/fixtures"
-    params = {"api_token": settings.SPORTMONK_API_KEY, "per_page": limit}
-    if league_id:
-        params["filters"] = f"fixtureLeagues:{league_id}"
-
+    full_params = {"APIkey": settings.ALLSPORTS_API_KEY, **params}
     async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(url, params=params)
+        response = await client.get(f"{settings.ALLSPORTS_BASE_URL}/football", params=full_params)
         if response.status_code != 200:
             return []
-        fixtures = response.json().get("data", [])
-
-    results = [
-        {"source": "sportmonk", "fixture_id": f.get("id"), "name": f.get("name"),
-         "starting_at": f.get("starting_at"), "league_id": f.get("league_id")}
-        for f in fixtures
-    ]
-    _set_cached(cache_key, results)
-    return results
-
-
-def _extract_current_score(scores: list[dict]) -> dict:
-    """
-    Sportmonk v3 shape (confirmed): each score entry has
-    score.participant ("home"/"away") and score.goals as SEPARATE
-    fields — you filter to description=="CURRENT" and read both entries,
-    one per side. Returns {"home": int|None, "away": int|None}.
-    """
-    result = {"home": None, "away": None}
-    for s in scores:
-        if s.get("description") != "CURRENT":
-            continue
-        inner = s.get("score", {})
-        side = inner.get("participant")  # "home" or "away"
-        goals = inner.get("goals")
-        if side in ("home", "away"):
-            result[side] = goals
-    return result
+        data = response.json()
+        if not data.get("success"):
+            return []
+        result = data.get("result")
+        return result if isinstance(result, list) else []
 
 
 async def fetch_live_fixtures() -> list[dict]:
     """Currently in-play matches. Short 30s cache — needs to feel real-time."""
-    cache_key = "sportmonk:livescores"
+    cache_key = "allsports:live"
     cached = _get_cached(cache_key, ttl_seconds=30)
     if cached is not None:
         return cached
 
-    if not settings.SPORTMONK_API_KEY:
-        return []
+    events = await _allsports_request({"met": "Livescore"})
+    results = [_map_event(ev, upcoming=False) for ev in events]
+    _set_cached(cache_key, results)
+    return results
 
-    url = f"{settings.SPORTMONK_BASE_URL}/livescores"
-    params = {"api_token": settings.SPORTMONK_API_KEY, "include": "scores;participants"}
 
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(url, params=params)
-        if response.status_code != 200:
-            return []
-        matches = response.json().get("data", [])
+async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
+    """Fixtures that have not kicked off yet, next `hours` hours (UTC). 5-minute cache."""
+    cache_key = f"allsports:upcoming:{hours}"
+    cached = _get_cached(cache_key, ttl_seconds=300)
+    if cached is not None:
+        return cached
+
+    now = datetime.now(timezone.utc)
+    start = now.date().isoformat()
+    end = (now + timedelta(hours=hours)).date().isoformat()
+    events = await _allsports_request({"met": "Fixtures", "from": start, "to": end})
 
     results = []
-    for m in matches:
-        participants = m.get("participants", [])
-        home = next((p.get("name") for p in participants if p.get("meta", {}).get("location") == "home"), None)
-        away = next((p.get("name") for p in participants if p.get("meta", {}).get("location") == "away"), None)
-        current_score = _extract_current_score(m.get("scores", []))
-        results.append({
-            "fixture_id": m.get("id"),
-            "name": m.get("name") or f"{home} vs {away}",
-            "home_team": home,
-            "away_team": away,
-            "home_score": current_score.get("home") or 0,
-            "away_score": current_score.get("away") or 0,
-            "minute": m.get("periods", [{}])[-1].get("minutes") if m.get("periods") else None,
-            "state": m.get("state_id"),
-        })
+    for ev in events:
+        try:
+            kickoff = datetime.strptime(f"{ev.get('event_date')} {ev.get('event_time')}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
+        except (TypeError, ValueError):
+            continue
+        if kickoff <= now or kickoff > now + timedelta(hours=hours):
+            continue
+        mapped = _map_event(ev, upcoming=True)
+        mapped["starting_at"] = kickoff.isoformat()
+        results.append(mapped)
+
+    results.sort(key=lambda r: r["starting_at"])
     _set_cached(cache_key, results)
     return results
 
 
 async def fetch_fixture_stats(fixture_id: int) -> dict | None:
     """Detailed stats for a single fixture — the 'fold' content, separate from chat."""
-    cache_key = f"sportmonk:stats:{fixture_id}"
+    cache_key = f"allsports:stats:{fixture_id}"
     cached = _get_cached(cache_key, ttl_seconds=20)
     if cached is not None:
         return cached
 
-    if not settings.SPORTMONK_API_KEY:
-        return None
-
-    url = f"{settings.SPORTMONK_BASE_URL}/fixtures/{fixture_id}"
-    params = {"api_token": settings.SPORTMONK_API_KEY, "include": "statistics;events;scores;participants"}
-
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(url, params=params)
-        if response.status_code != 200:
-            return None
-        data = response.json().get("data")
-
+    events = await _allsports_request({"met": "Fixtures", "matchId": fixture_id})
+    data = events[0] if events else None
     if data:
         _set_cached(cache_key, data)
     return data
-
-
-async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
-    """Fixtures that have not kicked off yet, next `days` days (UTC). 5-minute cache."""
-    from datetime import datetime, timedelta, timezone
-
-    cache_key = f"sportmonk:upcoming:{hours}"
-    cached = _get_cached(cache_key, ttl_seconds=300)
-    if cached is not None:
-        return cached
-    if not settings.SPORTMONK_API_KEY:
-        return []
-
-    now = datetime.now(timezone.utc)
-    start = now.date().isoformat()
-    end = (now + timedelta(hours=hours)).date().isoformat()
-    url = f"{settings.SPORTMONK_BASE_URL}/fixtures/between/{start}/{end}"
-    params = {"api_token": settings.SPORTMONK_API_KEY, "include": "participants;league", "per_page": 50}
-
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(url, params=params)
-        if response.status_code != 200:
-            return []
-        fixtures = response.json().get("data", [])
-
-    results = []
-    for m in fixtures:
-        try:
-            kickoff = datetime.strptime(m.get("starting_at"), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
-        except (TypeError, ValueError):
-            continue
-        if kickoff <= now or kickoff > now + timedelta(hours=hours):
-            continue
-        participants = m.get("participants", [])
-        home = next((p.get("name") for p in participants if p.get("meta", {}).get("location") == "home"), None)
-        away = next((p.get("name") for p in participants if p.get("meta", {}).get("location") == "away"), None)
-        results.append({
-            "fixture_id": m.get("id"),
-            "name": m.get("name") or f"{home} vs {away}",
-            "home_team": home,
-            "away_team": away,
-            "home_score": 0,
-            "away_score": 0,
-            "minute": None,
-            "state": m.get("state_id"),
-            "starting_at": kickoff.isoformat(),
-            "league": (m.get("league") or {}).get("name"),
-            "upcoming": True,
-        })
-    results.sort(key=lambda r: r["starting_at"])
-    _set_cached(cache_key, results)
-    return results

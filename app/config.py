@@ -29,6 +29,8 @@ class Settings:
     SPORTMONK_API_KEY: str = os.getenv("SPORTMONK_API_KEY", "")
     SPORTMONK_BASE_URL: str = os.getenv("SPORTMONK_BASE_URL", "https://api.sportmonks.com/v3/football")
     NEWS_CACHE_MINUTES: int = 15
+    ALLSPORTS_API_KEY: str = os.getenv("ALLSPORTS_API_KEY", "")
+    ALLSPORTS_BASE_URL: str = os.getenv("ALLSPORTS_BASE_URL", "https://apiv2.allsportsapi.com")
 
     # Cloud object storage (S3-compatible — Backblaze B2 by default, no
     # card required; AWS S3/Cloudflare R2 also work if switched later).
@@ -38,6 +40,11 @@ class Settings:
     STORAGE_ACCESS_KEY_ID: str = os.getenv("STORAGE_ACCESS_KEY_ID", "")
     STORAGE_SECRET_KEY: str = os.getenv("STORAGE_SECRET_KEY", "")
     STORAGE_BUCKET_NAME: str = os.getenv("STORAGE_BUCKET_NAME", "himate-media")
+
+    # Web Push (VAPID) — real push notifications to the device/app front
+    VAPID_PUBLIC_KEY: str = os.getenv("VAPID_PUBLIC_KEY", "")
+    VAPID_PRIVATE_KEY: str = os.getenv("VAPID_PRIVATE_KEY", "")
+    VAPID_SUBJECT: str = os.getenv("VAPID_SUBJECT", "")
 
     # App
     APP_VERSION: str = "1.0.0.1"
