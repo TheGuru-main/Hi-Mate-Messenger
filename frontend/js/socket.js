@@ -3,6 +3,8 @@
 // socket.js — WebSocket connection manager (messages + call signaling)
 // ==========================================
 
+import { getToken, WS_BASE } from "./api.js";
+
 let messageSocket = null;
 let callSocket = null;
 let messageHandlers = [];
