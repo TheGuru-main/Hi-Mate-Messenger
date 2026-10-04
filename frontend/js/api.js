@@ -5,7 +5,7 @@
 // backend's cloud storage, unrelated to this file).
 
 const API_BASE = "https://hi-mate-messenger-apiv1-0-0-1r.onrender.com/v1";
-const WS_BASE = "wss://hi-mate-messenger-apiv1-0-0-1r.onrender.com";
+export  WS_BASE = "wss://hi-mate-messenger-apiv1-0-0-1r.onrender.com";
 
 export function getToken() {
   return localStorage.getItem("himate_token");
