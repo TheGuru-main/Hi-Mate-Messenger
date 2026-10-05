@@ -24,7 +24,7 @@ async def list_live_matches(db: Session = Depends(get_db), current_user: User = 
     try:
         live = await news.fetch_live_fixtures()
     except Exception:
-        raise HTTPException(status_code=502, detail="Live scores provider unavailable. Check SPORTMONK_BASE_URL and the API key.")
+        raise HTTPException(status_code=502, detail="Live scores provider unavailable. Check ALLSPORTS_BASE_URL and ALLSPORTS_API_KEY.")
     fixture_ids = [m["fixture_id"] for m in live if m.get("fixture_id")]
     existing_rooms = {
         r.fixture_id: r.group_id

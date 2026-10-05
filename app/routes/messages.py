@@ -160,7 +160,11 @@ async def get_messages(
     messages = (
         db.query(Message)
         .filter(
-            (Message.receiver_uid == conversation_id) | (Message.group_id == conversation_id)
+            (
+                ((Message.sender_uid == current_user.uid) & (Message.receiver_uid == conversation_id))
+                | ((Message.sender_uid == conversation_id) & (Message.receiver_uid == current_user.uid))
+                | (Message.group_id == conversation_id)
+            )
         )
         .order_by(Message.created_at.desc())
         .limit(50)

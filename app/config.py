@@ -26,8 +26,6 @@ class Settings:
 
     # News/sports feed integration
     GNEWS_API_KEY: str = os.getenv("GNEWS_API_KEY", "")
-    SPORTMONK_API_KEY: str = os.getenv("SPORTMONK_API_KEY", "")
-    SPORTMONK_BASE_URL: str = os.getenv("SPORTMONK_BASE_URL", "https://api.sportmonks.com/v3/football")
     NEWS_CACHE_MINUTES: int = 15
     ALLSPORTS_API_KEY: str = os.getenv("ALLSPORTS_API_KEY", "")
     ALLSPORTS_BASE_URL: str = os.getenv("ALLSPORTS_BASE_URL", "https://apiv2.allsportsapi.com")
