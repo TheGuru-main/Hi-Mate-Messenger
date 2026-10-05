@@ -149,30 +149,59 @@ function loadContinentDropdown() {
 
 function loadCountryDropdowns(filterContinent) {
     const countryCodeSelect = document.getElementById("country-code");
+    const loginCountryCodeSelect = document.getElementById("login-country-code");
     const countrySelect = document.getElementById("country");
 
-    if (!countryCodeSelect || !countrySelect) return;
+    const list = filterContinent
+        ? countries.filter(c => c.continent === filterContinent)
+        : countries;
 
-    countryCodeSelect.innerHTML = "";
-    countrySelect.innerHTML = '<option value="">Select Country</option>';
+    // Signup country-code dropdown
+    if (countryCodeSelect) {
+        countryCodeSelect.innerHTML = "";
 
-    const list = filterContinent ? countries.filter(c => c.continent === filterContinent) : countries;
+        list.forEach(country => {
+            const codeOption = document.createElement("option");
+            codeOption.value = country.iso;
+            codeOption.textContent = `${country.flag} ${country.dial_code}`;
+            countryCodeSelect.appendChild(codeOption);
+        });
+    }
 
-    list.forEach(country => {
-        const codeOption = document.createElement("option");
-        codeOption.value = country.iso;
-        codeOption.textContent = `${country.flag} ${country.dial_code}`;
-        countryCodeSelect.appendChild(codeOption);
+    // Login country-code dropdown
+    if (loginCountryCodeSelect) {
+        loginCountryCodeSelect.innerHTML = "";
 
-        const countryOption = document.createElement("option");
-        countryOption.value = country.iso;
-        countryOption.textContent = `${country.flag} ${country.name}`;
-        countrySelect.appendChild(countryOption);
-    });
+        list.forEach(country => {
+            const codeOption = document.createElement("option");
+            codeOption.value = country.iso;
+            codeOption.textContent = `${country.flag} ${country.dial_code}`;
+            loginCountryCodeSelect.appendChild(codeOption);
+        });
+    }
 
-    // Keep the two selects in sync — picking a country updates the code, and vice versa
-    countrySelect.onchange = () => { countryCodeSelect.value = countrySelect.value; };
-    countryCodeSelect.onchange = () => { countrySelect.value = countryCodeSelect.value; };
+    // Country dropdown
+    if (countrySelect) {
+        countrySelect.innerHTML = '<option value="">Select Country</option>';
+
+        list.forEach(country => {
+            const countryOption = document.createElement("option");
+            countryOption.value = country.iso;
+            countryOption.textContent = `${country.flag} ${country.name}`;
+            countrySelect.appendChild(countryOption);
+        });
+    }
+
+    // Keep signup country and signup code synchronized
+    if (countrySelect && countryCodeSelect) {
+        countrySelect.onchange = () => {
+            countryCodeSelect.value = countrySelect.value;
+        };
+
+        countryCodeSelect.onchange = () => {
+            countrySelect.value = countryCodeSelect.value;
+        };
+    }
 }
 
 
