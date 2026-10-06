@@ -179,8 +179,6 @@ async function openCommentBox(postId) {
             });
         });
         listEl.querySelectorAll(".comment-react-btn").forEach(btn => {
-        });
-        listEl.querySelectorAll(".comment-react-btn").forEach(btn => {
             const item = btn.closest(".comment-item");
             const commentId = item.dataset.commentId;
             btn.onclick = async () => {

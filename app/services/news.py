@@ -93,8 +93,12 @@ async def _allsports_request(params: dict) -> list[dict]:
     if not settings.ALLSPORTS_API_KEY:
         return []
     full_params = {"APIkey": settings.ALLSPORTS_API_KEY, **params}
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(f"{settings.ALLSPORTS_BASE_URL}/football", params=full_params)
+    # AllSportsAPI 301-redirects "/football" (no trailing slash) to "/football/"
+    # (with one) — httpx does NOT follow redirects by default, so without both
+    # the trailing slash and follow_redirects=True every request here would
+    # silently come back as a 301 and get swallowed as "no results".
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True) as client:
+        response = await client.get(f"{settings.ALLSPORTS_BASE_URL}/football/", params=full_params)
         if response.status_code != 200:
             return []
         data = response.json()
