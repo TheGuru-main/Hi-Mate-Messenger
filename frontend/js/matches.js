@@ -117,6 +117,8 @@ function renderMatchListItem(m) {
 
   div.className =
     `match-list-item ${m.upcoming ? "upcoming" : "live"}`;
+  div.dataset.fixtureId = String(m.fixture_id ?? "");
+  div.__matchData = m;
 
   div.dataset.fixtureId =
     String(m.fixture_id ?? "");
