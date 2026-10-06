@@ -27,6 +27,31 @@ body{
   color:var(--text-primary);
 }
 
+/* =========================================================
+   BACKGROUND MODES
+   .background-classic  = original Hi-Mate visual
+   .background-network  = charcoal / whitesmoke network visual
+   ========================================================= */
+
+body.background-classic{
+  background: linear-gradient(
+    337deg,
+    var(--deep-blue) 2%,
+    #ffffff12 7%,
+    var(--deep-blue-2) 91%
+  );
+}
+
+body.background-network{
+  background: linear-gradient(
+    275deg,
+    #292929 0%,
+    #292929 78%,
+    #F5F5F5 78%,
+    #F5F5F5 100%
+  );
+}
+
 #network-bg{ position:fixed; top:0; left:0; width:100%; height:100%; z-index:-1; }
 
 /* ---------- Pages ---------- */
@@ -1592,3 +1617,55 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   color: var(--text-faint);
   font-size: 11px;
 }
+
+/* =========================================================
+   HI-MATE MAIN CHAT — EDGE-ANCHORED MESSAGE BUBBLES
+   Sent = right edge
+   Received = left edge
+   ========================================================= */
+
+#chat-messages {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 4px 100px;
+  box-sizing: border-box;
+}
+
+#chat-messages .bubble-row {
+  width: 100%;
+  display: flex;
+  flex-shrink: 0;
+  margin: 2px 0;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+#chat-messages .bubble-row.mine {
+  justify-content: flex-end;
+}
+
+#chat-messages .bubble-row.theirs {
+  justify-content: flex-start;
+}
+
+#chat-messages .bubble {
+  width: fit-content;
+  max-width: min(78%, 360px);
+  min-width: 0;
+  box-sizing: border-box;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+#chat-messages .bubble.mine {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+#chat-messages .bubble.theirs {
+  margin-left: 0;
+  margin-right: auto;
+}
+

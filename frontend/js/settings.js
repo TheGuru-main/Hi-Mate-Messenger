@@ -70,10 +70,88 @@ async function loadSettingsMenu() {
     try {
         const items = await api.getSettingsMenu();
         list.innerHTML = "";
-        items.forEach(item => list.appendChild(renderMenuItem(item)));
+
+        items.forEach(item => {
+            list.appendChild(renderMenuItem(item));
+        });
+
+        list.appendChild(renderBackgroundModeControl());
     } catch (e) {
         list.innerHTML = `<div class="error-text">${e.message}</div>`;
     }
+}
+
+function renderBackgroundModeControl() {
+    const div = document.createElement("div");
+    div.className = "settings-item background-mode-setting";
+
+    const currentMode =
+        localStorage.getItem("himate_background_mode") || "classic";
+
+    div.innerHTML = `
+        <div style="width:100%;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span>Background Mode</span>
+                <i class="fa-solid fa-palette"></i>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:10px;">
+                <button
+                    type="button"
+                    class="chip background-mode-btn ${currentMode === "classic" ? "active" : ""}"
+                    data-background-mode="classic"
+                    style="flex:1;"
+                >
+                    Classic
+                </button>
+
+                <button
+                    type="button"
+                    class="chip background-mode-btn ${currentMode === "network" ? "active" : ""}"
+                    data-background-mode="network"
+                    style="flex:1;"
+                >
+                    Network
+                </button>
+            </div>
+        </div>
+    `;
+
+    div.querySelectorAll(".background-mode-btn").forEach((button) => {
+        button.addEventListener("click", () => {
+            const mode = button.dataset.backgroundMode;
+
+            if (typeof window.setHiMateBackgroundMode === "function") {
+                window.setHiMateBackgroundMode(mode);
+            } else {
+                document.body.classList.remove(
+                    "background-classic",
+                    "background-network"
+                );
+
+                document.body.classList.add(
+                    mode === "network"
+                        ? "background-network"
+                        : "background-classic"
+                );
+
+                localStorage.setItem(
+                    "himate_background_mode",
+                    mode
+                );
+            }
+
+            div.querySelectorAll(".background-mode-btn")
+                .forEach((btn) => {
+                    btn.classList.toggle(
+                        "active",
+                        btn.dataset.backgroundMode === mode
+                    );
+                });
+        });
+    });
+
+    return div;
 }
 
 function doLogout() {

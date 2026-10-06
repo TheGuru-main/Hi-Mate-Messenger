@@ -212,30 +212,6 @@ export async function loadLiveMatches() {
   const hours = hoursEl ? hoursEl.value : "34";
   const country = countryEl ? countryEl.value.trim() : "";
 
-  let liveError = null;
-  let upcomingError = null;
-
-  const [live, upcoming] = await Promise.all([
-    api.getLiveMatches().catch((e) => {
-      liveError = e.message;
-      return [];
-    }),
-
-    api.getUpcomingMatches({
-      hours,
-      ...(country ? { country } : {})
-    }).catch((e) => {
-      upcomingError = e.message;
-      return [];
-    })
-  ]);
-
-  const now = Date.now();
-
-  live.forEach((m) => {
-    m._fetched_at = now;
-  });
-
   list.innerHTML = "";
 
   const liveTitle = document.createElement("div");
@@ -243,42 +219,85 @@ export async function loadLiveMatches() {
   liveTitle.textContent = "🔴 Live now";
   list.appendChild(liveTitle);
 
-  if (liveError) {
-    const error = document.createElement("div");
-    error.className = "match-data-error";
-    error.textContent = `Live scores unavailable: ${liveError}`;
-    list.appendChild(error);
-  } else if (!live.length) {
-    const empty = document.createElement("div");
-    empty.className = "match-empty";
-    empty.textContent = "No live matches right now.";
-    list.appendChild(empty);
-  } else {
-    live.forEach((m) => {
-      list.appendChild(renderMatchListItem(m));
-    });
-  }
+  const liveContainer = document.createElement("div");
+  liveContainer.className = "matches-live-section";
+  liveContainer.innerHTML =
+    '<div class="match-empty">Loading live scores…</div>';
+  list.appendChild(liveContainer);
 
   const upcomingTitle = document.createElement("div");
   upcomingTitle.className = "section-title";
   upcomingTitle.textContent = `📅 Upcoming · next ${hours}h`;
   list.appendChild(upcomingTitle);
 
-  if (upcomingError) {
-    const error = document.createElement("div");
-    error.className = "match-data-error";
-    error.textContent = `Upcoming fixtures unavailable: ${upcomingError}`;
-    list.appendChild(error);
-  } else if (!upcoming.length) {
-    const empty = document.createElement("div");
-    empty.className = "match-empty";
-    empty.textContent = "No upcoming fixtures found for this filter.";
-    list.appendChild(empty);
-  } else {
-    upcoming.forEach((m) => {
-      list.appendChild(renderMatchListItem(m));
+  const upcomingContainer = document.createElement("div");
+  upcomingContainer.className = "matches-upcoming-section";
+  upcomingContainer.innerHTML =
+    '<div class="match-empty">Loading upcoming fixtures…</div>';
+  list.appendChild(upcomingContainer);
+
+  const livePromise = api.getLiveMatches()
+    .then((live) => {
+      const now = Date.now();
+
+      live.forEach((m) => {
+        m._fetched_at = now;
+      });
+
+      liveContainer.innerHTML = "";
+
+      if (!live.length) {
+        const empty = document.createElement("div");
+        empty.className = "match-empty";
+        empty.textContent = "No live matches right now.";
+        liveContainer.appendChild(empty);
+        return;
+      }
+
+      live.forEach((m) => {
+        liveContainer.appendChild(renderMatchListItem(m));
+      });
+    })
+    .catch((e) => {
+      liveContainer.innerHTML = "";
+
+      const error = document.createElement("div");
+      error.className = "match-data-error";
+      error.textContent = `Live scores unavailable: ${e.message}`;
+      liveContainer.appendChild(error);
     });
-  }
+
+  const upcomingPromise = api.getUpcomingMatches({
+    hours,
+    ...(country ? { country } : {})
+  })
+    .then((upcoming) => {
+      upcomingContainer.innerHTML = "";
+
+      if (!upcoming.length) {
+        const empty = document.createElement("div");
+        empty.className = "match-empty";
+        empty.textContent =
+          "No upcoming fixtures found for this filter.";
+        upcomingContainer.appendChild(empty);
+        return;
+      }
+
+      upcoming.forEach((m) => {
+        upcomingContainer.appendChild(renderMatchListItem(m));
+      });
+    })
+    .catch((e) => {
+      upcomingContainer.innerHTML = "";
+
+      const error = document.createElement("div");
+      error.className = "match-data-error";
+      error.textContent =
+        `Upcoming fixtures unavailable: ${e.message}`;
+      upcomingContainer.appendChild(error);
+    });
+
+  await Promise.allSettled([livePromise, upcomingPromise]);
 
   const applyBtn = document.getElementById("matches-filter-apply");
 
