@@ -1669,3 +1669,20 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   margin-right: auto;
 }
 
+
+body.background-classic{
+  background: linear-gradient(
+    324deg,
+    var(--deep-blue),
+    var(--deep-blue-2)
+  );
+}
+
+body.background-network{
+  background: linear-gradient(
+    324deg,
+    #292929,
+    #F5F5F5
+  );
+}
+
