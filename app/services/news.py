@@ -6,6 +6,7 @@ football/league data, including live scores and upcoming fixtures.
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -72,7 +73,63 @@ def _parse_result(result_str: str | None) -> tuple[int, int]:
         return (0, 0)
 
 
-def _map_event(ev: dict, upcoming: bool = False) -> dict:
+def _event_starting_at_utc(
+    ev: dict,
+    display_timezone: str = "UTC",
+) -> str | None:
+    """
+    Convert AllSportsAPI's event_date/event_time, which are returned
+    in the requested API timezone, into an unambiguous UTC timestamp.
+    """
+    event_date = ev.get("event_date")
+    event_time = ev.get("event_time")
+
+    if not event_date or not event_time:
+        return None
+
+    try:
+        tz = ZoneInfo(display_timezone)
+    except Exception:
+        tz = timezone.utc
+        display_timezone = "UTC"
+
+    try:
+        local_dt = datetime.strptime(
+            f"{event_date} {event_time}",
+            "%Y-%m-%d %H:%M",
+        ).replace(tzinfo=tz)
+
+        return (
+            local_dt
+            .astimezone(timezone.utc)
+            .isoformat()
+            .replace("+00:00", "Z")
+        )
+    except (ValueError, TypeError):
+        return None
+
+
+def _valid_timezone(value: str | None) -> str:
+    """
+    Accept a browser IANA timezone but safely fall back to UTC.
+    """
+    value = (value or "").strip()
+
+    if not value:
+        return "UTC"
+
+    try:
+        ZoneInfo(value)
+        return value
+    except Exception:
+        return "UTC"
+
+
+def _map_event(
+    ev: dict,
+    upcoming: bool = False,
+    display_timezone: str = "UTC",
+) -> dict:
     home_score, away_score = _parse_result(ev.get("event_final_result"))
 
     cards = ev.get("cards") or []
@@ -157,9 +214,9 @@ def _map_event(ev: dict, upcoming: bool = False) -> dict:
         "minute": None if upcoming else ev.get("event_status"),
         "state": ev.get("event_status"),
 
-        "starting_at": (
-            f"{ev.get('event_date')}T"
-            f"{ev.get('event_time')}:00Z"
+        "starting_at": _event_starting_at_utc(
+            ev,
+            display_timezone,
         ),
 
         "league": ev.get("league_name"),
@@ -322,41 +379,109 @@ def _is_upcoming_event_status(status: str) -> bool:
     return True
 
 
-async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
+async def fetch_upcoming_fixtures(
+    hours: int = 34,
+    display_timezone: str = "UTC",
+) -> list[dict]:
     """
-    Fixtures that have not kicked off yet, next `hours` hours. 5-minute cache.
+    Return only fixtures whose actual kickoff is still in the future
+    for the requesting user's timezone.
 
-    We deliberately do NOT compare AllSportsAPI's event_date/event_time
-    against our own UTC "now" to decide what's upcoming — we don't have
-    confirmation of what timezone those fields are actually reported in,
-    and guessing wrong would silently let already-started/finished matches
-    through (which is exactly what happened before this fix). Instead we
-    trust AllSportsAPI's own event_status field, which is authoritative:
-    empty string or "Not Started" means genuinely upcoming; anything else
-    (a live minute number, "Finished", "Postponed", etc.) is not.
+    AllSportsAPI returns event_date/event_time in the timezone supplied
+    to the API. We convert that local kickoff to UTC and compare it
+    against the actual current UTC time. Provider status is still used
+    as an additional authority.
     """
-    cache_key = f"allsports:upcoming:{hours}"
-    cached = _get_cached(cache_key, ttl_seconds=300)
+    display_timezone = _valid_timezone(display_timezone)
+
+    cache_key = (
+        f"allsports:upcoming:{hours}:{display_timezone}"
+    )
+
+    cached = _get_cached(
+        cache_key,
+        ttl_seconds=60,
+    )
+
     if cached is not None:
         return cached
 
-    now = datetime.now(timezone.utc)
-    start = now.date().isoformat()
-    end = (now + timedelta(hours=hours)).date().isoformat()
-    events = await _allsports_request({"met": "Fixtures", "from": start, "to": end})
+    try:
+        user_tz = ZoneInfo(display_timezone)
+    except Exception:
+        user_tz = timezone.utc
+        display_timezone = "UTC"
+
+    now_utc = datetime.now(timezone.utc)
+    now_local = now_utc.astimezone(user_tz)
+
+    start = now_local.date().isoformat()
+    end = (
+        now_local + timedelta(hours=hours)
+    ).date().isoformat()
+
+    events = await _allsports_request({
+        "met": "Fixtures",
+        "from": start,
+        "to": end,
+        "timezone": display_timezone,
+    })
 
     results = []
+
     for ev in events:
-        status = (ev.get("event_status") or "").strip()
+        status = (
+            ev.get("event_status") or ""
+        ).strip()
 
         if not _is_upcoming_event_status(status):
             continue
 
-        mapped = _map_event(ev, upcoming=True)
+        starting_at = _event_starting_at_utc(
+            ev,
+            display_timezone,
+        )
+
+        if not starting_at:
+            continue
+
+        try:
+            kickoff_utc = datetime.fromisoformat(
+                starting_at.replace("Z", "+00:00")
+            )
+        except ValueError:
+            continue
+
+        # This is the critical stale-fixture protection.
+        # A fixture cannot remain UPCOMING once its actual kickoff
+        # timestamp has passed, even if AllSportsAPI still says
+        # "Not Started".
+        if kickoff_utc <= now_utc:
+            continue
+
+        # Also enforce the requested horizon.
+        if kickoff_utc > now_utc + timedelta(hours=hours):
+            continue
+
+        mapped = _map_event(
+            ev,
+            upcoming=True,
+            display_timezone=display_timezone,
+        )
+
         results.append(mapped)
 
-    results.sort(key=lambda r: (r.get("starting_at") or ""))
-    _set_cached(cache_key, results)
+    results.sort(
+        key=lambda r: (
+            r.get("starting_at") or ""
+        )
+    )
+
+    _set_cached(
+        cache_key,
+        results,
+    )
+
     return results
 
 
@@ -464,7 +589,10 @@ def score_club_search(query: str, match: dict) -> float:
     return best
 
 
-async def search_live_sports(query: str) -> list[dict]:
+async def search_live_sports(
+    query: str,
+    display_timezone: str = "UTC",
+) -> list[dict]:
     """Search directly across live and upcoming fixtures."""
     query = (query or "").strip()
 
@@ -472,7 +600,10 @@ async def search_live_sports(query: str) -> list[dict]:
         return []
 
     live = await fetch_live_fixtures()
-    upcoming = await fetch_upcoming_fixtures(hours=168)
+    upcoming = await fetch_upcoming_fixtures(
+        hours=168,
+        display_timezone=display_timezone,
+    )
 
     seen = set()
     matches = []

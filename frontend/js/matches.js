@@ -118,6 +118,11 @@ function renderMatchListItem(m) {
   div.className =
     `match-list-item ${m.upcoming ? "upcoming" : "live"}`;
 
+  div.dataset.fixtureId =
+    String(m.fixture_id ?? "");
+
+  div.__matchData = m;
+
   const fetchedAt =
     m._fetched_at || Date.now();
 
@@ -212,6 +217,10 @@ export async function loadLiveMatches() {
   const hours = hoursEl ? hoursEl.value : "34";
   const country = countryEl ? countryEl.value.trim() : "";
 
+  const timezone =
+    Intl.DateTimeFormat().resolvedOptions().timeZone ||
+    "UTC";
+
   list.innerHTML = "";
 
   const liveTitle = document.createElement("div");
@@ -269,6 +278,7 @@ export async function loadLiveMatches() {
 
   const upcomingPromise = api.getUpcomingMatches({
     hours,
+    timezone_name: timezone,
     ...(country ? { country } : {})
   })
     .then((upcoming) => {
@@ -312,20 +322,161 @@ export async function loadLiveMatches() {
    REALTIME MATCH LIST REFRESH
    ============================================================ */
 
+async function refreshLiveCardsInBackground() {
+  const tab = document.getElementById("tab-matches");
+  const liveContainer =
+    document.querySelector(".matches-live-section");
+
+  if (
+    !tab ||
+    tab.classList.contains("hidden") ||
+    !liveContainer
+  ) {
+    return;
+  }
+
+  try {
+    const live = await api.getLiveMatches();
+
+    const now = Date.now();
+
+    live.forEach((match) => {
+      match._fetched_at = now;
+    });
+
+    const incoming = new Map(
+      live.map((match) => [
+        String(match.fixture_id),
+        match
+      ])
+    );
+
+    const existingCards = [
+      ...liveContainer.querySelectorAll(
+        ".match-list-item.live"
+      )
+    ];
+
+    const existing = new Map(
+      existingCards.map((card) => [
+        card.dataset.fixtureId,
+        card
+      ])
+    );
+
+    // Remove matches that are no longer live.
+    existingCards.forEach((card) => {
+      const id = card.dataset.fixtureId;
+
+      if (!incoming.has(id)) {
+        card.remove();
+      }
+    });
+
+    // Add new matches or update only the affected card.
+    incoming.forEach((match, id) => {
+      const currentCard = existing.get(id);
+
+      if (!currentCard) {
+        liveContainer.appendChild(
+          renderMatchListItem(match)
+        );
+        return;
+      }
+
+      const old = currentCard.__matchData || {};
+
+      const changed =
+        old.home_score !== match.home_score ||
+        old.away_score !== match.away_score ||
+        old.minute !== match.minute ||
+        old.state !== match.state ||
+        old.yellow_card_count !== match.yellow_card_count ||
+        old.red_card_count !== match.red_card_count ||
+        old.substitution_count !== match.substitution_count;
+
+      if (!changed) {
+        currentCard.__matchData = match;
+        return;
+      }
+
+      const replacement =
+        renderMatchListItem(match);
+
+      currentCard.replaceWith(replacement);
+    });
+
+    const remaining =
+      liveContainer.querySelectorAll(
+        ".match-list-item.live"
+      );
+
+    if (!remaining.length) {
+      liveContainer.innerHTML = `
+        <div class="match-empty">
+          No live matches right now.
+        </div>
+      `;
+    }
+
+  } catch (e) {
+    console.error(
+      "Background LiveSports refresh failed:",
+      e
+    );
+  }
+}
+
+
+function updateLiveCardClocks() {
+  const cards =
+    document.querySelectorAll(
+      ".matches-live-section .match-list-item.live"
+    );
+
+  cards.forEach((card) => {
+    const match = card.__matchData;
+
+    if (!match) return;
+
+    const sub =
+      card.querySelector(".match-list-sub");
+
+    if (!sub) return;
+
+    let meta =
+      `${liveMinuteText(
+        match,
+        match._fetched_at || Date.now()
+      )} · LIVE`;
+
+    if (match.league) {
+      meta += ` · ${match.league}`;
+    }
+
+    sub.textContent = meta;
+  });
+}
+
+
 function startMatchesPolling() {
   if (matchesRefreshTimer) {
     clearInterval(matchesRefreshTimer);
   }
 
-  matchesRefreshTimer = setInterval(() => {
-    const tab = document.getElementById("tab-matches");
+  matchesRefreshTimer = setInterval(
+    refreshLiveCardsInBackground,
+    15000
+  );
 
-    if (!tab || tab.classList.contains("hidden")) {
-      return;
-    }
+  if (matchClockTimer) {
+    clearInterval(matchClockTimer);
+  }
 
-    loadLiveMatches();
-  }, 15000);
+  matchClockTimer = setInterval(
+    updateLiveCardClocks,
+    1000
+  );
 }
 
 

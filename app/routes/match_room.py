@@ -38,9 +38,18 @@ async def list_live_matches(db: Session = Depends(get_db), current_user: User = 
 
 
 @router.get("/upcoming")
-async def list_upcoming_matches(hours: int = 34, country: str | None = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def list_upcoming_matches(
+    hours: int = 34,
+    country: str | None = None,
+    timezone_name: str = "UTC",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     try:
-        upcoming = await news.fetch_upcoming_fixtures(hours=hours)
+        upcoming = await news.fetch_upcoming_fixtures(
+            hours=hours,
+            display_timezone=timezone_name,
+        )
     except Exception:
         raise HTTPException(status_code=502, detail="Sports data provider unavailable")
     ids = [m["fixture_id"] for m in upcoming if m.get("fixture_id")]
