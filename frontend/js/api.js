@@ -80,6 +80,8 @@ export const api = {
   sendMessage: (payload) => request("/messages", { method: "POST", body: payload }),
 
   getLiveMatches: () => request("/matches/live"),
+  searchMatches: (q) =>
+    request(`/matches/search?q=${encodeURIComponent(q)}`),
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
 

@@ -1,3 +1,4 @@
+import re
 """
 News/Sports feed integration — GNews for general news, AllSportsAPI for
 football/league data, including live scores and upcoming fixtures.
@@ -73,18 +74,105 @@ def _parse_result(result_str: str | None) -> tuple[int, int]:
 
 def _map_event(ev: dict, upcoming: bool = False) -> dict:
     home_score, away_score = _parse_result(ev.get("event_final_result"))
+
+    cards = ev.get("cards") or []
+    substitutes = ev.get("substitutes") or []
+
+    yellow_cards = []
+    red_cards = []
+    substitutions = []
+
+    for card in cards:
+        if not isinstance(card, dict):
+            continue
+
+        card_type = str(card.get("card") or "").strip().lower()
+
+        player = (
+            card.get("home_fault")
+            or card.get("away_fault")
+            or ""
+        )
+
+        side = "home" if card.get("home_fault") else "away"
+
+        item = {
+            "time": card.get("time"),
+            "player": player,
+            "side": side,
+            "type": card_type,
+        }
+
+        if "yellow" in card_type:
+            yellow_cards.append(item)
+
+        elif "red" in card_type:
+            red_cards.append(item)
+
+    for sub in substitutes:
+        if not isinstance(sub, dict):
+            continue
+
+        time_value = sub.get("time")
+
+        home = sub.get("home_scorer")
+        away = sub.get("away_scorer")
+
+        if isinstance(home, dict) and (
+            home.get("in") or home.get("out")
+        ):
+            substitutions.append({
+                "time": time_value,
+                "side": "home",
+                "player_in": home.get("in") or "",
+                "player_out": home.get("out") or "",
+            })
+
+        if isinstance(away, dict) and (
+            away.get("in") or away.get("out")
+        ):
+            substitutions.append({
+                "time": time_value,
+                "side": "away",
+                "player_in": away.get("in") or "",
+                "player_out": away.get("out") or "",
+            })
+
     return {
         "fixture_id": ev.get("event_key"),
         "name": f"{ev.get('event_home_team')} vs {ev.get('event_away_team')}",
+
         "home_team": ev.get("event_home_team"),
         "away_team": ev.get("event_away_team"),
+
+        "home_team_key": ev.get("home_team_key"),
+        "away_team_key": ev.get("away_team_key"),
+
+        "home_team_logo": ev.get("home_team_logo"),
+        "away_team_logo": ev.get("away_team_logo"),
+
         "home_score": home_score,
         "away_score": away_score,
+
         "minute": None if upcoming else ev.get("event_status"),
         "state": ev.get("event_status"),
-        "starting_at": f"{ev.get('event_date')}T{ev.get('event_time')}:00Z",
+
+        "starting_at": (
+            f"{ev.get('event_date')}T"
+            f"{ev.get('event_time')}:00Z"
+        ),
+
         "league": ev.get("league_name"),
         "country": ev.get("country_name"),
+
+        "yellow_cards": yellow_cards,
+        "red_cards": red_cards,
+        "substitutions": substitutions,
+
+        "yellow_card_count": len(yellow_cards),
+        "red_card_count": len(red_cards),
+        "substitution_count": len(substitutions),
+
         "upcoming": upcoming,
     }
 
@@ -113,14 +201,60 @@ async def _allsports_request(params: dict) -> list[dict]:
 
 
 async def fetch_live_fixtures() -> list[dict]:
-    """Currently in-play matches. Short 30s cache — needs to feel real-time."""
+    """Only matches that are actually live.
+
+    FINISHED is a hard exclusion even if the provider briefly leaves
+    event_live=1 during its transition.
+    """
     cache_key = "allsports:live"
-    cached = _get_cached(cache_key, ttl_seconds=30)
+    cached = _get_cached(cache_key, ttl_seconds=5)
+
     if cached is not None:
         return cached
 
-    events = await _allsports_request({"met": "Livescore"})
-    results = [_map_event(ev, upcoming=False) for ev in events]
+    events = await _allsports_request({
+        "met": "Livescore",
+    })
+
+    terminal_statuses = {
+        "finished",
+        "ft",
+        "full time",
+        "full-time",
+        "ended",
+        "complete",
+        "completed",
+        "cancelled",
+        "canceled",
+        "postponed",
+        "abandoned",
+        "suspended",
+    }
+
+    results = []
+
+    for ev in events:
+        status = str(
+            ev.get("event_status") or ""
+        ).strip().lower()
+
+        event_live = str(
+            ev.get("event_live") or ""
+        ).strip()
+
+        # Hard rule:
+        # FINISHED can never enter LiveSports.
+        if status in terminal_statuses:
+            continue
+
+        # Provider's live flag must also say live.
+        if event_live != "1":
+            continue
+
+        results.append(
+            _map_event(ev, upcoming=False)
+        )
+
     _set_cached(cache_key, results)
     return results
 
@@ -224,6 +358,155 @@ async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
     results.sort(key=lambda r: (r.get("starting_at") or ""))
     _set_cached(cache_key, results)
     return results
+
+
+def tokenize_club_name(value: str) -> list[str]:
+    """
+    Hi-Mate LiveSports tokenizer.
+
+    Normalizes club names so searches like:
+      "man u"
+      "Man United"
+      "manchester united"
+      "manchester-united"
+
+    can all participate in matching.
+    """
+    value = (value or "").lower()
+
+    # Normalize common football punctuation.
+    value = re.sub(r"['’`]", "", value)
+    value = re.sub(r"[^a-z0-9]+", " ", value)
+
+    stop_words = {
+        "fc",
+        "cf",
+        "sc",
+        "afc",
+        "ac",
+        "club",
+        "football",
+        "fk",
+        "the",
+    }
+
+    tokens = [
+        token
+        for token in value.split()
+        if token and token not in stop_words
+    ]
+
+    aliases = {
+        "utd": "united",
+        "man": "manchester",
+        "psg": "paris",
+        "inter": "internazionale",
+        "ath": "athletic",
+    }
+
+    return [
+        aliases.get(token, token)
+        for token in tokens
+    ]
+
+
+def score_club_search(query: str, match: dict) -> float:
+    query_tokens = tokenize_club_name(query)
+
+    if not query_tokens:
+        return 0.0
+
+    home = tokenize_club_name(
+        match.get("home_team")
+    )
+    away = tokenize_club_name(
+        match.get("away_team")
+    )
+
+    query_text = " ".join(query_tokens)
+    home_text = " ".join(home)
+    away_text = " ".join(away)
+
+    best = 0.0
+
+    for team_tokens, team_text in (
+        (home, home_text),
+        (away, away_text),
+    ):
+        if not team_tokens:
+            continue
+
+        if query_text == team_text:
+            best = max(best, 100.0)
+
+        elif team_text.startswith(query_text):
+            best = max(best, 90.0)
+
+        elif query_text in team_text:
+            best = max(best, 80.0)
+
+        matched = sum(
+            1
+            for token in query_tokens
+            if any(
+                t.startswith(token) or token.startswith(t)
+                for t in team_tokens
+            )
+        )
+
+        if matched:
+            score = (
+                matched / len(query_tokens)
+            ) * 70.0
+
+            best = max(best, score)
+
+    return best
+
+
+async def search_live_sports(query: str) -> list[dict]:
+    """Search directly across live and upcoming fixtures."""
+    query = (query or "").strip()
+
+    if not query:
+        return []
+
+    live = await fetch_live_fixtures()
+    upcoming = await fetch_upcoming_fixtures(hours=168)
+
+    seen = set()
+    matches = []
+
+    for match in [*live, *upcoming]:
+        fixture_id = str(
+            match.get("fixture_id") or ""
+        )
+
+        if fixture_id in seen:
+            continue
+
+        seen.add(fixture_id)
+
+        score = score_club_search(
+            query,
+            match,
+        )
+
+        if score <= 0:
+            continue
+
+        result = dict(match)
+        result["_search_score"] = score
+        matches.append(result)
+
+    matches.sort(
+        key=lambda item: (
+            -item["_search_score"],
+            item.get("starting_at") or "",
+        )
+    )
+
+    return matches[:30]
 
 
 async def fetch_fixture_stats(fixture_id: int) -> dict | None:

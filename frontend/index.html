@@ -227,19 +227,77 @@
   </div>
 
   <div class="tab-content hidden" id="tab-matches">
-    <div class="section-title">🔴 Live Matches</div>
-    <div class="matches-filter-bar">
-      <input class="input-box small" id="matches-filter-country" placeholder="Country / league">
-      <select class="input-box small" id="matches-filter-sport"><option value="football">Football</option></select>
-      <select class="input-box small" id="matches-filter-hours">
-        <option value="12">Next 12h</option>
-        <option value="34" selected>Next 34h</option>
-        <option value="72">Next 3 days</option>
-        <option value="168">Next 7 days</option>
-      </select>
-      <button class="secondary-btn" id="matches-filter-apply" style="margin-top:0;">Apply</button>
+    <div class="livesports-shell">
+
+      <div class="livesports-header">
+        <div>
+          <div class="section-title">LiveSports</div>
+          <div class="livesports-subtitle">
+            Live scores, fixtures & match rooms
+          </div>
+        </div>
+
+        <i class="fa-solid fa-futbol livesports-header-icon"></i>
+      </div>
+
+      <div class="livesports-search">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input
+          class="input-box"
+          id="matches-search-input"
+          placeholder="Search club name…"
+          autocomplete="off"
+        >
+        <button
+          class="livesports-search-btn"
+          id="matches-search-btn"
+          aria-label="Search matches"
+        >
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+
+      <div
+        class="livesports-search-results hidden"
+        id="matches-search-results"
+      ></div>
+
+      <div class="matches-filter-bar">
+        <input
+          class="input-box small"
+          id="matches-filter-country"
+          placeholder="Country / league"
+        >
+
+        <select
+          class="input-box small"
+          id="matches-filter-sport"
+        >
+          <option value="football">Football</option>
+        </select>
+
+        <select
+          class="input-box small"
+          id="matches-filter-hours"
+        >
+          <option value="12">Next 12h</option>
+          <option value="34" selected>Next 34h</option>
+          <option value="72">Next 3 days</option>
+          <option value="168">Next 7 days</option>
+        </select>
+
+        <button
+          class="secondary-btn"
+          id="matches-filter-apply"
+          style="margin-top:0;"
+        >
+          Apply
+        </button>
+      </div>
+
+      <div id="matches-list" class="scroll-list"></div>
+
     </div>
-    <div id="matches-list" class="scroll-list"></div>
   </div>
 
   <div class="tab-content hidden" id="tab-chats">

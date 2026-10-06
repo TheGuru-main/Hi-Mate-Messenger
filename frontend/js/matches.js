@@ -66,48 +66,132 @@ function liveMinuteText(match, fetchedAt = Date.now()) {
    MATCH LIST
    ============================================================ */
 
+function renderMatchEventSummary(m) {
+  const events = [];
+
+  if (m.yellow_card_count) {
+    events.push(`
+      <span class="match-event-pill yellow">
+        <i class="fa-solid fa-square"></i>
+        ${m.yellow_card_count}
+      </span>
+    `);
+  }
+
+  if (m.red_card_count) {
+    events.push(`
+      <span class="match-event-pill red">
+        <i class="fa-solid fa-square"></i>
+        ${m.red_card_count}
+      </span>
+    `);
+  }
+
+  if (m.substitution_count) {
+    events.push(`
+      <span class="match-event-pill sub">
+        <i class="fa-solid fa-right-left"></i>
+        ${m.substitution_count}
+      </span>
+    `);
+  }
+
+  return events.length
+    ? `<div class="match-event-summary">${events.join("")}</div>`
+    : "";
+}
+
+
+function renderClubName(name) {
+  return `
+    <span class="match-club-name">
+      <i class="fa-solid fa-shield-halved match-club-badge"></i>
+      <span>${escapeHtml(name || "?")}</span>
+    </span>
+  `;
+}
+
+
 function renderMatchListItem(m) {
   const div = document.createElement("div");
-  div.className = "match-list-item";
 
-  const fetchedAt = m._fetched_at || Date.now();
+  div.className =
+    `match-list-item ${m.upcoming ? "upcoming" : "live"}`;
 
-  const title = m.upcoming
-    ? `${m.home_team || "?"} vs ${m.away_team || "?"}`
-    : `${m.home_team || "?"} ${m.home_score ?? 0} - ${m.away_score ?? 0} ${m.away_team || "?"}`;
+  const fetchedAt =
+    m._fetched_at || Date.now();
 
-  let sub;
+  let meta;
 
   if (m.upcoming) {
-    const kickoff = new Date(m.starting_at);
+    const kickoff =
+      new Date(m.starting_at);
 
-    sub =
+    meta =
       `Kickoff ${kickoff.toLocaleString([], {
         weekday: "short",
         day: "numeric",
         month: "short",
         hour: "2-digit",
         minute: "2-digit"
-      })}` +
-      (m.league ? ` · ${m.league}` : "");
+      })}`;
   } else {
-    sub =
-      `${liveMinuteText(m, fetchedAt)} · LIVE` +
-      (m.league ? ` · ${m.league}` : "");
+    meta =
+      `${liveMinuteText(m, fetchedAt)} · LIVE`;
+  }
+
+  if (m.league) {
+    meta += ` · ${m.league}`;
   }
 
   div.innerHTML = `
-    <div class="match-list-icon">⚽</div>
+    <div class="match-list-topline">
+      <span class="match-state-pill ${m.upcoming ? "upcoming" : "live"}">
+        ${m.upcoming ? "UPCOMING" : "LIVE"}
+      </span>
 
-    <div class="match-list-main">
-      <div class="match-list-title">${escapeHtml(title)}</div>
-      <div class="match-list-sub">${escapeHtml(sub)}</div>
+      ${m.has_room ? `
+        <span class="match-room-pill">
+          <i class="fa-solid fa-comments"></i>
+          Room
+        </span>
+      ` : ""}
     </div>
 
-    <div class="match-list-arrow">›</div>
+    <div class="match-clubs">
+
+      <div class="match-club">
+        ${renderClubName(m.home_team)}
+      </div>
+
+      <div class="match-score-box">
+        <strong>${m.upcoming ? "VS" : `${m.home_score ?? 0} - ${m.away_score ?? 0}`}</strong>
+      </div>
+
+      <div class="match-club away">
+        ${renderClubName(m.away_team)}
+      </div>
+
+    </div>
+
+    <div class="match-list-sub">
+      ${escapeHtml(meta)}
+    </div>
+
+    ${renderMatchEventSummary(m)}
+
+    <div class="match-card-footer">
+      <span>
+        <i class="fa-solid fa-comments"></i>
+        ${m.upcoming ? "Join match room" : "Open live room"}
+      </span>
+
+      <i class="fa-solid fa-chevron-right"></i>
+    </div>
   `;
 
-  div.onclick = () => openMatchRoom(m);
+  div.onclick = () =>
+    openMatchRoom(m);
 
   return div;
 }
@@ -270,6 +354,8 @@ function renderScoreboard(m) {
       ${escapeHtml(state)}
     </div>
   `;
+
+  renderMatchEvents(m);
 }
 
 
@@ -714,6 +800,7 @@ export async function openMatchRoom(match) {
    ============================================================ */
 
 export function initMatches() {
+  initMatchSearch();
   const back =
     document.getElementById("btn-back-from-match");
 
@@ -854,4 +941,242 @@ async function sendMatchMessage() {
   } catch (e) {
     alert(e.message);
   }
+}
+
+/* ============================================================
+   CLUB SEARCH
+   ============================================================ */
+
+function renderMatchSearchResult(match) {
+  const div =
+    document.createElement("div");
+
+  div.className =
+    "match-search-result";
+
+  div.innerHTML = `
+    <div class="match-search-result-icon">
+      <i class="fa-solid fa-shield-halved"></i>
+    </div>
+
+    <div class="match-search-result-main">
+
+      <div class="match-search-result-clubs">
+        ${escapeHtml(match.home_team || "?")}
+        <span>vs</span>
+        ${escapeHtml(match.away_team || "?")}
+      </div>
+
+      <div class="match-search-result-meta">
+        ${match.upcoming
+          ? "UPCOMING"
+          : `${liveMinuteText(match)} · LIVE`
+        }
+
+        ${match.league
+          ? ` · ${escapeHtml(match.league)}`
+          : ""
+        }
+      </div>
+
+    </div>
+
+    <i class="fa-solid fa-chevron-right"></i>
+  `;
+
+  div.onclick = () =>
+    openMatchRoom(match);
+
+  return div;
+}
+
+
+async function searchLiveSports() {
+  const input =
+    document.getElementById(
+      "matches-search-input"
+    );
+
+  const results =
+    document.getElementById(
+      "matches-search-results"
+    );
+
+  if (!input || !results) return;
+
+  const query =
+    input.value.trim();
+
+  if (!query) {
+    results.classList.add("hidden");
+    results.innerHTML = "";
+    return;
+  }
+
+  results.classList.remove("hidden");
+
+  results.innerHTML = `
+    <div class="match-search-loading">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      Searching clubs…
+    </div>
+  `;
+
+  try {
+    const matches =
+      await api.searchMatches(query);
+
+    results.innerHTML = "";
+
+    if (!matches.length) {
+      results.innerHTML = `
+        <div class="match-search-empty">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          No live or upcoming match found for
+          <strong>${escapeHtml(query)}</strong>.
+        </div>
+      `;
+      return;
+    }
+
+    matches.forEach((match) => {
+      results.appendChild(
+        renderMatchSearchResult(match)
+      );
+    });
+
+  } catch (e) {
+    results.innerHTML = `
+      <div class="match-data-error">
+        ${escapeHtml(e.message)}
+      </div>
+    `;
+  }
+}
+
+
+function initMatchSearch() {
+  const input =
+    document.getElementById(
+      "matches-search-input"
+    );
+
+  const button =
+    document.getElementById(
+      "matches-search-btn"
+    );
+
+  if (!input || !button) return;
+
+  let timer;
+
+  input.addEventListener(
+    "input",
+    () => {
+      clearTimeout(timer);
+
+      timer = setTimeout(
+        searchLiveSports,
+        300
+      );
+    }
+  );
+
+  input.addEventListener(
+    "keydown",
+    (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        searchLiveSports();
+      }
+    }
+  );
+
+  button.addEventListener(
+    "click",
+    searchLiveSports
+  );
+}
+
+
+/* ============================================================
+   MATCH EVENTS
+   ============================================================ */
+
+function renderMatchEvents(match) {
+  const existing =
+    document.getElementById(
+      "match-events-body"
+    );
+
+  if (!existing) return;
+
+  const events = [];
+
+  (match.yellow_cards || []).forEach((item) => {
+    events.push({
+      time: item.time,
+      side: item.side,
+      icon: "fa-square",
+      className: "yellow",
+      text: `${item.player || "Player"} — Yellow card`,
+    });
+  });
+
+  (match.red_cards || []).forEach((item) => {
+    events.push({
+      time: item.time,
+      side: item.side,
+      icon: "fa-square",
+      className: "red",
+      text: `${item.player || "Player"} — Red card`,
+    });
+  });
+
+  (match.substitutions || []).forEach((item) => {
+    events.push({
+      time: item.time,
+      side: item.side,
+      icon: "fa-right-left",
+      className: "sub",
+      text:
+        `${item.player_in || "Player"} in · ` +
+        `${item.player_out || "Player"} out`,
+    });
+  });
+
+  events.sort(
+    (a, b) =>
+      Number(a.time || 0) -
+      Number(b.time || 0)
+  );
+
+  if (!events.length) {
+    existing.innerHTML = `
+      <div class="match-events-empty">
+        No cards or substitutions recorded yet.
+      </div>
+    `;
+    return;
+  }
+
+  existing.innerHTML =
+    events.map((event) => `
+      <div class="match-event-row">
+        <span class="match-event-time">
+          ${escapeHtml(event.time || "—")}'
+        </span>
+
+        <i class="
+          fa-solid
+          ${event.icon}
+          match-event-row-icon
+          ${event.className}
+        "></i>
+
+        <span class="match-event-row-text">
+          ${escapeHtml(event.text)}
+        </span>
+      </div>
+    `).join("");
 }

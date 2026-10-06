@@ -62,6 +62,26 @@ async def list_upcoming_matches(hours: int = 34, country: str | None = None, db:
 
 
 
+@router.get("/search")
+async def search_matches(
+    q: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Direct LiveSports club-name search."""
+    query = q.strip()
+
+    if not query:
+        return []
+
+    try:
+        return await news.search_live_sports(query)
+    except Exception:
+        raise HTTPException(
+            status_code=502,
+            detail="Sports search provider unavailable",
+        )
+
+
 @router.post("/{fixture_id}/join")
 async def join_match_room(
     fixture_id: int,
