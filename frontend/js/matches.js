@@ -56,13 +56,134 @@ function renderScoreboard(m) {
   `;
 }
 
+function escapeStatsHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatStatsLabel(value) {
+  return String(value ?? "")
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .replace(/\\b\\w/g, (char) => char.toUpperCase());
+}
+
+function renderStatsValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return "—";
+  }
+
+  if (typeof value !== "object") {
+    return escapeStatsHtml(value);
+  }
+
+  if (Array.isArray(value)) {
+    if (!value.length) return "—";
+
+    return value.map((item, index) => {
+      if (item && typeof item === "object") {
+        return `
+          <div class="match-stat-card">
+            <div class="match-stat-card-title">Item ${index + 1}</div>
+            ${renderStatsObject(item)}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="match-stat-line">
+          <span>${escapeStatsHtml(item)}</span>
+        </div>
+      `;
+    }).join("");
+  }
+
+  return renderStatsObject(value);
+}
+
+function renderStatsObject(obj) {
+  return Object.entries(obj)
+    .filter(([key, value]) => value !== null && value !== undefined && value !== "")
+    .map(([key, value]) => {
+      const label = formatStatsLabel(key);
+
+      if (value && typeof value === "object") {
+        return `
+          <div class="match-stat-group">
+            <div class="match-stat-group-title">${escapeStatsHtml(label)}</div>
+            <div class="match-stat-group-body">
+              ${renderStatsValue(value)}
+            </div>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="match-stat-line">
+          <span class="match-stat-label">${escapeStatsHtml(label)}</span>
+          <strong class="match-stat-value">${escapeStatsHtml(value)}</strong>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderMatchStats(stats) {
+  if (!stats || typeof stats !== "object") {
+    return `<div class="match-stats-empty">No statistics available.</div>`;
+  }
+
+  const preferred = [
+    "event_statistics",
+    "statistics",
+    "event_home_team",
+    "event_away_team",
+    "event_status",
+    "event_final_result",
+    "event_halftime_result",
+    "league_name",
+  ];
+
+  const ordered = {};
+  for (const key of preferred) {
+    if (key in stats) ordered[key] = stats[key];
+  }
+
+  for (const [key, value] of Object.entries(stats)) {
+    if (!(key in ordered)) ordered[key] = value;
+  }
+
+  return `
+    <div class="match-stats-grid">
+      ${renderStatsObject(ordered)}
+    </div>
+  `;
+}
+
 async function loadStatsFold(fixtureId) {
   const body = document.getElementById("match-stats-body");
+
+  body.innerHTML = `
+    <div class="match-stats-loading">
+      <span class="stats-loader-dot"></span>
+      Loading match statistics…
+    </div>
+  `;
+
   try {
     const stats = await api.getMatchStats(fixtureId);
-    body.innerHTML = `<pre style="white-space:pre-wrap; font-size:11.5px;">${JSON.stringify(stats, null, 2)}</pre>`;
+    body.innerHTML = renderMatchStats(stats);
   } catch (e) {
-    body.innerHTML = `<div class="error-text">Stats unavailable: ${e.message}</div>`;
+    body.innerHTML = `
+      <div class="match-stats-error">
+        <div class="match-stats-error-title">Statistics unavailable</div>
+        <div>${escapeStatsHtml(e.message)}</div>
+      </div>
+    `;
   }
 }
 

@@ -406,3 +406,405 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 }
 .hm-toast.show{ opacity:1; transform:translateY(0); }
 .hm-toast-error{ border-color:var(--danger); color:var(--danger); }
+
+/* =========================================================
+   MATCH ROOM CHAT — DISTINCT LEFT / RIGHT BUBBLES
+   ========================================================= */
+
+#match-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 4px 100px;
+}
+
+#match-chat-messages .bubble-row {
+  width: 100%;
+  display: flex;
+  margin: 2px 0;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+#match-chat-messages .bubble-row.theirs {
+  justify-content: flex-start;
+}
+
+#match-chat-messages .bubble-row.mine {
+  justify-content: flex-end;
+}
+
+#match-chat-messages .bubble {
+  position: relative;
+  max-width: min(78%, 360px);
+  padding: 10px 13px;
+  font-size: 14px;
+  line-height: 1.42;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .16);
+}
+
+/* RECEIVED — LEFT */
+#match-chat-messages .bubble.theirs {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, .09);
+  color: var(--text-primary, #fff);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 4px 17px 17px 17px;
+  margin-right: auto;
+}
+
+/* SENT — RIGHT */
+#match-chat-messages .bubble.mine {
+  align-self: flex-end;
+  background: linear-gradient(
+    135deg,
+    var(--neon-blue),
+    var(--neon-purple)
+  );
+  color: #050718;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 17px 4px 17px 17px;
+  margin-left: auto;
+  font-weight: 500;
+}
+
+/* Small visual tail */
+#match-chat-messages .bubble.theirs::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  background: rgba(255, 255, 255, .09);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+#match-chat-messages .bubble.mine::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  background: var(--neon-purple);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+/* =========================================================
+   MATCH STATISTICS FOLD
+   ========================================================= */
+
+.match-stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.match-stat-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .045);
+  border: 1px solid rgba(255, 255, 255, .045);
+}
+
+.match-stat-label {
+  color: var(--text-faint);
+  font-size: 11.5px;
+}
+
+.match-stat-value {
+  color: var(--text-primary, #fff);
+  font-size: 12px;
+  text-align: right;
+}
+
+.match-stat-group {
+  overflow: hidden;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(255, 255, 255, .055);
+}
+
+.match-stat-group-title {
+  padding: 9px 11px;
+  color: var(--neon-blue);
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(0, 229, 255, .045);
+}
+
+.match-stat-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px;
+}
+
+.match-stat-card {
+  padding: 8px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .12);
+}
+
+.match-stat-card-title {
+  margin-bottom: 5px;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.match-stats-loading,
+.match-stats-empty,
+.match-stats-error {
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.match-stats-error {
+  border-radius: 10px;
+  background: rgba(255, 70, 70, .08);
+  border: 1px solid rgba(255, 70, 70, .15);
+}
+
+.match-stats-error-title {
+  margin-bottom: 4px;
+  color: #ff7777;
+  font-weight: 700;
+}
+
+.stats-loader-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--neon-blue);
+  box-shadow: 0 0 10px var(--neon-blue);
+  animation: matchStatsPulse 1s ease-in-out infinite;
+}
+
+@keyframes matchStatsPulse {
+  0%, 100% {
+    opacity: .35;
+    transform: scale(.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* =========================================================
+   MATCH ROOM CHAT — DISTINCT LEFT / RIGHT BUBBLES
+   ========================================================= */
+
+#match-chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 4px 100px;
+}
+
+#match-chat-messages .bubble-row {
+  width: 100%;
+  display: flex;
+  margin: 2px 0;
+  padding: 0 8px;
+  box-sizing: border-box;
+}
+
+#match-chat-messages .bubble-row.theirs {
+  justify-content: flex-start;
+}
+
+#match-chat-messages .bubble-row.mine {
+  justify-content: flex-end;
+}
+
+#match-chat-messages .bubble {
+  position: relative;
+  max-width: min(78%, 360px);
+  padding: 10px 13px;
+  font-size: 14px;
+  line-height: 1.42;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, .16);
+}
+
+/* RECEIVED — LEFT */
+#match-chat-messages .bubble.theirs {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, .09);
+  color: var(--text-primary, #fff);
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 4px 17px 17px 17px;
+  margin-right: auto;
+}
+
+/* SENT — RIGHT */
+#match-chat-messages .bubble.mine {
+  align-self: flex-end;
+  background: linear-gradient(
+    135deg,
+    var(--neon-blue),
+    var(--neon-purple)
+  );
+  color: #050718;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 17px 4px 17px 17px;
+  margin-left: auto;
+  font-weight: 500;
+}
+
+/* Small visual tail */
+#match-chat-messages .bubble.theirs::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  background: rgba(255, 255, 255, .09);
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+#match-chat-messages .bubble.mine::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  background: var(--neon-purple);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+/* =========================================================
+   MATCH STATISTICS FOLD
+   ========================================================= */
+
+.match-stats-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.match-stat-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 34px;
+  padding: 7px 9px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, .045);
+  border: 1px solid rgba(255, 255, 255, .045);
+}
+
+.match-stat-label {
+  color: var(--text-faint);
+  font-size: 11.5px;
+}
+
+.match-stat-value {
+  color: var(--text-primary, #fff);
+  font-size: 12px;
+  text-align: right;
+}
+
+.match-stat-group {
+  overflow: hidden;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, .035);
+  border: 1px solid rgba(255, 255, 255, .055);
+}
+
+.match-stat-group-title {
+  padding: 9px 11px;
+  color: var(--neon-blue);
+  font-size: 12px;
+  font-weight: 700;
+  background: rgba(0, 229, 255, .045);
+}
+
+.match-stat-group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 7px;
+}
+
+.match-stat-card {
+  padding: 8px;
+  border-radius: 9px;
+  background: rgba(0, 0, 0, .12);
+}
+
+.match-stat-card-title {
+  margin-bottom: 5px;
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.match-stats-loading,
+.match-stats-empty,
+.match-stats-error {
+  padding: 14px 10px;
+  text-align: center;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.match-stats-error {
+  border-radius: 10px;
+  background: rgba(255, 70, 70, .08);
+  border: 1px solid rgba(255, 70, 70, .15);
+}
+
+.match-stats-error-title {
+  margin-bottom: 4px;
+  color: #ff7777;
+  font-weight: 700;
+}
+
+.stats-loader-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--neon-blue);
+  box-shadow: 0 0 10px var(--neon-blue);
+  animation: matchStatsPulse 1s ease-in-out infinite;
+}
+
+@keyframes matchStatsPulse {
+  0%, 100% {
+    opacity: .35;
+    transform: scale(.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+

@@ -121,7 +121,67 @@ async def fetch_live_fixtures() -> list[dict]:
     return results
 
 
-NOT_STARTED_STATUSES = {"", "Not Started"}
+NOT_STARTED_STATUSES = {
+    "",
+    "not started",
+    "scheduled",
+    "schedule",
+    "tbd",
+    "to be played",
+}
+
+EXCLUDED_UPCOMING_STATUSES = {
+    "finished",
+    "ft",
+    "full time",
+    "cancelled",
+    "canceled",
+    "postponed",
+    "abandoned",
+    "suspended",
+    "walkover",
+}
+
+
+def _is_upcoming_event_status(status: str) -> bool:
+    """
+    AllSportsAPI uses slightly different status values across fixtures.
+    Treat known scheduled states as upcoming, while explicitly rejecting
+    live/finished/cancelled/postponed states.
+    """
+    value = (status or "").strip().lower()
+
+    if value in EXCLUDED_UPCOMING_STATUSES:
+        return False
+
+    if not value:
+        return True
+
+    if value in NOT_STARTED_STATUSES:
+        return True
+
+    # Live football statuses are normally minute values such as "23",
+    # "45", "90", "HT", etc. Do not allow those into Upcoming.
+    if value.isdigit():
+        return False
+
+    live_markers = {
+        "ht",
+        "half time",
+        "live",
+        "1h",
+        "2h",
+        "et",
+        "extra time",
+        "penalties",
+    }
+
+    if value in live_markers:
+        return False
+
+    # Unknown non-terminal statuses are safer to treat as scheduled
+    # than to silently discard legitimate future fixtures.
+    return True
 
 
 async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
@@ -150,8 +210,10 @@ async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
     results = []
     for ev in events:
         status = (ev.get("event_status") or "").strip()
-        if status not in NOT_STARTED_STATUSES:
+
+        if not _is_upcoming_event_status(status):
             continue
+
         mapped = _map_event(ev, upcoming=True)
         results.append(mapped)
 
