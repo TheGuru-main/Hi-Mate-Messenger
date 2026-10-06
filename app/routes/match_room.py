@@ -49,7 +49,12 @@ async def list_upcoming_matches(hours: int = 34, country: str | None = None, db:
         for r in db.query(MatchRoom).filter(MatchRoom.fixture_id.in_(ids)).all()
     } if ids else {}
     if country:
-        upcoming = [m for m in upcoming if (m.get("league") or "").lower().find(country.lower()) != -1]
+        needle = country.strip().lower()
+        upcoming = [
+            m for m in upcoming
+            if needle in (m.get("country") or "").lower()
+            or needle in (m.get("league") or "").lower()
+        ]
     for m in upcoming:
         m["has_room"] = m["fixture_id"] in rooms
         m["group_id"] = rooms.get(m["fixture_id"])
@@ -75,7 +80,7 @@ async def join_match_room(
         live = live + await news.fetch_upcoming_fixtures()
         match = next((m for m in live if m.get("fixture_id") == fixture_id), None)
         if not match:
-            raise HTTPException(status_code=404, detail="Match not currently live")
+            raise HTTPException(status_code=404, detail="Match is no longer available")
 
         room_name = match.get("name") or f"Match {fixture_id}"
         raw = f"match-{fixture_id}-{time.time()}"
@@ -111,7 +116,7 @@ async def join_match_room(
 async def get_match_stats(fixture_id: int, current_user: User = Depends(get_current_user)):
     """
     The stats/live-view FOLD — separate from the room chat entirely.
-    Not stored as messages; fetched fresh (short-cached) from Sportmonk.
+    Not stored as messages; fetched fresh (short-cached) from AllSportsAPI.
     """
     stats = await news.fetch_fixture_stats(fixture_id)
     if not stats:

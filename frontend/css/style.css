@@ -808,3 +808,406 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   }
 }
 
+
+
+/* ============================================================
+   HI-MATE MATCH ROOM — FINAL OVERRIDES
+   These classes are intentionally unique to LiveSports.
+   ============================================================ */
+
+#matches-list {
+  width: 100%;
+}
+
+.match-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px;
+  margin-bottom: 8px;
+  border-radius: 15px;
+  background: rgba(21, 26, 58, .96);
+  border: 1px solid rgba(255,255,255,.08);
+  box-shadow: 0 5px 18px rgba(0,0,0,.14);
+  cursor: pointer;
+}
+
+.match-list-item:active {
+  transform: scale(.985);
+}
+
+.match-list-icon {
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,229,255,.10);
+  border: 1px solid rgba(0,229,255,.20);
+  font-size: 20px;
+}
+
+.match-list-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.match-list-title {
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow-wrap: anywhere;
+}
+
+.match-list-sub {
+  margin-top: 4px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--text-faint);
+}
+
+.match-list-arrow {
+  color: var(--text-faint);
+  font-size: 22px;
+  padding-left: 4px;
+}
+
+.match-empty,
+.match-data-error {
+  padding: 11px 4px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.match-data-error {
+  color: var(--danger);
+}
+
+
+/* ---------- Match scoreboard ---------- */
+
+#match-scoreboard {
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  padding: 17px 14px;
+  border-radius: 17px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(0,229,255,.09),
+      rgba(168,85,247,.08)
+    ),
+    #151A3A;
+  border: 1px solid rgba(0,229,255,.20);
+  box-shadow: 0 8px 25px rgba(0,0,0,.18);
+  text-align: center;
+}
+
+.match-scoreboard-teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.match-scoreboard-teams span:last-child {
+  text-align: right;
+}
+
+.match-scoreboard-teams span:first-child {
+  text-align: left;
+}
+
+.match-scoreboard-teams strong {
+  color: var(--text-faint);
+  font-size: 10px;
+}
+
+.match-scoreboard-score {
+  margin: 7px 0 4px;
+  font-size: 30px;
+  line-height: 1;
+  font-weight: 900;
+  color: var(--neon-blue);
+}
+
+.match-scoreboard-score span {
+  color: var(--text-secondary);
+  margin: 0 5px;
+}
+
+.match-scoreboard-state {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+
+/* ---------- Statistics ---------- */
+
+#match-stats-body {
+  overflow-x: hidden;
+}
+
+.match-stat-section {
+  margin-bottom: 10px;
+}
+
+.match-stat-section-title {
+  padding: 8px 2px 7px;
+  color: var(--neon-blue);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.match-stat-table {
+  overflow: hidden;
+  border-radius: 11px;
+  border: 1px solid rgba(255,255,255,.07);
+  background: rgba(255,255,255,.025);
+}
+
+.match-stat-table-head,
+.match-stat-table-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 55px 55px;
+  gap: 8px;
+  align-items: center;
+}
+
+.match-stat-table-head {
+  padding: 8px 9px;
+  background: rgba(0,229,255,.07);
+  color: var(--text-faint);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.match-stat-table-head span:nth-child(2),
+.match-stat-table-head span:nth-child(3),
+.match-stat-table-row strong {
+  text-align: center;
+}
+
+.match-stat-table-row {
+  min-height: 35px;
+  padding: 7px 9px;
+  border-top: 1px solid rgba(255,255,255,.045);
+}
+
+.match-stat-type {
+  min-width: 0;
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.match-stat-table-row strong {
+  font-size: 11.5px;
+  color: var(--text-primary);
+}
+
+.match-stat-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 33px;
+  padding: 7px 9px;
+  margin-bottom: 5px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.04);
+}
+
+.match-stat-label {
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.match-stat-value {
+  color: var(--text-primary);
+  font-size: 11.5px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.match-stat-group {
+  margin-bottom: 6px;
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.055);
+}
+
+.match-stat-group-title {
+  padding: 8px 9px;
+  background: rgba(0,229,255,.045);
+  color: var(--neon-blue);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.match-stat-group-body {
+  padding: 7px;
+}
+
+.match-stat-card {
+  padding: 8px;
+  margin-bottom: 5px;
+  border-radius: 8px;
+  background: rgba(0,0,0,.12);
+}
+
+.match-stat-card-title {
+  margin-bottom: 5px;
+  color: var(--text-faint);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.match-stats-loading,
+.match-stats-empty,
+.match-stats-error {
+  padding: 15px 8px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+
+.match-stats-error {
+  border-radius: 10px;
+  background: rgba(255,70,70,.08);
+  border: 1px solid rgba(255,70,70,.16);
+}
+
+.match-stats-error-title {
+  margin-bottom: 4px;
+  color: #ff7777;
+  font-weight: 800;
+}
+
+.stats-loader-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--neon-blue);
+  box-shadow: 0 0 9px var(--neon-blue);
+  animation: matchStatsPulse 1s ease-in-out infinite;
+}
+
+@keyframes matchStatsPulse {
+  0%, 100% {
+    opacity: .3;
+    transform: scale(.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* ---------- Match room chat ---------- */
+
+#match-chat-messages {
+  width: 100%;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  padding: 8px 5px 100px !important;
+}
+
+.match-bubble-row {
+  width: 100%;
+  display: flex !important;
+  margin: 1px 0;
+  padding: 0 7px;
+}
+
+.match-bubble-row.theirs {
+  justify-content: flex-start !important;
+}
+
+.match-bubble-row.mine {
+  justify-content: flex-end !important;
+}
+
+.match-bubble {
+  position: relative;
+  width: fit-content;
+  max-width: min(78%, 350px);
+  padding: 10px 13px;
+  font-size: 14px;
+  line-height: 1.42;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  box-shadow: 0 3px 10px rgba(0,0,0,.16);
+}
+
+.match-bubble.theirs {
+  margin-right: auto;
+  background: #20264a;
+  color: var(--text-primary);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 4px 17px 17px 17px;
+}
+
+.match-bubble.mine {
+  margin-left: auto;
+  background: linear-gradient(
+    135deg,
+    var(--neon-blue),
+    var(--neon-purple-2)
+  );
+  color: #050718;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 17px 4px 17px 17px;
+  font-weight: 600;
+}
+
+.match-bubble.theirs::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  background: #20264a;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.match-bubble.mine::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  bottom: 0;
+  width: 9px;
+  height: 9px;
+  background: var(--neon-purple-2);
+  clip-path: polygon(0 0, 100% 100%, 0 100%);
+}
+
+.match-goal-event {
+  width: fit-content;
+  max-width: 90%;
+  align-self: center;
+  margin: 8px auto;
+  padding: 7px 11px;
+  border-radius: 12px;
+  background: rgba(255,180,84,.10);
+  border: 1px solid rgba(255,180,84,.20);
+  color: #FFB454;
+  font-size: 12px;
+  text-align: center;
+}

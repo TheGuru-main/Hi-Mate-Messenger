@@ -82,7 +82,7 @@ def _map_event(ev: dict, upcoming: bool = False) -> dict:
         "away_score": away_score,
         "minute": None if upcoming else ev.get("event_status"),
         "state": ev.get("event_status"),
-        "starting_at": f"{ev.get('event_date')}T{ev.get('event_time')}:00",
+        "starting_at": f"{ev.get('event_date')}T{ev.get('event_time')}:00Z",
         "league": ev.get("league_name"),
         "country": ev.get("country_name"),
         "upcoming": upcoming,
@@ -92,7 +92,11 @@ def _map_event(ev: dict, upcoming: bool = False) -> dict:
 async def _allsports_request(params: dict) -> list[dict]:
     if not settings.ALLSPORTS_API_KEY:
         return []
-    full_params = {"APIkey": settings.ALLSPORTS_API_KEY, **params}
+    full_params = {
+        "APIkey": settings.ALLSPORTS_API_KEY,
+        "timezone": "UTC",
+        **params,
+    }
     # AllSportsAPI 301-redirects "/football" (no trailing slash) to "/football/"
     # (with one) — httpx does NOT follow redirects by default, so without both
     # the trailing slash and follow_redirects=True every request here would
@@ -229,7 +233,11 @@ async def fetch_fixture_stats(fixture_id: int) -> dict | None:
     if cached is not None:
         return cached
 
-    events = await _allsports_request({"met": "Fixtures", "matchId": fixture_id})
+    events = await _allsports_request({
+        "met": "Fixtures",
+        "matchId": fixture_id,
+        "withPlayerStats": "1",
+    })
     data = events[0] if events else None
     if data:
         _set_cached(cache_key, data)
