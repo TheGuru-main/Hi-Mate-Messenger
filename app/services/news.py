@@ -121,8 +121,22 @@ async def fetch_live_fixtures() -> list[dict]:
     return results
 
 
+NOT_STARTED_STATUSES = {"", "Not Started"}
+
+
 async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
-    """Fixtures that have not kicked off yet, next `hours` hours (UTC). 5-minute cache."""
+    """
+    Fixtures that have not kicked off yet, next `hours` hours. 5-minute cache.
+
+    We deliberately do NOT compare AllSportsAPI's event_date/event_time
+    against our own UTC "now" to decide what's upcoming — we don't have
+    confirmation of what timezone those fields are actually reported in,
+    and guessing wrong would silently let already-started/finished matches
+    through (which is exactly what happened before this fix). Instead we
+    trust AllSportsAPI's own event_status field, which is authoritative:
+    empty string or "Not Started" means genuinely upcoming; anything else
+    (a live minute number, "Finished", "Postponed", etc.) is not.
+    """
     cache_key = f"allsports:upcoming:{hours}"
     cached = _get_cached(cache_key, ttl_seconds=300)
     if cached is not None:
@@ -135,17 +149,13 @@ async def fetch_upcoming_fixtures(hours: int = 34) -> list[dict]:
 
     results = []
     for ev in events:
-        try:
-            kickoff = datetime.strptime(f"{ev.get('event_date')} {ev.get('event_time')}", "%Y-%m-%d %H:%M").replace(tzinfo=timezone.utc)
-        except (TypeError, ValueError):
-            continue
-        if kickoff <= now or kickoff > now + timedelta(hours=hours):
+        status = (ev.get("event_status") or "").strip()
+        if status not in NOT_STARTED_STATUSES:
             continue
         mapped = _map_event(ev, upcoming=True)
-        mapped["starting_at"] = kickoff.isoformat()
         results.append(mapped)
 
-    results.sort(key=lambda r: r["starting_at"])
+    results.sort(key=lambda r: (r.get("starting_at") or ""))
     _set_cached(cache_key, results)
     return results
 
