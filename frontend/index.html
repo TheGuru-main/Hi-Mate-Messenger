@@ -506,3 +506,22 @@ window.setTimeout(() => {
     }
 }, 1500);
 </script>
+
+<!-- Hi-Mate Feed status/update surface -->
+<script>
+(function () {
+    const composer = document.querySelector("#tab-feed .composer");
+    const feedList = document.getElementById("feed-list");
+
+    if (!composer || !feedList) return;
+
+    if (document.getElementById("feed-status-strip")) return;
+
+    const statusStrip = document.createElement("div");
+    statusStrip.id = "feed-status-strip";
+    statusStrip.className = "status-strip";
+
+    composer.insertAdjacentElement("afterend", statusStrip);
+})();
+</script>
+

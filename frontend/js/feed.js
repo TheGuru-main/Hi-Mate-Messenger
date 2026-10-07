@@ -261,48 +261,155 @@ function renderCarousel(mediaRefs) {
     `;
 }
 
-function openHiMateImageViewer(src) {
-    const existing = document.querySelector(".himate-image-viewer");
+function openHiMateMediaViewer(mediaRefs, startIndex = 0) {
+    const refs = Array.isArray(mediaRefs)
+        ? mediaRefs.filter(Boolean)
+        : [];
+
+    if (!refs.length) return;
+
+    const existing = document.querySelector(".himate-media-viewer");
     if (existing) existing.remove();
 
+    let currentIndex = Math.max(
+        0,
+        Math.min(startIndex, refs.length - 1)
+    );
+
     const overlay = document.createElement("div");
-    overlay.className = "himate-image-viewer";
+    overlay.className = "himate-media-viewer";
 
     overlay.innerHTML = `
-      <div class="himate-image-viewer-header">
+      <div class="himate-media-viewer-header">
         <button
           type="button"
-          class="himate-viewer-btn himate-image-close"
-          aria-label="Close image"
+          class="himate-viewer-btn himate-media-close"
+          aria-label="Close media viewer"
         >
           <i class="fa-solid fa-xmark"></i>
         </button>
 
+        <div class="himate-media-viewer-brand">
+          Powered by GuruInnovations @
+        </div>
+
         <button
           type="button"
-          class="himate-viewer-btn himate-image-download"
-          aria-label="Download image"
+          class="himate-viewer-btn himate-media-download"
+          aria-label="Download media"
         >
           <i class="fa-solid fa-download"></i>
         </button>
       </div>
 
-      <div class="himate-image-viewer-body">
-        <img src="${escapeHtml(src)}" alt="">
+      <div class="himate-media-viewer-body">
+        <button
+          type="button"
+          class="himate-media-nav himate-media-prev"
+          aria-label="Previous media"
+        >
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+
+        <div class="himate-media-viewer-track"></div>
+
+        <button
+          type="button"
+          class="himate-media-nav himate-media-next"
+          aria-label="Next media"
+        >
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+
+      <div class="himate-media-viewer-footer">
+        <span class="himate-media-counter"></span>
       </div>
     `;
 
     document.body.appendChild(overlay);
 
-    const close = () => overlay.remove();
+    const track =
+        overlay.querySelector(".himate-media-viewer-track");
+
+    const counter =
+        overlay.querySelector(".himate-media-counter");
+
+    const renderViewerMedia = () => {
+        track.innerHTML = "";
+
+        const ref = refs[currentIndex];
+        const safeRef = escapeHtml(ref);
+
+        if (isVideoRef(ref)) {
+            track.innerHTML = `
+              <div class="himate-viewer-media-item">
+                <video
+                  class="himate-viewer-video"
+                  src="${safeRef}"
+                  playsinline
+                  controls
+                  autoplay
+                ></video>
+              </div>
+            `;
+        } else {
+            track.innerHTML = `
+              <div class="himate-viewer-media-item">
+                <img
+                  class="himate-viewer-image"
+                  src="${safeRef}"
+                  alt=""
+                >
+              </div>
+            `;
+        }
+
+        counter.textContent =
+            `${currentIndex + 1} / ${refs.length}`;
+
+        const previous =
+            overlay.querySelector(".himate-media-prev");
+
+        const next =
+            overlay.querySelector(".himate-media-next");
+
+        previous.hidden = refs.length <= 1;
+        next.hidden = refs.length <= 1;
+    };
+
+    const goTo = (index) => {
+        if (!refs.length) return;
+
+        currentIndex =
+            (index + refs.length) % refs.length;
+
+        renderViewerMedia();
+    };
 
     overlay
-        .querySelector(".himate-image-close")
-        .addEventListener("click", close);
+        .querySelector(".himate-media-close")
+        .addEventListener("click", () => overlay.remove());
 
     overlay
-        .querySelector(".himate-image-download")
+        .querySelector(".himate-media-prev")
+        .addEventListener("click", (e) => {
+            e.stopPropagation();
+            goTo(currentIndex - 1);
+        });
+
+    overlay
+        .querySelector(".himate-media-next")
+        .addEventListener("click", (e) => {
+            e.stopPropagation();
+            goTo(currentIndex + 1);
+        });
+
+    overlay
+        .querySelector(".himate-media-download")
         .addEventListener("click", () => {
+            const src = refs[currentIndex];
+
             const a = document.createElement("a");
             a.href = src;
             a.download = "";
@@ -312,8 +419,64 @@ function openHiMateImageViewer(src) {
         });
 
     overlay.addEventListener("click", (e) => {
-        if (e.target === overlay) close();
+        if (e.target === overlay) {
+            overlay.remove();
+        }
     });
+
+    let startX = 0;
+
+    track.addEventListener(
+        "touchstart",
+        (e) => {
+            startX = e.touches[0].clientX;
+        },
+        { passive: true }
+    );
+
+    track.addEventListener(
+        "touchend",
+        (e) => {
+            const delta =
+                startX - e.changedTouches[0].clientX;
+
+            if (Math.abs(delta) < 45) return;
+
+            if (delta > 0) {
+                goTo(currentIndex + 1);
+            } else {
+                goTo(currentIndex - 1);
+            }
+        },
+        { passive: true }
+    );
+
+    document.addEventListener(
+        "keydown",
+        function mediaViewerKeys(e) {
+            if (!document.body.contains(overlay)) {
+                document.removeEventListener(
+                    "keydown",
+                    mediaViewerKeys
+                );
+                return;
+            }
+
+            if (e.key === "Escape") {
+                overlay.remove();
+            }
+
+            if (e.key === "ArrowLeft") {
+                goTo(currentIndex - 1);
+            }
+
+            if (e.key === "ArrowRight") {
+                goTo(currentIndex + 1);
+            }
+        }
+    );
+
+    renderViewerMedia();
 }
 
 
@@ -657,78 +820,180 @@ function wireCarousel(cardEl) {
 
     const dots = cardEl.querySelectorAll(".carousel-dot");
 
-    cardEl.querySelectorAll(".himate-image-trigger").forEach((trigger) => {
-        trigger.addEventListener("click", (e) => {
-            e.stopPropagation();
+    const mediaRefs = Array.isArray(cardEl.__mediaRefs)
+        ? cardEl.__mediaRefs
+        : [];
 
-            const src =
-                trigger.dataset.imageSrc;
+    const slides =
+        Array.from(
+            track.querySelectorAll(".carousel-slide")
+        );
 
-            if (src) {
-                openHiMateImageViewer(src);
-            }
+    /*
+     * Images:
+     * Tap any image to open the complete media viewer.
+     */
+    cardEl
+        .querySelectorAll(".himate-image-trigger")
+        .forEach((trigger) => {
+            trigger.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                const slide =
+                    trigger.closest(".carousel-slide");
+
+                const index =
+                    slide
+                        ? slides.indexOf(slide)
+                        : 0;
+
+                if (!mediaRefs.length) {
+                    const src =
+                        trigger.dataset.imageSrc;
+
+                    if (src) {
+                        openHiMateMediaViewer(
+                            [src],
+                            0
+                        );
+                    }
+
+                    return;
+                }
+
+                openHiMateMediaViewer(
+                    mediaRefs,
+                    index >= 0 ? index : 0
+                );
+            });
         });
-    });
 
-    cardEl.querySelectorAll(".himate-video").forEach((player) => {
-        wireVideoPlayer(player);
-    });
+    /*
+     * Videos:
+     * The video itself opens the internal Hi-Mate
+     * watch viewer. Controls remain inside the feed.
+     */
+    cardEl
+        .querySelectorAll(".himate-video")
+        .forEach((player) => {
+            wireVideoPlayer(player);
 
-    cardEl.querySelectorAll(".himate-audio").forEach((player) => {
-        wireAudioPlayer(player);
-    });
+            const video =
+                player.querySelector("video");
 
+            if (!video) return;
+
+            const slide =
+                player.closest(".carousel-slide");
+
+            const index =
+                slide
+                    ? slides.indexOf(slide)
+                    : 0;
+
+            video.addEventListener("click", (e) => {
+                e.stopPropagation();
+
+                const src =
+                    video.currentSrc ||
+                    video.src;
+
+                if (!src) return;
+
+                openHiMateMediaViewer(
+                    mediaRefs.length
+                        ? mediaRefs
+                        : [src],
+                    index >= 0 ? index : 0
+                );
+            });
+        });
+
+    /*
+     * Voice / audio:
+     * Keep the custom Hi-Mate player.
+     */
+    cardEl
+        .querySelectorAll(".himate-audio")
+        .forEach((player) => {
+            wireAudioPlayer(player);
+        });
+
+    /*
+     * Horizontal media navigation.
+     */
     let startX = 0;
     let scrolling = false;
 
-    track.addEventListener("touchstart", (e) => {
-        startX = e.touches[0].clientX;
-        scrolling = true;
-    }, { passive: true });
+    track.addEventListener(
+        "touchstart",
+        (e) => {
+            startX =
+                e.touches[0].clientX;
 
-    track.addEventListener("touchmove", () => {}, {
-        passive: true
-    });
+            scrolling = true;
+        },
+        { passive: true }
+    );
 
-    track.addEventListener("touchend", (e) => {
-        if (!scrolling) return;
+    track.addEventListener(
+        "touchmove",
+        () => {},
+        { passive: true }
+    );
 
-        scrolling = false;
+    track.addEventListener(
+        "touchend",
+        (e) => {
+            if (!scrolling) return;
 
-        const delta =
-            startX - e.changedTouches[0].clientX;
+            scrolling = false;
 
-        if (Math.abs(delta) < 40) return;
+            const delta =
+                startX -
+                e.changedTouches[0].clientX;
 
-        const slideWidth =
-            track.clientWidth;
+            if (Math.abs(delta) < 40) return;
 
-        track.scrollTo({
-            left:
-                track.scrollLeft +
-                (delta > 0
-                    ? slideWidth
-                    : -slideWidth),
-            behavior: "smooth"
-        });
-    });
+            const slideWidth =
+                track.clientWidth;
 
-    track.addEventListener("scroll", () => {
-        const width = track.clientWidth;
-        if (!width) return;
+            if (!slideWidth) return;
 
-        const idx =
-            Math.round(
-                track.scrollLeft / width
-            );
+            track.scrollTo({
+                left:
+                    track.scrollLeft +
+                    (
+                        delta > 0
+                            ? slideWidth
+                            : -slideWidth
+                    ),
+                behavior: "smooth"
+            });
+        }
+    );
 
-        dots.forEach((d, i) => {
-            d.classList.toggle(
-                "active",
-                i === idx
-            );
-        });
-    });
+    track.addEventListener(
+        "scroll",
+        () => {
+            const width =
+                track.clientWidth;
+
+            if (!width) return;
+
+            const idx =
+                Math.round(
+                    track.scrollLeft / width
+                );
+
+            dots.forEach((dot, i) => {
+                dot.classList.toggle(
+                    "active",
+                    i === idx
+                );
+            });
+        }
+    );
 }
 
 function closeReactionPopover() {
@@ -972,6 +1237,15 @@ function openReactionPicker(anchorBtn, onPicked) {
 export function renderPost(post, opts) {
     const div = document.createElement("div");
     div.className = "card feed-card";
+
+    /*
+     * Keep the complete media set attached to the post card.
+     * The internal viewer uses this to open 1..100 media items
+     * without rebuilding the feed.
+     */
+    div.__mediaRefs = Array.isArray(post.media_refs)
+        ? post.media_refs.filter(Boolean)
+        : [];
     const initials = (post.author_username || "?").slice(0, 2).toUpperCase();
     const locationParts = [post.author_locality, post.author_region].filter(Boolean).join(", ");
     const talentBadge = post.author_talent_category ? `<span class="talent-badge">${escapeHtml(talentLabel(post.author_talent_category))}</span>` : "";
