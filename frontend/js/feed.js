@@ -1259,12 +1259,25 @@ export function renderPost(post, opts) {
         </div>
       </div>
       ${post.content ? `<div class="content">${escapeHtml(post.content)}</div>` : ""}
-      ${renderCarousel(post.media_refs)}
-      <div class="action-row">
+      ${post.media_refs && post.media_refs.length
+        ? `
+          <div class="feed-media-frame">
+            <div class="feed-media-brand">
+              <i class="fa-solid fa-bolt"></i>
+              <span>Powered by GuruInnovations @</span>
+            </div>
+            ${renderCarousel(post.media_refs)}
+          </div>
+        `
+        : ""
+      }
+      <div class="reaction-frame">
+        <div class="action-row">
         <button class="action-btn react-btn" data-action="react"><i class="fa-regular fa-heart"></i></button>
         <button class="action-btn" data-action="comment"><i class="fa-regular fa-comment"></i> ${post.comment_count || ""}</button>
         <button class="action-btn" data-action="share"><i class="fa-solid fa-share"></i></button>
         <button class="action-btn gem-btn" data-action="gem"><i class="fa-solid fa-gem"></i></button>
+      </div>
       </div>
     `;
 
@@ -1398,7 +1411,8 @@ export function renderPost(post, opts) {
 export async function loadFeed() {
     const list = document.getElementById("feed-list");
     if (!list) return;
-    list.innerHTML = '<div class="section-title">Loading…</div>';
+    list.innerHTML = '<div class="section-title">Loading…</div>
+      </div>';
     try {
         const posts = await api.getFeed();
         list.innerHTML = "";

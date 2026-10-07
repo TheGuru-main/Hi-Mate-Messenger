@@ -3,6 +3,11 @@ import { compressImage } from "./media-utils.js";
 
 let statusGroups = [];
 
+    
+function isVideoRef(ref) {
+    return /\.(mp4|mov|m4v|webm)(\?|$)/i.test(ref || "");
+}
+
 function escapeHtml(str) {
     const d = document.createElement("div");
     d.textContent = str || "";
@@ -52,43 +57,204 @@ export async function loadStatusFeed() {
 
 function openStatusViewer(group) {
     closeModal();
-    let index = 0;
+
+    const statuses = Array.isArray(group?.statuses)
+        ? group.statuses
+        : [];
+
+    if (!statuses.length) return;
+
+    let statusIndex = 0;
+    let mediaIndex = 0;
+
     const overlay = document.createElement("div");
     overlay.className = "status-modal-overlay";
 
+    function getMediaRefs(status) {
+        if (!status) return [];
+
+        if (Array.isArray(status.media_refs)) {
+            return status.media_refs.filter(Boolean);
+        }
+
+        if (status.media_ref) {
+            return [status.media_ref];
+        }
+
+        return [];
+    }
+
     function render() {
-        const s = group.statuses[index];
+        const status = statuses[statusIndex];
+        const refs = getMediaRefs(status);
+
+        if (mediaIndex >= refs.length) {
+            mediaIndex = Math.max(0, refs.length - 1);
+        }
+
+        const currentRef = refs[mediaIndex] || "";
+
+        const mediaHtml = currentRef
+            ? (
+                isVideoRef(currentRef)
+                    ? `
+                        <video
+                            class="status-media"
+                            src="${currentRef}"
+                            playsinline
+                            autoplay
+                            controls
+                        ></video>
+                    `
+                    : `
+                        <img
+                            src="${currentRef}"
+                            class="status-media"
+                            alt=""
+                        >
+                    `
+            )
+            : "";
+
+        const mediaCounter = refs.length > 1
+            ? `<div class="status-media-counter">${mediaIndex + 1} / ${refs.length}</div>`
+            : "";
+
         overlay.innerHTML = `
-          <div class="status-viewer">
-            <div class="status-viewer-header">
-              <div class="status-viewer-name">${escapeHtml(group.author_username)}</div>
-              <button class="icon-btn status-viewer-close"><i class="fa-solid fa-xmark"></i></button>
+            <div class="status-viewer">
+                <div class="status-viewer-header">
+                    <div class="status-viewer-name">
+                        ${escapeHtml(group.author_username || "")}
+                    </div>
+
+                    <button
+                        type="button"
+                        class="icon-btn status-viewer-close"
+                        aria-label="Close"
+                    >
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="status-viewer-progress">
+                    ${statuses.map((_, i) => `
+                        <span
+                            class="status-progress-bar
+                                ${i < statusIndex ? "seen" : ""}
+                                ${i === statusIndex ? "active" : ""}">
+                        </span>
+                    `).join("")}
+                </div>
+
+                <div class="status-viewer-body himate-status-viewer-frame">
+                    <div class="himate-status-viewer-brand">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Powered by GuruInnovations @</span>
+                    </div>
+
+                    <div class="himate-status-media-stage">
+                        ${mediaHtml}
+
+                        ${!mediaHtml && status?.content
+                            ? `
+                                <div class="status-text">
+                                    ${escapeHtml(status.content)}
+                                </div>
+                            `
+                            : ""
+                        }
+
+                        ${mediaCounter}
+                    </div>
+
+                    ${status?.content && mediaHtml
+                        ? `
+                            <div class="status-viewer-caption">
+                                ${escapeHtml(status.content)}
+                            </div>
+                        `
+                        : ""
+                    }
+                </div>
+
+                <div class="status-viewer-nav">
+                    <div class="status-nav-zone prev"></div>
+                    <div class="status-nav-zone next"></div>
+                </div>
             </div>
-            <div class="status-viewer-progress">
-              ${group.statuses.map((_, i) => `<span class="status-progress-bar ${i < index ? "seen" : ""} ${i === index ? "active" : ""}"></span>`).join("")}
-            </div>
-            <div class="status-viewer-body">
-              ${s.media_ref ? `<img src="${s.media_ref}" class="status-media">` : ""}
-              ${s.content ? `<div class="status-text">${escapeHtml(s.content)}</div>` : ""}
-            </div>
-            <div class="status-viewer-nav">
-              <div class="status-nav-zone prev"></div>
-              <div class="status-nav-zone next"></div>
-            </div>
-          </div>
         `;
-        overlay.querySelector(".status-viewer-close").addEventListener("click", closeModal);
-        overlay.querySelector(".prev").addEventListener("click", () => {
-            if (index > 0) { index--; render(); } else { closeModal(); }
+
+        const closeButton =
+            overlay.querySelector(".status-viewer-close");
+
+        closeButton?.addEventListener("click", (e) => {
+            e.stopPropagation();
+            closeModal();
         });
-        overlay.querySelector(".next").addEventListener("click", () => {
-            if (index < group.statuses.length - 1) { index++; render(); } else { closeModal(); }
+
+        const prevZone =
+            overlay.querySelector(".status-nav-zone.prev");
+
+        const nextZone =
+            overlay.querySelector(".status-nav-zone.next");
+
+        prevZone?.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            if (mediaIndex > 0) {
+                mediaIndex -= 1;
+                render();
+                return;
+            }
+
+            if (statusIndex > 0) {
+                statusIndex -= 1;
+
+                const previousRefs =
+                    getMediaRefs(statuses[statusIndex]);
+
+                mediaIndex =
+                    Math.max(0, previousRefs.length - 1);
+
+                render();
+            }
+        });
+
+        nextZone?.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            if (mediaIndex < refs.length - 1) {
+                mediaIndex += 1;
+                render();
+                return;
+            }
+
+            if (statusIndex < statuses.length - 1) {
+                statusIndex += 1;
+                mediaIndex = 0;
+                render();
+            } else {
+                closeModal();
+            }
         });
     }
 
-    render();
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) {
+            closeModal();
+        }
+    });
+
+    overlay.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+            closeModal();
+        }
+    });
+
     document.body.appendChild(overlay);
+    render();
 }
+
 
 async function openStatusComposer() {
     closeModal();
