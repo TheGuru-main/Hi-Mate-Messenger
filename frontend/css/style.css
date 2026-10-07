@@ -2219,3 +2219,18 @@ body.background-network{
   }
 }
 
+
+/* ---------- Home header nav buttons ---------- */
+#home .top-bar .icon-btn{
+  color: var(--success);
+}
+#home .top-bar .icon-btn:active{
+  color: var(--success);
+  opacity: 0.8;
+}
+
+/* Utility: apply to any icon-btn sitting on a neon gradient surface
+   instead of the plain dark background, for contrast. */
+.icon-btn.on-neon{
+  color: #fff;
+}
