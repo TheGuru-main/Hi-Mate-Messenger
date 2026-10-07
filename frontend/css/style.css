@@ -1686,3 +1686,99 @@ body.background-network{
   );
 }
 
+
+/* ---------- Klique My Groups ---------- */
+
+.my-groups-panel{
+  width: min(92vw, 440px);
+}
+
+.my-groups-create-btn{
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.my-groups-list{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.my-group-room{
+  width: 100%;
+  min-height: 64px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #151A3A;
+  border: 1px solid rgba(255,255,255,.07);
+  cursor: pointer;
+  transition:
+    background .18s ease,
+    border-color .18s ease,
+    transform .18s ease;
+}
+
+.my-group-room:active{
+  transform: scale(.985);
+  background: rgba(255,255,255,.08);
+}
+
+.my-group-avatar{
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--neon-blue),
+    var(--neon-purple)
+  );
+  color: #050718;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.my-group-info{
+  min-width: 0;
+  flex: 1;
+}
+
+.my-group-name{
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-group-meta{
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.my-group-arrow{
+  flex: 0 0 auto;
+  color: var(--text-faint);
+  font-size: 12px;
+}
+
+.my-groups-empty{
+  padding: 16px 4px;
+}
+

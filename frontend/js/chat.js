@@ -185,37 +185,114 @@ async function openCreateGroupModal() {
 
 export async function openMyGroupsModal() {
     closeKliqueModal();
+
     const overlay = document.createElement("div");
     overlay.className = "klique-modal-overlay feed-modal-overlay";
+
     overlay.innerHTML = `
-      <div class="status-composer">
+      <div class="status-composer my-groups-panel">
         <div class="status-viewer-header">
           <div class="status-viewer-name">My Groups</div>
-          <button class="icon-btn klique-modal-close"><i class="fa-solid fa-xmark"></i></button>
+          <button class="icon-btn klique-modal-close">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
         </div>
-        <div id="my-groups-list" class="scroll-list"></div>
+
+        <button
+          type="button"
+          class="secondary-btn my-groups-create-btn"
+        >
+          <i class="fa-solid fa-users"></i>
+          Create Group
+        </button>
+
+        <div id="my-groups-list" class="my-groups-list"></div>
       </div>
     `;
+
     document.body.appendChild(overlay);
-    overlay.querySelector(".klique-modal-close").addEventListener("click", closeKliqueModal);
+
+    overlay
+        .querySelector(".klique-modal-close")
+        .addEventListener("click", closeKliqueModal);
+
+    overlay
+        .querySelector(".my-groups-create-btn")
+        .addEventListener("click", () => {
+            closeKliqueModal();
+            openCreateGroupModal();
+        });
 
     const list = overlay.querySelector("#my-groups-list");
-    list.innerHTML = '<div class="section-title">Loading…</div>';
+
+    list.innerHTML =
+        '<div class="section-title">Loading…</div>';
+
     try {
         const groups = await api.getMyGroups();
-        list.innerHTML = groups.length ? "" : '<div class="section-title">You haven\'t created or joined any groups yet.</div>';
-        groups.forEach(g => {
-            const item = document.createElement("div");
-            item.className = "list-item";
-            item.innerHTML = `
-              <div class="avatar">${g.name.slice(0, 2).toUpperCase()}</div>
-              <div><div class="name">${g.name}</div><div class="sub">${g.member_uids.length} members · ${g.visibility}</div></div>
+
+        if (!groups.length) {
+            list.innerHTML = `
+                <div class="section-title my-groups-empty">
+                    You haven't created or joined any groups yet.
+                </div>
             `;
-            item.addEventListener("click", () => { closeKliqueModal(); openGroupChat(g); });
+            return;
+        }
+
+        list.innerHTML = "";
+
+        groups.forEach((g) => {
+            const item = document.createElement("div");
+
+            item.className = "my-group-room";
+
+            const name =
+                String(g.name || "Unnamed Group").trim();
+
+            const initials =
+                name
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part.charAt(0))
+                    .join("")
+                    .toUpperCase() || "G";
+
+            const memberCount =
+                Array.isArray(g.member_uids)
+                    ? g.member_uids.length
+                    : 0;
+
+            item.innerHTML = `
+                <div class="my-group-avatar">
+                    ${initials}
+                </div>
+
+                <div class="my-group-info">
+                    <div class="my-group-name">
+                        ${name}
+                    </div>
+
+                    <div class="my-group-meta">
+                        ${memberCount} members · ${g.visibility || "private"}
+                    </div>
+                </div>
+
+                <i class="fa-solid fa-chevron-right my-group-arrow"></i>
+            `;
+
+            item.addEventListener("click", () => {
+                closeKliqueModal();
+                openGroupChat(g);
+            });
+
             list.appendChild(item);
         });
+
     } catch (e) {
-        list.innerHTML = `<div class="error-text">${e.message}</div>`;
+        list.innerHTML =
+            `<div class="error-text">${e.message}</div>`;
     }
 }
 
