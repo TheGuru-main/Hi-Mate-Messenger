@@ -783,24 +783,6 @@ function renderFeedStatusSurface() {
         sync();
     }
 
-    const bodyObserver =
-        new MutationObserver(() => {
-            const strip =
-                document.getElementById("status-strip");
-
-            const feedStrip =
-                document.getElementById("feed-status-strip");
-
-            if (!strip || !feedStrip) return;
-
-            renderFeedStatusSurface();
-        });
-
-    bodyObserver.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-
     sync();
 })();
 
