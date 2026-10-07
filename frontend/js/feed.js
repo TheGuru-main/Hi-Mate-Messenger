@@ -18,43 +18,716 @@ function escapeHtml(str) {
 
 
 function isVideoRef(ref) {
-    return /\.(mp4|mov|webm|m4v)(\?|$)/i.test(ref || "");
+    return /\.(mp4|mov|m4v)(\?|$)/i.test(ref || "");
+}
+
+function isAudioRef(ref) {
+    return /\.(webm|mp3|m4a|wav|ogg|aac)(\?|$)/i.test(ref || "");
+}
+
+function isVoiceRef(ref) {
+    return /(?:^|[/_-])voice[-_]/i.test(ref || "");
 }
 
 function renderCarousel(mediaRefs) {
     if (!mediaRefs || !mediaRefs.length) return "";
-    const slides = mediaRefs.map(ref => {
-        const tag = isVideoRef(ref)
-            ? `<video src="${ref}" class="carousel-media" controls playsinline></video>`
-            : `<img src="${ref}" class="carousel-media" loading="lazy">`;
-        return `<div class="carousel-slide">${tag}</div>`;
+
+    const slides = mediaRefs.map((ref, index) => {
+        const safeRef = escapeHtml(ref || "");
+
+        /*
+         * 1. VIDEO
+         * MP4 / MOV / M4V are rendered through the Hi-Mate
+         * custom video player.
+         */
+        if (isVideoRef(ref)) {
+            return `
+              <div class="carousel-slide">
+                <div class="himate-video">
+                  <video
+                    src="${safeRef}"
+                    class="carousel-media"
+                    playsinline
+                    preload="metadata"
+                    data-media-index="${index}"
+                  ></video>
+
+                  <div class="himate-video-overlay">
+                    <button
+                      type="button"
+                      class="himate-media-play"
+                      data-media-action="play"
+                      aria-label="Play video"
+                    >
+                      <i class="fa-solid fa-play"></i>
+                    </button>
+                  </div>
+
+                  <div class="himate-video-controls">
+                    <button
+                      type="button"
+                      class="himate-control-btn"
+                      data-media-action="play"
+                      aria-label="Play or pause"
+                    >
+                      <i class="fa-solid fa-play"></i>
+                    </button>
+
+                    <input
+                      type="range"
+                      class="himate-progress"
+                      min="0"
+                      max="100"
+                      value="0"
+                      step="0.1"
+                      aria-label="Video progress"
+                    >
+
+                    <button
+                      type="button"
+                      class="himate-control-btn"
+                      data-media-action="mute"
+                      aria-label="Mute"
+                    >
+                      <i class="fa-solid fa-volume-high"></i>
+                    </button>
+
+                    <input
+                      type="range"
+                      class="himate-volume"
+                      min="0"
+                      max="1"
+                      value="1"
+                      step="0.05"
+                      aria-label="Volume"
+                    >
+
+                    <button
+                      type="button"
+                      class="himate-control-btn"
+                      data-media-action="download"
+                      aria-label="Download video"
+                    >
+                      <i class="fa-solid fa-download"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+        }
+
+        /*
+         * 2. VOICE / AUDIO
+         * Voice recordings are identified explicitly by voice-*
+         * and are rendered separately from video.
+         */
+        if (isVoiceRef(ref) || isAudioRef(ref)) {
+            return `
+              <div class="carousel-slide himate-audio-slide">
+                <div class="himate-audio">
+                  <audio
+                    src="${safeRef}"
+                    class="himate-audio-element"
+                    preload="metadata"
+                  ></audio>
+
+                  <div class="himate-audio-main">
+                    <button
+                      type="button"
+                      class="himate-audio-play"
+                      data-audio-action="play"
+                      aria-label="Play voice message"
+                    >
+                      <i class="fa-solid fa-play"></i>
+                    </button>
+
+                    <div class="himate-audio-content">
+                      <div class="himate-audio-top">
+                        <div class="himate-audio-label">
+                          <i class="fa-solid fa-microphone"></i>
+                          ${isVoiceRef(ref) ? "Voice message" : "Audio"}
+                        </div>
+
+                        <div class="himate-audio-time">
+                          <span class="himate-audio-current">0:00</span>
+                          <span class="himate-audio-separator">/</span>
+                          <span class="himate-audio-duration">0:00</span>
+                        </div>
+                      </div>
+
+                      <input
+                        type="range"
+                        class="himate-audio-progress"
+                        min="0"
+                        max="100"
+                        value="0"
+                        step="0.1"
+                        aria-label="Audio progress"
+                      >
+
+                      <div class="himate-audio-wave">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="himate-audio-control"
+                      data-audio-action="mute"
+                      aria-label="Mute audio"
+                    >
+                      <i class="fa-solid fa-volume-high"></i>
+                    </button>
+
+                    <input
+                      type="range"
+                      class="himate-audio-volume"
+                      min="0"
+                      max="1"
+                      value="1"
+                      step="0.05"
+                      aria-label="Audio volume"
+                    >
+
+                    <button
+                      type="button"
+                      class="himate-audio-control"
+                      data-audio-action="download"
+                      aria-label="Download audio"
+                    >
+                      <i class="fa-solid fa-download"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+        }
+
+        /*
+         * 3. IMAGE
+         * Images stay inside the carousel container and open
+         * in the internal Hi-Mate image viewer when tapped.
+         */
+        return `
+          <div class="carousel-slide">
+            <button
+              type="button"
+              class="himate-image-trigger"
+              data-image-src="${safeRef}"
+              aria-label="View image"
+            >
+              <img
+                src="${safeRef}"
+                class="carousel-media"
+                loading="lazy"
+                alt=""
+              >
+            </button>
+          </div>
+        `;
     }).join("");
+
     const dots = mediaRefs.length > 1
-        ? `<div class="carousel-dots">${mediaRefs.map((_, i) => `<span class="carousel-dot${i === 0 ? " active" : ""}"></span>`).join("")}</div>`
+        ? `<div class="carousel-dots">${mediaRefs.map((_, i) =>
+            `<span class="carousel-dot${i === 0 ? " active" : ""}"></span>`
+        ).join("")}</div>`
         : "";
-    return `<div class="media-carousel"><div class="carousel-track">${slides}</div>${dots}</div>`;
+
+    return `
+      <div class="media-carousel">
+        <div class="carousel-track">${slides}</div>
+        ${dots}
+      </div>
+    `;
 }
+
+function openHiMateImageViewer(src) {
+    const existing = document.querySelector(".himate-image-viewer");
+    if (existing) existing.remove();
+
+    const overlay = document.createElement("div");
+    overlay.className = "himate-image-viewer";
+
+    overlay.innerHTML = `
+      <div class="himate-image-viewer-header">
+        <button
+          type="button"
+          class="himate-viewer-btn himate-image-close"
+          aria-label="Close image"
+        >
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <button
+          type="button"
+          class="himate-viewer-btn himate-image-download"
+          aria-label="Download image"
+        >
+          <i class="fa-solid fa-download"></i>
+        </button>
+      </div>
+
+      <div class="himate-image-viewer-body">
+        <img src="${escapeHtml(src)}" alt="">
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.remove();
+
+    overlay
+        .querySelector(".himate-image-close")
+        .addEventListener("click", close);
+
+    overlay
+        .querySelector(".himate-image-download")
+        .addEventListener("click", () => {
+            const a = document.createElement("a");
+            a.href = src;
+            a.download = "";
+            a.target = "_blank";
+            a.rel = "noopener";
+            a.click();
+        });
+
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) close();
+    });
+}
+
+
+function updateVideoButton(video) {
+    const player = video.closest(".himate-video");
+    if (!player) return;
+
+    const buttons = player.querySelectorAll(
+        '[data-media-action="play"]'
+    );
+
+    buttons.forEach((button) => {
+        button.innerHTML = video.paused
+            ? '<i class="fa-solid fa-play"></i>'
+            : '<i class="fa-solid fa-pause"></i>';
+    });
+}
+
+
+function updateVideoProgress(video) {
+    const player = video.closest(".himate-video");
+    if (!player) return;
+
+    const progress =
+        player.querySelector(".himate-progress");
+
+    if (!progress || !video.duration) return;
+
+    progress.value =
+        (video.currentTime / video.duration) * 100;
+}
+
+
+function wireVideoPlayer(player) {
+    const video = player.querySelector("video");
+    if (!video) return;
+
+    const playButtons =
+        player.querySelectorAll(
+            '[data-media-action="play"]'
+        );
+
+    const muteButton =
+        player.querySelector(
+            '[data-media-action="mute"]'
+        );
+
+    const downloadButton =
+        player.querySelector(
+            '[data-media-action="download"]'
+        );
+
+    const progress =
+        player.querySelector(".himate-progress");
+
+    const volume =
+        player.querySelector(".himate-volume");
+
+    const togglePlay = () => {
+        if (video.paused) {
+            video.play().catch(() => {});
+        } else {
+            video.pause();
+        }
+    };
+
+    playButtons.forEach((button) => {
+        button.addEventListener("click", (e) => {
+            e.stopPropagation();
+            togglePlay();
+        });
+    });
+
+    muteButton?.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        video.muted = !video.muted;
+
+        muteButton.innerHTML = video.muted
+            ? '<i class="fa-solid fa-volume-xmark"></i>'
+            : '<i class="fa-solid fa-volume-high"></i>';
+    });
+
+    volume?.addEventListener("input", (e) => {
+        e.stopPropagation();
+
+        video.volume = Number(e.target.value);
+        video.muted = video.volume === 0;
+
+        if (muteButton) {
+            muteButton.innerHTML = video.muted
+                ? '<i class="fa-solid fa-volume-xmark"></i>'
+                : '<i class="fa-solid fa-volume-high"></i>';
+        }
+    });
+
+    progress?.addEventListener("input", (e) => {
+        e.stopPropagation();
+
+        if (!video.duration) return;
+
+        video.currentTime =
+            (Number(e.target.value) / 100) *
+            video.duration;
+    });
+
+    downloadButton?.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        const src = video.currentSrc || video.src;
+        if (!src) return;
+
+        const a = document.createElement("a");
+        a.href = src;
+        a.download = "";
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.click();
+    });
+
+    video.addEventListener("play", () => {
+        updateVideoButton(video);
+    });
+
+    video.addEventListener("pause", () => {
+        updateVideoButton(video);
+    });
+
+    video.addEventListener("timeupdate", () => {
+        updateVideoProgress(video);
+    });
+
+    video.addEventListener("loadedmetadata", () => {
+        updateVideoProgress(video);
+    });
+
+    video.addEventListener("ended", () => {
+        updateVideoButton(video);
+        const progress = player.querySelector(".himate-progress");
+        if (progress) progress.value = 0;
+    });
+}
+
+
+function updateAudioPlayer(audio) {
+    const player = audio.closest(".himate-audio");
+    if (!player) return;
+
+    const playButton =
+        player.querySelector(
+            '[data-audio-action="play"]'
+        );
+
+    const progress =
+        player.querySelector(".himate-audio-progress");
+
+    const current =
+        player.querySelector(".himate-audio-current");
+
+    const duration =
+        player.querySelector(".himate-audio-duration");
+
+    const bars =
+        player.querySelectorAll(
+            ".himate-audio-wave span"
+        );
+
+    if (playButton) {
+        playButton.innerHTML = audio.paused
+            ? '<i class="fa-solid fa-play"></i>'
+            : '<i class="fa-solid fa-pause"></i>';
+    }
+
+    if (current) {
+        current.textContent =
+            formatDuration(audio.currentTime * 1000);
+    }
+
+    if (duration && Number.isFinite(audio.duration)) {
+        duration.textContent =
+            formatDuration(audio.duration * 1000);
+    }
+
+    if (progress && Number.isFinite(audio.duration) && audio.duration > 0) {
+        const percent =
+            (audio.currentTime / audio.duration) * 100;
+
+        progress.value = percent;
+
+        const activeBars =
+            Math.round(
+                (percent / 100) * bars.length
+            );
+
+        bars.forEach((bar, index) => {
+            bar.classList.toggle(
+                "active",
+                index < activeBars
+            );
+        });
+    }
+}
+
+
+function wireAudioPlayer(player) {
+    const audio =
+        player.querySelector(".himate-audio-element");
+
+    if (!audio) return;
+
+    const playButton =
+        player.querySelector(
+            '[data-audio-action="play"]'
+        );
+
+    const muteButton =
+        player.querySelector(
+            '[data-audio-action="mute"]'
+        );
+
+    const downloadButton =
+        player.querySelector(
+            '[data-audio-action="download"]'
+        );
+
+    const progress =
+        player.querySelector(".himate-audio-progress");
+
+    const volume =
+        player.querySelector(".himate-audio-volume");
+
+    const togglePlay = () => {
+        if (audio.paused) {
+            audio.play().catch(() => {});
+        } else {
+            audio.pause();
+        }
+    };
+
+    playButton?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        togglePlay();
+    });
+
+    muteButton?.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        audio.muted = !audio.muted;
+
+        muteButton.innerHTML = audio.muted
+            ? '<i class="fa-solid fa-volume-xmark"></i>'
+            : '<i class="fa-solid fa-volume-high"></i>';
+    });
+
+    volume?.addEventListener("input", (e) => {
+        e.stopPropagation();
+
+        audio.volume =
+            Number(e.target.value);
+
+        audio.muted =
+            audio.volume === 0;
+
+        if (muteButton) {
+            muteButton.innerHTML =
+                audio.muted
+                    ? '<i class="fa-solid fa-volume-xmark"></i>'
+                    : '<i class="fa-solid fa-volume-high"></i>';
+        }
+    });
+
+    progress?.addEventListener("input", (e) => {
+        e.stopPropagation();
+
+        if (
+            !Number.isFinite(audio.duration) ||
+            audio.duration <= 0
+        ) {
+            return;
+        }
+
+        audio.currentTime =
+            (Number(e.target.value) / 100) *
+            audio.duration;
+    });
+
+    downloadButton?.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        const src =
+            audio.currentSrc ||
+            audio.src;
+
+        if (!src) return;
+
+        const a =
+            document.createElement("a");
+
+        a.href = src;
+        a.download = "";
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.click();
+    });
+
+    audio.addEventListener(
+        "loadedmetadata",
+        () => updateAudioPlayer(audio)
+    );
+
+    audio.addEventListener(
+        "timeupdate",
+        () => updateAudioPlayer(audio)
+    );
+
+    audio.addEventListener(
+        "play",
+        () => updateAudioPlayer(audio)
+    );
+
+    audio.addEventListener(
+        "pause",
+        () => updateAudioPlayer(audio)
+    );
+
+    audio.addEventListener(
+        "ended",
+        () => {
+            audio.currentTime = 0;
+            updateAudioPlayer(audio);
+        }
+    );
+
+    updateAudioPlayer(audio);
+}
+
 
 function wireCarousel(cardEl) {
     const track = cardEl.querySelector(".carousel-track");
     if (!track) return;
+
     const dots = cardEl.querySelectorAll(".carousel-dot");
+
+    cardEl.querySelectorAll(".himate-image-trigger").forEach((trigger) => {
+        trigger.addEventListener("click", (e) => {
+            e.stopPropagation();
+
+            const src =
+                trigger.dataset.imageSrc;
+
+            if (src) {
+                openHiMateImageViewer(src);
+            }
+        });
+    });
+
+    cardEl.querySelectorAll(".himate-video").forEach((player) => {
+        wireVideoPlayer(player);
+    });
+
+    cardEl.querySelectorAll(".himate-audio").forEach((player) => {
+        wireAudioPlayer(player);
+    });
+
     let startX = 0;
     let scrolling = false;
 
-    track.addEventListener("touchstart", (e) => { startX = e.touches[0].clientX; scrolling = true; }, { passive: true });
-    track.addEventListener("touchmove", () => {}, { passive: true });
+    track.addEventListener("touchstart", (e) => {
+        startX = e.touches[0].clientX;
+        scrolling = true;
+    }, { passive: true });
+
+    track.addEventListener("touchmove", () => {}, {
+        passive: true
+    });
+
     track.addEventListener("touchend", (e) => {
         if (!scrolling) return;
+
         scrolling = false;
-        const delta = startX - e.changedTouches[0].clientX;
+
+        const delta =
+            startX - e.changedTouches[0].clientX;
+
         if (Math.abs(delta) < 40) return;
-        const slideWidth = track.clientWidth;
-        track.scrollTo({ left: track.scrollLeft + (delta > 0 ? slideWidth : -slideWidth), behavior: "smooth" });
+
+        const slideWidth =
+            track.clientWidth;
+
+        track.scrollTo({
+            left:
+                track.scrollLeft +
+                (delta > 0
+                    ? slideWidth
+                    : -slideWidth),
+            behavior: "smooth"
+        });
     });
+
     track.addEventListener("scroll", () => {
-        const idx = Math.round(track.scrollLeft / track.clientWidth);
-        dots.forEach((d, i) => d.classList.toggle("active", i === idx));
+        const width = track.clientWidth;
+        if (!width) return;
+
+        const idx =
+            Math.round(
+                track.scrollLeft / width
+            );
+
+        dots.forEach((d, i) => {
+            d.classList.toggle(
+                "active",
+                i === idx
+            );
+        });
     });
 }
 
