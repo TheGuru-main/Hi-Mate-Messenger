@@ -2234,3 +2234,10 @@ body.background-network{
 .icon-btn.on-neon{
   color: #fff;
 }
+
+/* ---------- Header nav buttons — match bottom-nav tap size ---------- */
+#home .top-bar .icon-btn{
+  width: 44px;
+  height: 44px;
+  font-size: 19px;
+}
