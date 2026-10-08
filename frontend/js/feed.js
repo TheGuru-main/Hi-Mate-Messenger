@@ -1411,8 +1411,7 @@ export function renderPost(post, opts) {
 export async function loadFeed() {
     const list = document.getElementById("feed-list");
     if (!list) return;
-    list.innerHTML = '<div class="section-title">Loading…</div>
-      </div>';
+    list.innerHTML = '<div class="section-title">Loading…</div>';
     try {
         const posts = await api.getFeed();
         list.innerHTML = "";
