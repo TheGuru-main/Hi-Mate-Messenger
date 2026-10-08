@@ -107,6 +107,11 @@ def serialize_post(post: Post, author: User | None, comment_count: int, reaction
         "id": str(post.id),
         "author_uid": post.author_uid,
         "author_username": author.username if author else None,
+        "author_profile_image_ref": (
+            storage.get_signed_url(author.profile_image_ref)
+            if author and author.profile_image_ref
+            else None
+        ),
         "author_region": author.region if author else None,
         "author_locality": author.locality if author else None,
         "author_talent_category": author.interest if author else None,

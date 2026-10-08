@@ -36,12 +36,22 @@ export async function loadKliqueList() {
     }
 }
 
-function renderBubble(content, isMine) {
+function renderBubble(content, isMine, messageId = null, pendingKey = null) {
     const row = document.createElement("div");
     row.className = "bubble-row " + (isMine ? "mine" : "theirs");
+
+    if (messageId) {
+        row.dataset.messageId = String(messageId);
+    }
+
+    if (pendingKey) {
+        row.dataset.pendingKey = String(pendingKey);
+    }
+
     const bubble = document.createElement("div");
     bubble.className = "bubble " + (isMine ? "mine" : "theirs");
     bubble.textContent = content || "";
+
     row.appendChild(bubble);
     return row;
 }
@@ -92,26 +102,67 @@ export async function openGroupChat(group) {
 
 async function sendCurrentMessage() {
     const input = document.getElementById("chat-input");
+    if (!input) return;
+
     const content = input.value.trim();
     if (!content || !activeConversationUid) return;
+
     input.value = "";
 
     const container = document.getElementById("chat-messages");
-    const bubbleRow = renderBubble(content, true);
+    if (!container) return;
+
+    /*
+     * The backend echoes the saved message over WebSocket to BOTH
+     * receiver and sender. Keep one optimistic bubble and let the
+     * WebSocket event reconcile it by message id/content.
+     */
+    const pendingKey = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    const bubbleRow = renderBubble(
+        content,
+        true,
+        null,
+        pendingKey
+    );
+
     container.appendChild(bubbleRow);
     container.scrollTop = container.scrollHeight;
 
     const payload = activeConversationType === "group"
-        ? { group_id: activeConversationUid, type: "text", content }
-        : { receiver_uid: activeConversationUid, type: "text", content };
+        ? {
+            group_id: activeConversationUid,
+            type: "text",
+            content
+        }
+        : {
+            receiver_uid: activeConversationUid,
+            type: "text",
+            content
+        };
 
     try {
-        await api.sendMessage(payload);
+        const saved = await api.sendMessage(payload);
+
+        /*
+         * If WebSocket has not arrived yet, attach the server id
+         * to the optimistic bubble. If WebSocket already reconciled
+         * it, this lookup simply finds nothing and does no harm.
+         */
+        const pending = container.querySelector(
+            `[data-pending-key="${CSS.escape(pendingKey)}"]`
+        );
+
+        if (pending && saved?.id) {
+            pending.dataset.messageId = String(saved.id);
+            delete pending.dataset.pendingKey;
+        }
     } catch (e) {
         bubbleRow.remove();
         alert(e.message);
     }
 }
+
 
 function closeKliqueModal() {
     const existing = document.querySelector(".klique-modal-overlay");
@@ -617,12 +668,66 @@ export function initChat() {
 
     onMessage((data) => {
         if (data.type !== "message") return;
+
         const me = getCachedUser();
-        const isRelevant = data.sender_uid === activeConversationUid || data.receiver_uid === activeConversationUid || data.group_id === activeConversationUid;
+        const myUid = me ? me.uid : null;
+
+        const isRelevant =
+            data.sender_uid === activeConversationUid ||
+            data.receiver_uid === activeConversationUid ||
+            data.group_id === activeConversationUid;
+
         if (!isRelevant) return;
+
         const container = document.getElementById("chat-messages");
         if (!container) return;
-        container.appendChild(renderBubble(data.content, data.sender_uid === (me ? me.uid : null)));
+
+        const messageId = data.id ? String(data.id) : null;
+
+        /*
+         * First: exact server-id deduplication.
+         */
+        if (
+            messageId &&
+            container.querySelector(
+                `[data-message-id="${CSS.escape(messageId)}"]`
+            )
+        ) {
+            return;
+        }
+
+        /*
+         * Second: reconcile the sender's optimistic bubble.
+         * The backend deliberately echoes to the sender, so don't
+         * append another copy of our own message.
+         */
+        if (data.sender_uid === myUid) {
+            const pendingRows = Array.from(
+                container.querySelectorAll(".bubble-row[data-pending-key]")
+            );
+
+            const pending = pendingRows.find(row => {
+                const bubble = row.querySelector(".bubble");
+                return bubble && bubble.textContent === (data.content || "");
+            });
+
+            if (pending) {
+                if (messageId) {
+                    pending.dataset.messageId = messageId;
+                }
+                delete pending.dataset.pendingKey;
+                return;
+            }
+        }
+
+        container.appendChild(
+            renderBubble(
+                data.content,
+                data.sender_uid === myUid,
+                messageId
+            )
+        );
+
         container.scrollTop = container.scrollHeight;
     });
 }

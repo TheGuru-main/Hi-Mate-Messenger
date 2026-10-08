@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.database import Base
 
 # Locked reaction set
-VALID_REACTIONS = {"❤️", "👍", "😂", "😮", "😢", "✅", "🙏", "🙋", "👏", "🚀", "🎓", "📍", "💪"}
+VALID_REACTIONS = {"❤️", "👍", "😂", "😮", "😢", "✅", "🙏", "🙋", "👏", "🚀", "🎓", "📍", "💪", "💎"}
 
 # Locked feed categories
 FEED_CATEGORIES = {

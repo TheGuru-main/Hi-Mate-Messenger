@@ -2668,21 +2668,22 @@ body.background-network{
 
 .feed-media-brand{
     position:absolute;
-    top:10px;
     left:10px;
-    right:10px;
+    bottom:10px;
     z-index:8;
     display:flex;
     align-items:center;
     gap:6px;
     width:max-content;
     max-width:calc(100% - 20px);
-    padding:7px 10px;
+    padding:6px 9px;
     border-radius:9px;
-    background:rgba(0,0,0,.42);
-    color:rgba(255,255,255,.88);
-    font-size:10px;
+    background:rgba(0,0,0,.48);
+    color:rgba(255,255,255,.82);
+    font-size:9px;
+    line-height:1;
     pointer-events:none;
+    backdrop-filter:blur(7px);
 }
 
 .feed-media-brand i{
@@ -2865,3 +2866,26 @@ body.background-network{
     font-size:12px;
 }
 
+
+
+/* ---------- Feed profile images ---------- */
+
+.feed-profile-avatar{
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+}
+
+.feed-profile-image{
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:cover;
+    object-position:center;
+}
+
+.feed-profile-avatar:active{
+    transform:scale(.94);
+}

@@ -1247,12 +1247,15 @@ export function renderPost(post, opts) {
         ? post.media_refs.filter(Boolean)
         : [];
     const initials = (post.author_username || "?").slice(0, 2).toUpperCase();
+    const profileImage = post.author_profile_image_ref
+        ? `<img class="feed-profile-image" src="${escapeHtml(post.author_profile_image_ref)}" alt="${escapeHtml(post.author_username || "Profile")}" loading="lazy">`
+        : initials;
     const locationParts = [post.author_locality, post.author_region].filter(Boolean).join(", ");
     const talentBadge = post.author_talent_category ? `<span class="talent-badge">${escapeHtml(talentLabel(post.author_talent_category))}</span>` : "";
 
     div.innerHTML = `
       <div class="post-header">
-        <div class="avatar profile-tap" data-uid="${post.author_uid}">${initials}</div>
+        <div class="avatar profile-tap feed-profile-avatar" data-uid="${post.author_uid}">${profileImage}</div>
         <div class="post-header-text">
           <div class="post-author-name profile-tap" data-uid="${post.author_uid}">${escapeHtml(post.author_username || post.author_uid)} ${talentBadge}</div>
           <div class="post-meta" data-ts="${post.created_at}">${locationParts ? escapeHtml(locationParts) + " · " : ""}${post.category} · ${timeAgo(post.created_at)}</div>
