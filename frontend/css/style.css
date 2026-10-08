@@ -2220,6 +2220,57 @@ body.background-network{
 }
 
 
+
+/* =========================================================
+   Hi-Mate 🌐 Header Identity
+   ========================================================= */
+
+.himate-logo{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    min-width:0;
+    color:var(--text-primary);
+    text-decoration:none;
+}
+
+.himate-logo-globe{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    width:30px;
+    height:30px;
+    flex:0 0 30px;
+    font-size:22px;
+    line-height:1;
+    filter:drop-shadow(0 0 7px rgba(0,229,255,.28));
+}
+
+.himate-logo-text{
+    display:inline-block;
+    font-size:17px;
+    font-weight:800;
+    letter-spacing:.1px;
+    white-space:nowrap;
+}
+
+@media (max-width:520px){
+    .himate-logo{
+        gap:5px;
+    }
+
+    .himate-logo-globe{
+        width:28px;
+        height:28px;
+        flex-basis:28px;
+        font-size:21px;
+    }
+
+    .himate-logo-text{
+        font-size:16px;
+    }
+}
+
 /* ---------- Home header nav buttons ---------- */
 #home .top-bar .icon-btn{
   color: var(--success);
