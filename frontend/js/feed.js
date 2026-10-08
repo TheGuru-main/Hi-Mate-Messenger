@@ -1307,7 +1307,12 @@ export function renderPost(post, opts) {
             kliqueStatus: post.author_klique_status,
             isFollowing: post.author_is_following,
         });
-        div.insertBefore(connectRow, div.querySelector(".action-row"));
+        const reactionFrame = div.querySelector(".reaction-frame");
+        const actionRow = div.querySelector(".action-row");
+
+        if (reactionFrame && actionRow) {
+            reactionFrame.insertBefore(connectRow, actionRow);
+        }
     }
 
     wireCarousel(div);
