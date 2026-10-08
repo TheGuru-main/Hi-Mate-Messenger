@@ -53,3 +53,12 @@ class Reaction(Base):
     emoji = Column(String, nullable=False)  # must be in VALID_REACTIONS
     identity_version = Column(Integer, default=1, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PostMention(Base):
+    __tablename__ = "post_mentions"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    post_id = Column(UUID(as_uuid=True), ForeignKey("posts.id"), nullable=False)
+    mentioned_uid = Column(String, ForeignKey("users.uid"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)

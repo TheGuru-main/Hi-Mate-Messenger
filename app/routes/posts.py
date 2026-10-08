@@ -6,7 +6,7 @@ from sqlalchemy import func, or_
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.models.post import Post, Comment, Reaction, FEED_CATEGORIES, VALID_REACTIONS
+from app.models.post import Post, PostMention, Comment, Reaction, FEED_CATEGORIES, VALID_REACTIONS
 from app.services.crawler import crawl, Candidate
 from app.services import storage
 from app.models.klique import KliqueRequest, Follow
@@ -20,6 +20,7 @@ class PostCreate(BaseModel):
     category: str
     content: str | None = None
     media_refs: list[str] = []
+    mentioned_uids: list[str] = []
 
 
 class ReactionCreate(BaseModel):
@@ -103,6 +104,10 @@ def serialize_post(post: Post, author: User | None, comment_count: int, reaction
     gem_count = rd["counts"].get(GEM_EMOJI, 0)
     emoji_counts = {k: v for k, v in rd["counts"].items() if k != GEM_EMOJI}
 
+    mention_rows = db.query(PostMention, User).join(
+        User, User.uid == PostMention.mentioned_uid
+    ).filter(PostMention.post_id == post.id).all()
+
     return {
         "id": str(post.id),
         "author_uid": post.author_uid,
@@ -117,6 +122,10 @@ def serialize_post(post: Post, author: User | None, comment_count: int, reaction
         "author_talent_category": author.interest if author else None,
         "category": post.category,
         "content": post.content,
+        "mentions": [
+            {"uid": user.uid, "username": user.username}
+            for _, user in mention_rows
+        ],
         "media_refs": media_list,
         "comment_count": comment_count,
         "reaction_counts": emoji_counts,
@@ -139,6 +148,28 @@ async def create_post(payload: PostCreate, db: Session = Depends(get_db), curren
         identity_version=current_user.identity_version,
     )
     db.add(post)
+    db.flush()
+
+    mention_uids = list(dict.fromkeys(
+        uid for uid in payload.mentioned_uids
+        if uid and uid != current_user.uid
+    ))
+
+    if mention_uids:
+        valid_users = {
+            u.uid
+            for u in db.query(User).filter(User.uid.in_(mention_uids)).all()
+        }
+
+        for uid in mention_uids:
+            if uid in valid_users:
+                db.add(
+                    PostMention(
+                        post_id=post.id,
+                        mentioned_uid=uid,
+                    )
+                )
+
     db.commit()
     db.refresh(post)
     return serialize_post(post, current_user, 0)
@@ -151,6 +182,7 @@ async def delete_post(post_id: str, db: Session = Depends(get_db), current_user:
         raise HTTPException(status_code=404, detail="Post not found")
     if post.author_uid != current_user.uid:
         raise HTTPException(status_code=403, detail="You can only delete your own posts")
+    db.query(PostMention).filter(PostMention.post_id == post_id).delete()
     db.query(Reaction).filter(Reaction.post_id == post_id).delete()
     db.query(Comment).filter(Comment.post_id == post_id).delete()
     db.delete(post)

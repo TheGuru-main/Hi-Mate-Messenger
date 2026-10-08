@@ -2889,3 +2889,96 @@ body.background-network{
 .feed-profile-avatar:active{
     transform:scale(.94);
 }
+
+/* ---------- Feed @ / # controls ---------- */
+
+.feed-control-btn{
+    min-width:44px;
+    height:42px;
+    padding:0 12px;
+    border:1px solid rgba(0,229,255,.22);
+    border-radius:11px;
+    background:rgba(255,255,255,.07);
+    color:var(--text-primary);
+    font-size:21px;
+    font-weight:800;
+    line-height:1;
+    cursor:pointer;
+    touch-action:manipulation;
+}
+
+.feed-control-btn:active,
+.feed-action-shortcut:active{
+    transform:scale(.96);
+}
+
+.feed-action-shortcut{
+    min-width:42px;
+    min-height:36px;
+    justify-content:center;
+    font-size:20px;
+    font-weight:800;
+    color:var(--text-primary);
+}
+
+.feed-mention-picker,
+.feed-topic-picker{
+    margin:6px 0 8px;
+    padding:8px;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:11px;
+    background:rgba(255,255,255,.035);
+}
+
+.feed-mention-results{
+    display:flex;
+    flex-direction:column;
+    gap:5px;
+    max-height:180px;
+    overflow-y:auto;
+    margin-top:6px;
+}
+
+.feed-picker-user{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    width:100%;
+    border:0;
+    border-radius:9px;
+    padding:7px;
+    background:rgba(255,255,255,.05);
+    color:var(--text-primary);
+    text-align:left;
+    cursor:pointer;
+}
+
+.feed-picker-user .avatar.small{
+    width:30px;
+    height:30px;
+    font-size:10px;
+}
+
+.feed-picker-hint,
+.feed-picker-title{
+    color:var(--text-faint);
+    font-size:11px;
+    padding:3px;
+}
+
+.feed-topic-grid{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-top:5px;
+}
+
+.feed-topic-option{
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:9px;
+    padding:7px 9px;
+    background:rgba(255,255,255,.05);
+    color:var(--text-primary);
+    font-size:11px;
+    cursor:pointer;
+}

@@ -7,6 +7,7 @@ const REACTIONS = ["❤️", "👍", "😂", "😮", "😢", "✅", "🙏", "�
 const LONG_PRESS_MS = 450;
 
 let pendingMediaRefs = [];
+let pendingMentionUids = [];
 let mediaRecorder = null;
 let recordedChunks = [];
 
@@ -1234,6 +1235,209 @@ function openReactionPicker(anchorBtn, onPicked) {
     setTimeout(() => document.addEventListener("click", closeReactionPopover, { once: true }), 0);
 }
 
+
+function ensureComposerMentions() {
+    if (!Array.isArray(pendingMentionUids)) pendingMentionUids = [];
+    return pendingMentionUids;
+}
+
+function insertComposerMention(uid, username) {
+    const textarea = document.getElementById("post-content");
+    if (!textarea) return;
+
+    const name = String(username || uid || "").trim();
+    if (!name) return;
+
+    ensureComposerMentions();
+
+    if (uid && !pendingMentionUids.includes(uid)) {
+        pendingMentionUids.push(uid);
+    }
+
+    const prefix = textarea.value && !/\s$/.test(textarea.value) ? " " : "";
+
+    textarea.value += prefix + "@" + name + " ";
+    textarea.focus();
+}
+
+function openFeedMentionPicker() {
+    const composer = document.querySelector("#tab-feed .composer");
+    if (!composer) return;
+
+    const existing = composer.querySelector(".feed-mention-picker");
+
+    if (existing) {
+        existing.querySelector("input")?.focus();
+        return;
+    }
+
+    const picker = document.createElement("div");
+    picker.className = "feed-mention-picker";
+
+    picker.innerHTML = `
+      <input class="input-box small"
+             type="text"
+             placeholder="Search username…"
+             autocomplete="off">
+      <div class="feed-mention-results"></div>
+    `;
+
+    composer.insertBefore(
+        picker,
+        composer.querySelector(".composer-toolbar")
+    );
+
+    const input = picker.querySelector("input");
+    const results = picker.querySelector(".feed-mention-results");
+
+    let timer;
+
+    async function searchUsers() {
+        const q = input.value.trim();
+
+        results.innerHTML = q
+            ? '<div class="feed-picker-hint">Searching…</div>'
+            : '<div class="feed-picker-hint">Type a username</div>';
+
+        if (!q) return;
+
+        try {
+            const users = await api.search(q, "username");
+
+            results.innerHTML = "";
+
+            (Array.isArray(users) ? users : [])
+                .slice(0, 8)
+                .forEach(user => {
+                    const button = document.createElement("button");
+
+                    button.type = "button";
+                    button.className = "feed-picker-user";
+
+                    button.innerHTML = `
+                      <span class="avatar small">
+                        ${escapeHtml(
+                            (user.username || "?")
+                                .slice(0, 2)
+                                .toUpperCase()
+                        )}
+                      </span>
+                      <span>
+                        @${escapeHtml(user.username || user.uid)}
+                      </span>
+                    `;
+
+                    button.addEventListener("click", () => {
+                        insertComposerMention(
+                            user.uid,
+                            user.username
+                        );
+
+                        picker.remove();
+                    });
+
+                    results.appendChild(button);
+                });
+
+            if (!results.children.length) {
+                results.innerHTML =
+                    '<div class="feed-picker-hint">No matching users</div>';
+            }
+        } catch (e) {
+            results.innerHTML =
+                `<div class="feed-picker-hint">${escapeHtml(e.message)}</div>`;
+        }
+    }
+
+    input.addEventListener("input", () => {
+        clearTimeout(timer);
+        timer = setTimeout(searchUsers, 250);
+    });
+
+    input.addEventListener("keydown", e => {
+        if (e.key === "Escape") {
+            picker.remove();
+        }
+    });
+
+    input.focus();
+}
+
+function openFeedTopicPicker() {
+    const composer = document.querySelector("#tab-feed .composer");
+    const select = document.getElementById("post-category");
+
+    if (!composer || !select) return;
+
+    const existing = composer.querySelector(".feed-topic-picker");
+
+    if (existing) {
+        existing.remove();
+        return;
+    }
+
+    const picker = document.createElement("div");
+    picker.className = "feed-topic-picker";
+
+    picker.innerHTML = `
+      <div class="feed-picker-title">Choose topic</div>
+      <div class="feed-topic-grid"></div>
+    `;
+
+    composer.insertBefore(
+        picker,
+        composer.querySelector(".composer-toolbar")
+    );
+
+    const grid = picker.querySelector(".feed-topic-grid");
+
+    Array.from(select.options)
+        .filter(option => option.value)
+        .forEach(option => {
+            const button = document.createElement("button");
+
+            button.type = "button";
+            button.className = "feed-topic-option";
+            button.textContent = "#" + option.textContent;
+
+            button.addEventListener("click", () => {
+                select.value = option.value;
+                picker.remove();
+            });
+
+            grid.appendChild(button);
+        });
+}
+
+function preparePostMention(post) {
+    insertComposerMention(
+        post.author_uid,
+        post.author_username || post.author_uid
+    );
+
+    document
+        .querySelector("#tab-feed .composer")
+        ?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+}
+
+function preparePostTopic(post) {
+    const select = document.getElementById("post-category");
+
+    if (select && post.category) {
+        select.value = post.category;
+    }
+
+    document
+        .querySelector("#tab-feed .composer")
+        ?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+}
+
 export function renderPost(post, opts) {
     const div = document.createElement("div");
     div.className = "card feed-card";
@@ -1276,6 +1480,8 @@ export function renderPost(post, opts) {
       }
       <div class="reaction-frame">
         <div class="action-row">
+        <button class="action-btn feed-action-shortcut mention-post-btn" data-action="mention" title="Mention author">@</button>
+        <button class="action-btn feed-action-shortcut topic-post-btn" data-action="topic" title="Use this topic">#</button>
         <button class="action-btn react-btn" data-action="react"><i class="fa-regular fa-heart"></i></button>
         <button class="action-btn" data-action="comment"><i class="fa-regular fa-comment"></i> ${post.comment_count || ""}</button>
         <button class="action-btn" data-action="share"><i class="fa-solid fa-share"></i></button>
@@ -1319,6 +1525,24 @@ export function renderPost(post, opts) {
     }
 
     wireCarousel(div);
+
+    const mentionPostBtn = div.querySelector(".mention-post-btn");
+    const topicPostBtn = div.querySelector(".topic-post-btn");
+
+    if (mentionPostBtn) {
+        mentionPostBtn.addEventListener(
+            "click",
+            () => preparePostMention(post)
+        );
+    }
+
+    if (topicPostBtn) {
+        topicPostBtn.addEventListener(
+            "click",
+            () => preparePostTopic(post)
+        );
+    }
+
     const reactBtn = div.querySelector(".react-btn");
     const gemBtn = div.querySelector(".gem-btn");
     const reactState = {
@@ -1595,6 +1819,23 @@ export function initFeed() {
 
     if (voiceBtn) voiceBtn.addEventListener("click", () => toggleVoiceRecording(voiceBtn));
 
+    const composerMentionBtn = document.getElementById("btn-composer-mention");
+    const composerTopicBtn = document.getElementById("btn-composer-topic");
+
+    if (composerMentionBtn) {
+        composerMentionBtn.addEventListener(
+            "click",
+            openFeedMentionPicker
+        );
+    }
+
+    if (composerTopicBtn) {
+        composerTopicBtn.addEventListener(
+            "click",
+            openFeedTopicPicker
+        );
+    }
+
     btn.addEventListener("click", async () => {
         const category = document.getElementById("post-category").value;
         const postContent = document.getElementById("post-content").value.trim();
@@ -1603,10 +1844,16 @@ export function initFeed() {
 
         const toast = showToast("Posting…", { sticky: true });
         try {
-            const newPost = await api.createPost({ category, content: postContent, media_refs: pendingMediaRefs });
+            const newPost = await api.createPost({
+                category,
+                content: postContent,
+                media_refs: pendingMediaRefs,
+                mentioned_uids: ensureComposerMentions()
+            });
             document.getElementById("post-content").value = "";
             document.getElementById("post-category").value = "";
             pendingMediaRefs = [];
+            pendingMentionUids = [];
             renderMediaPreview();
             updateToast(toast, "Posted ✓");
             setTimeout(() => dismissToast(toast), 1200);
