@@ -86,7 +86,7 @@ def bulk_relation_data(db: Session, author_uids: list, viewer_uid: str) -> dict:
 
 
 
-def serialize_post(post: Post, author: User | None, comment_count: int, reaction_data: dict | None = None, relation: dict | None = None) -> dict:
+def serialize_post(db: Session, post: Post, author: User | None, comment_count: int, reaction_data: dict | None = None, relation: dict | None = None) -> dict:
     raw_refs = []
     if post.media_refs:
         raw_refs = [m for m in post.media_refs.split(",") if m]
@@ -172,7 +172,7 @@ async def create_post(payload: PostCreate, db: Session = Depends(get_db), curren
 
     db.commit()
     db.refresh(post)
-    return serialize_post(post, current_user, 0)
+    return serialize_post(db, post, current_user, 0)
 
 
 @router.delete("/posts/{post_id}")
@@ -227,7 +227,7 @@ async def get_feed(media: str | None = None, db: Session = Depends(get_db), curr
     relations = bulk_relation_data(db, author_uids, current_user.uid)
 
     return [
-        serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0), reaction_data.get(p.id), relations.get(p.author_uid))
+        serialize_post(db, p, authors.get(p.author_uid), comment_counts.get(p.id, 0), reaction_data.get(p.id), relations.get(p.author_uid))
         for p in posts
     ]
 
