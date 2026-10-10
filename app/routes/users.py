@@ -140,7 +140,10 @@ async def get_user_posts(uid: str, db: Session = Depends(get_db), current_user: 
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_(post_ids)).group_by(Comment.post_id).all()
     )
     rd = bulk_reaction_data(db, [p.id for p in posts], current_user.uid)
-    return [serialize_post(p, target, comment_counts.get(p.id, 0), rd.get(p.id)) for p in posts]
+    return [
+        serialize_post(db, p, target, comment_counts.get(p.id, 0), rd.get(p.id))
+        for p in posts
+    ]
 
 
 @router.get("/users/{uid}/liked-posts")
@@ -156,7 +159,13 @@ async def get_user_liked_posts(uid: str, db: Session = Depends(get_db), current_
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_([p.id for p in posts])).group_by(Comment.post_id).all()
     )
     rd = bulk_reaction_data(db, [p.id for p in posts], current_user.uid)
-    return [serialize_post(p, authors.get(p.author_uid), comment_counts.get(p.id, 0), rd.get(p.id)) for p in posts]
+    return [
+        serialize_post(
+            db, p, authors.get(p.author_uid),
+            comment_counts.get(p.id, 0), rd.get(p.id)
+        )
+        for p in posts
+    ]
 
 
 @router.get("/users/{uid}/shared-posts")
@@ -172,4 +181,7 @@ async def get_user_shared_posts(uid: str, db: Session = Depends(get_db), current
         db.query(Comment.post_id, func.count(Comment.id)).filter(Comment.post_id.in_(post_ids)).group_by(Comment.post_id).all()
     )
     rd = bulk_reaction_data(db, [p.id for p in posts], current_user.uid)
-    return [serialize_post(p, target, comment_counts.get(p.id, 0), rd.get(p.id)) for p in posts]
+    return [
+        serialize_post(db, p, target, comment_counts.get(p.id, 0), rd.get(p.id))
+        for p in posts
+    ]
