@@ -75,10 +75,31 @@ async def list_kliques(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    return db.query(KliqueRequest).filter(
+    kliques = db.query(KliqueRequest).filter(
         ((KliqueRequest.from_uid == current_user.uid) | (KliqueRequest.to_uid == current_user.uid)),
         KliqueRequest.status == "accepted",
     ).all()
+
+    uids = {
+        uid
+        for k in kliques
+        for uid in (k.from_uid, k.to_uid)
+    }
+    users = db.query(User).filter(User.uid.in_(uids)).all()
+    usernames = {user.uid: user.username for user in users}
+
+    return [
+        {
+            "id": k.id,
+            "from_uid": k.from_uid,
+            "to_uid": k.to_uid,
+            "from_username": usernames.get(k.from_uid),
+            "to_username": usernames.get(k.to_uid),
+            "status": k.status,
+            "created_at": k.created_at,
+        }
+        for k in kliques
+    ]
 
 
 @router.get("/followers")

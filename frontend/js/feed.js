@@ -1192,8 +1192,16 @@ async function openSharePicker(post) {
     try { kliques = await api.kliqueList(); } catch (e) {}
     const me = getCachedUser();
     const kliqueOptions = kliques.map(k => {
-        const otherUid = k.from_uid === (me ? me.uid : null) ? k.to_uid : k.from_uid;
-        return `<label class="status-recipient-option"><input type="checkbox" value="${otherUid}"> ${escapeHtml(otherUid)}</label>`;
+        const myUid = me ? me.uid : null;
+        const isSender = k.from_uid === myUid;
+        const otherUid = isSender ? k.to_uid : k.from_uid;
+        const username = (
+            isSender
+                ? (k.to_username || k.username)
+                : (k.from_username || k.username)
+        ) || otherUid;
+
+        return `<label class="status-recipient-option"><input type="checkbox" value="${escapeHtml(otherUid)}"> ${escapeHtml(username)}</label>`;
     }).join("");
 
     overlay.innerHTML = `

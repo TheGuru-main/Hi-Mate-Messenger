@@ -7,14 +7,34 @@ let activeConversationType = "user";
 let activeGroup = null;
 
 function renderKliqueEntry(k, myUid) {
-    const otherUid = k.from_uid === myUid ? k.to_uid : k.from_uid;
+    const isSender = k.from_uid === myUid;
+    const otherUid = isSender ? k.to_uid : k.from_uid;
+    const username = (
+        isSender
+            ? (k.to_username || k.username)
+            : (k.from_username || k.username)
+    ) || otherUid;
+
     const div = document.createElement("div");
     div.className = "list-item";
-    div.innerHTML = `
-      <div class="avatar">${otherUid.slice(-2)}</div>
-      <div><div class="name">${otherUid}</div><div class="sub">Klique · tap to chat</div></div>
-    `;
-    div.addEventListener("click", () => openChat(otherUid, otherUid));
+
+    const avatar = document.createElement("div");
+    avatar.className = "avatar";
+    avatar.textContent = String(username).slice(-2);
+
+    const details = document.createElement("div");
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = username;
+
+    const sub = document.createElement("div");
+    sub.className = "sub";
+    sub.textContent = "Klique · tap to chat";
+
+    details.append(name, sub);
+    div.append(avatar, details);
+    div.addEventListener("click", () => openChat(otherUid, username));
+
     return div;
 }
 
