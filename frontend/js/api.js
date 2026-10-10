@@ -84,6 +84,7 @@ export const api = {
     request(`/matches/search?q=${encodeURIComponent(q)}`),
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
+  getMatchDetail: (fixtureId, q = "") => request(`/matches/${fixtureId}/detail${q}`),
 
   getLocationRegions: (countryIso) => request(`/location/regions?country=${encodeURIComponent(countryIso)}`, { auth: false }),
   getLocationLocalities: (region) => request(`/location/localities?region=${encodeURIComponent(region)}`, { auth: false }),

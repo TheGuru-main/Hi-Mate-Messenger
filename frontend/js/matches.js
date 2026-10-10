@@ -1,3 +1,4 @@
+import { mountMatchDetail } from "./match-detail.js";
 import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { onMessage } from "./socket.js";
@@ -769,7 +770,7 @@ function renderMatchStats(stats) {
    STATS FOLD
    ============================================================ */
 
-async function loadStatsFold(fixtureId) {
+async function loadStatsFoldLegacy(fixtureId) {
   const body = document.getElementById("match-stats-body");
 
   if (!body) return;
@@ -1351,4 +1352,19 @@ function renderMatchEvents(match) {
         </span>
       </div>
     `).join("");
+}
+
+
+async function loadStatsFold(fixtureId) {
+  const body = document.getElementById("match-stats-body");
+  if (!body) return;
+  const snap = typeof activeMatchSnapshot !== "undefined" ? activeMatchSnapshot : null;
+  const hints = snap && String(snap.fixture_id) === String(fixtureId)
+    ? { home_team_key: snap.home_team_key, away_team_key: snap.away_team_key }
+    : {};
+  try {
+    await mountMatchDetail(fixtureId, body, hints);
+  } catch (e) {
+    await loadStatsFoldLegacy(fixtureId);
+  }
 }

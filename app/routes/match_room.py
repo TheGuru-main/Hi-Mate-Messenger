@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.message import Group
 from app.models.match_room import MatchRoom
 from app.services import news, placement
+from app.services import match_detail as match_detail_service
 
 router = APIRouter(prefix="/matches", tags=["match-rooms"])
 
@@ -151,3 +152,19 @@ async def get_match_stats(fixture_id: int, current_user: User = Depends(get_curr
     if not stats:
         raise HTTPException(status_code=404, detail="Stats not available for this fixture")
     return stats
+
+@router.get("/{fixture_id}/detail")
+async def match_detail(
+    fixture_id: int,
+    home_key: str | None = None,
+    away_key: str | None = None,
+    current_user: User = Depends(get_current_user),
+):
+    """Goals, cards, subs, lineups, stats, last-5 and next-15 for one match, in one call."""
+    try:
+        data = await match_detail_service.fetch_match_detail(fixture_id, home_key, away_key)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Sports data provider unavailable")
+    if not data:
+        raise HTTPException(status_code=404, detail="Match detail not available")
+    return data
