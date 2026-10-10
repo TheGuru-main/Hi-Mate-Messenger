@@ -1070,7 +1070,7 @@ function renderCommentItem(c) {
     `;
 }
 
-async function openCommentBox(postId, initialPickerMode = null) {
+async function openCommentBox(postId) {
     closeOverlay();
     const overlay = document.createElement("div");
     overlay.className = "feed-modal-overlay";
@@ -1083,8 +1083,6 @@ async function openCommentBox(postId, initialPickerMode = null) {
         <div class="comment-list" id="comment-list"><div class="section-title">Loading…</div></div>
         <div class="comment-reply-context hidden" id="comment-reply-context"></div>
         <div class="comment-input-row">
-          <button type="button" class="comment-token-btn" id="comment-mention-btn" aria-label="Mention a person">@</button>
-          <button type="button" class="comment-token-btn" id="comment-topic-btn" aria-label="Insert a topic">#</button>
           <input class="input-box" id="comment-input" placeholder="Add a comment…">
           <button class="send-btn" id="comment-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
@@ -1095,27 +1093,6 @@ async function openCommentBox(postId, initialPickerMode = null) {
 
     const listEl = overlay.querySelector("#comment-list");
     let replyTo = null;
-
-    const commentInput = overlay.querySelector("#comment-input");
-    const commentBox = overlay.querySelector(".comment-box");
-
-    overlay.querySelector("#comment-mention-btn").addEventListener("click", () => {
-        openFeedMentionPicker({
-            mount: commentBox,
-            targetInput: commentInput,
-            onChoose: user => appendCommentToken(
-                commentInput,
-                "@" + String(user.username || user.uid)
-            )
-        });
-    });
-
-    overlay.querySelector("#comment-topic-btn").addEventListener("click", () => {
-        openFeedTopicPicker({
-            mount: commentBox,
-            targetInput: commentInput
-        });
-    });
 
     async function refresh() {
         try {
@@ -1165,22 +1142,6 @@ async function openCommentBox(postId, initialPickerMode = null) {
     });
 
     refresh();
-
-    if (initialPickerMode === "mention") {
-        openFeedMentionPicker({
-            mount: overlay.querySelector(".comment-box"),
-            targetInput: commentInput,
-            onChoose: user => appendCommentToken(
-                commentInput,
-                "@" + String(user.username || user.uid)
-            )
-        });
-    } else if (initialPickerMode === "topic") {
-        openFeedTopicPicker({
-            mount: overlay.querySelector(".comment-box"),
-            targetInput: commentInput
-        });
-    }
 }
 
 async function openSharePicker(post) {
@@ -1280,32 +1241,6 @@ function ensureComposerMentions() {
     return pendingMentionUids;
 }
 
-
-function appendCommentToken(input, token) {
-    if (!input) return;
-
-    const start = Number.isInteger(input.selectionStart)
-        ? input.selectionStart
-        : input.value.length;
-    const end = Number.isInteger(input.selectionEnd)
-        ? input.selectionEnd
-        : start;
-
-    const before = input.value.slice(0, start);
-    const after = input.value.slice(end);
-    const prefix = before && !/\s$/.test(before) ? " " : "";
-    const suffix = after && !/^\s/.test(after) ? " " : " ";
-
-    const insertion = prefix + token + suffix;
-    input.value = before + insertion + after;
-
-    const caret = before.length + insertion.length;
-    input.focus();
-    if (typeof input.setSelectionRange === "function") {
-        input.setSelectionRange(caret, caret);
-    }
-}
-
 function insertComposerMention(uid, username) {
     const textarea = document.getElementById("post-content");
     if (!textarea) return;
@@ -1325,321 +1260,117 @@ function insertComposerMention(uid, username) {
     textarea.focus();
 }
 
-function openFeedMentionPicker(options = {}) {
+function openFeedMentionPicker() {
     const composer = document.querySelector("#tab-feed .composer");
-    const mount = options.mount || composer;
-    if (!mount) return;
+    if (!composer) return;
 
-    const existing = mount.querySelector(".feed-mention-picker");
+    const existing = composer.querySelector(".feed-mention-picker");
+
     if (existing) {
         existing.querySelector("input")?.focus();
-        existing.scrollIntoView({ behavior: "smooth", block: "center" });
         return;
     }
 
     const picker = document.createElement("div");
     picker.className = "feed-mention-picker";
+
     picker.innerHTML = `
-      <div class="feed-mention-tabs">
-        <button type="button" data-mode="kliques" class="active">Kliques</button>
-        <button type="button" data-mode="search">Search</button>
-        <button type="button" data-mode="contacts">Contacts</button>
-      </div>
       <input class="input-box small"
-             type="search"
+             type="text"
              placeholder="Search username…"
              autocomplete="off">
-      <div class="feed-mention-results">
-        <div class="feed-picker-hint">Loading your Kliques…</div>
-      </div>
+      <div class="feed-mention-results"></div>
     `;
 
-    const toolbar = options.mount ? null : mount.querySelector(".composer-toolbar");
-    const commentRow = options.mount ? mount.querySelector(".comment-input-row") : null;
-
-    if (toolbar) mount.insertBefore(picker, toolbar);
-    else if (commentRow) mount.insertBefore(picker, commentRow);
-    else mount.appendChild(picker);
+    composer.insertBefore(
+        picker,
+        composer.querySelector(".composer-toolbar")
+    );
 
     const input = picker.querySelector("input");
     const results = picker.querySelector(".feed-mention-results");
-    const tabs = [...picker.querySelectorAll("[data-mode]")];
 
-    let mode = "kliques";
-    let timer = null;
-    let requestNumber = 0;
-
-    function hint(message) {
-        results.replaceChildren();
-        const el = document.createElement("div");
-        el.className = "feed-picker-hint";
-        el.textContent = message;
-        results.appendChild(el);
-    }
-
-    function chooseUser(user) {
-        if (!user || user.uid == null) return;
-        const uid = String(user.uid);
-        const username = String(user.username || uid);
-
-        if (typeof options.onChoose === "function") {
-            options.onChoose({ uid, username });
-        } else {
-            insertComposerMention(uid, username);
-        }
-        picker.remove();
-    }
-
-    function addUserButton(user) {
-        if (!user || user.uid == null) return;
-
-        const button = document.createElement("button");
-        button.type = "button";
-        button.className = "feed-picker-user";
-
-        const avatar = document.createElement("span");
-        avatar.className = "avatar small";
-        avatar.textContent = String(user.username || "?").slice(0, 2).toUpperCase();
-
-        const label = document.createElement("span");
-        label.textContent = "@" + String(user.username || user.uid);
-
-        button.append(avatar, label);
-        button.addEventListener("click", () => chooseUser(user));
-        results.appendChild(button);
-    }
-
-    async function loadKliques() {
-        const requestId = ++requestNumber;
-        hint("Loading your Kliques…");
-
-        try {
-            const me = getCachedUser();
-            const myUid = me && me.uid != null ? String(me.uid) : "";
-            const kliques = await api.kliqueList();
-
-            if (requestId !== requestNumber || mode !== "kliques") return;
-
-            results.replaceChildren();
-
-            const rows = Array.isArray(kliques) ? kliques : [];
-            const seen = new Set();
-
-            rows.forEach(k => {
-                const fromUid = String(k.from_uid ?? "");
-                const toUid = String(k.to_uid ?? "");
-                const uid = fromUid === myUid ? toUid : fromUid;
-
-                if (!uid || uid === myUid || seen.has(uid)) return;
-                seen.add(uid);
-
-                const username =
-                    (fromUid === myUid
-                        ? (k.to_username || k.username)
-                        : (k.from_username || k.username)) || uid;
-
-                addUserButton({ uid, username });
-            });
-
-            if (!results.children.length) {
-                hint("No Kliques found. Use Search to find people.");
-            }
-        } catch (error) {
-            if (requestId === requestNumber) {
-                hint("Could not load Kliques. Use Search to find someone.");
-            }
-        }
-    }
+    let timer;
 
     async function searchUsers() {
         const q = input.value.trim();
-        const requestId = ++requestNumber;
 
-        if (!q) {
-            hint("Type a username to search.");
-            return;
-        }
+        results.innerHTML = q
+            ? '<div class="feed-picker-hint">Searching…</div>'
+            : '<div class="feed-picker-hint">Type a username</div>';
 
-        hint("Searching…");
+        if (!q) return;
 
         try {
-            const response = await api.search(q, "username");
-            if (requestId !== requestNumber || mode !== "search") return;
+            const users = await api.search(q, "username");
 
-            results.replaceChildren();
-            const users = Array.isArray(response) ? response : [];
+            results.innerHTML = "";
 
-            users.slice(0, 20).forEach(user => addUserButton(user));
+            (Array.isArray(users) ? users : [])
+                .slice(0, 8)
+                .forEach(user => {
+                    const button = document.createElement("button");
 
-            if (!results.children.length) hint("No matching users found.");
-        } catch (error) {
-            if (requestId === requestNumber) {
-                hint("Search failed: " + (error.message || "Please try again."));
-            }
-        }
-    }
+                    button.type = "button";
+                    button.className = "feed-picker-user";
 
-    async function openContacts() {
-        const requestId = ++requestNumber;
-        hint("Choose contacts to find people on Hi-Mate.");
+                    button.innerHTML = `
+                      <span class="avatar small">
+                        ${escapeHtml(
+                            (user.username || "?")
+                                .slice(0, 2)
+                                .toUpperCase()
+                        )}
+                      </span>
+                      <span>
+                        @${escapeHtml(user.username || user.uid)}
+                      </span>
+                    `;
 
-        if (navigator.contacts && typeof navigator.contacts.select === "function") {
-            const button = document.createElement("button");
-            button.type = "button";
-            button.className = "feed-picker-user";
-            button.textContent = "Choose contacts from this device";
-            results.replaceChildren(button);
+                    button.addEventListener("click", () => {
+                        insertComposerMention(
+                            user.uid,
+                            user.username
+                        );
 
-            button.addEventListener("click", async () => {
-                try {
-                    const contacts = await navigator.contacts.select(["tel", "name"], {
-                        multiple: true
+                        picker.remove();
                     });
 
-                    if (requestId !== requestNumber || mode !== "contacts") return;
+                    results.appendChild(button);
+                });
 
-                    const me = getCachedUser();
-                    const country = me ? window.getCountryByName?.(me.country) : null;
-                    const dialCode = country?.dial_code || "";
-
-                    function normalizeNumber(raw) {
-                        let number = String(raw || "").replace(/[^\d+]/g, "");
-                        if (number.startsWith("+")) return number;
-                        number = number.replace(/^0+/, "");
-                        return dialCode + number;
-                    }
-
-                    const numbers = [
-                        ...new Set(
-                            contacts.flatMap(c => c.tel || [])
-                                .map(normalizeNumber)
-                                .filter(Boolean)
-                        )
-                    ];
-
-                    if (!numbers.length) {
-                        hint("No phone numbers were selected.");
-                        return;
-                    }
-
-                    hint("Matching contacts…");
-                    const response = await api.matchContacts(numbers);
-
-                    if (requestId !== requestNumber || mode !== "contacts") return;
-
-                    results.replaceChildren();
-                    const matches = Array.isArray(response?.matches)
-                        ? response.matches
-                        : [];
-
-                    matches.forEach(user => addUserButton(user));
-
-                    if (!results.children.length) {
-                        hint("No selected contacts matched Hi-Mate accounts.");
-                    }
-                } catch (error) {
-                    if (requestId === requestNumber && mode === "contacts") {
-                        hint(error.message || "Could not match those contacts.");
-                    }
-                }
-            });
-            return;
+            if (!results.children.length) {
+                results.innerHTML =
+                    '<div class="feed-picker-hint">No matching users</div>';
+            }
+        } catch (e) {
+            results.innerHTML =
+                `<div class="feed-picker-hint">${escapeHtml(e.message)}</div>`;
         }
-
-        results.innerHTML = `
-          <div class="feed-picker-hint">
-            Contact selection isn't supported here. Enter phone numbers to match contacts.
-          </div>
-          <textarea class="input-box" data-contact-numbers
-                    placeholder="Enter phone numbers, one per line"></textarea>
-          <button type="button" class="primary-btn" data-match-contacts>
-            Match contacts
-          </button>
-        `;
-
-        results.querySelector("[data-match-contacts]").addEventListener("click", async () => {
-            const raw = results.querySelector("[data-contact-numbers]").value;
-            const numbers = [...new Set(
-                raw.split(/\n/)
-                    .map(n => n.replace(/[^\d+]/g, ""))
-                    .filter(Boolean)
-            )];
-
-            if (!numbers.length) {
-                hint("Enter at least one phone number.");
-                return;
-            }
-
-            const currentRequest = ++requestNumber;
-            hint("Matching contacts…");
-
-            try {
-                const response = await api.matchContacts(numbers);
-                if (currentRequest !== requestNumber || mode !== "contacts") return;
-
-                results.replaceChildren();
-                (Array.isArray(response?.matches) ? response.matches : [])
-                    .forEach(user => addUserButton(user));
-
-                if (!results.children.length) {
-                    hint("No matching Hi-Mate accounts found.");
-                }
-            } catch (error) {
-                if (currentRequest === requestNumber) {
-                    hint(error.message || "Contact matching failed.");
-                }
-            }
-        });
     }
-
-    function switchMode(nextMode) {
-        mode = nextMode;
-        requestNumber++;
-
-        tabs.forEach(tab => {
-            tab.classList.toggle("active", tab.dataset.mode === mode);
-        });
-
-        input.hidden = mode !== "search";
-        input.value = "";
-
-        if (mode === "kliques") loadKliques();
-        else if (mode === "search") {
-            hint("Type a username to search.");
-            input.focus();
-        } else openContacts();
-    }
-
-    tabs.forEach(tab => {
-        tab.addEventListener("click", () => switchMode(tab.dataset.mode));
-    });
 
     input.addEventListener("input", () => {
-        if (mode !== "search") return;
         clearTimeout(timer);
         timer = setTimeout(searchUsers, 250);
     });
 
-    input.addEventListener("keydown", event => {
-        if (event.key === "Escape") picker.remove();
+    input.addEventListener("keydown", e => {
+        if (e.key === "Escape") {
+            picker.remove();
+        }
     });
 
-    if (options.mount) {
-        picker.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    } else {
-        picker.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-    loadKliques();
+    input.focus();
 }
 
-function openFeedTopicPicker(options = {}) {
+function openFeedTopicPicker() {
     const composer = document.querySelector("#tab-feed .composer");
-    const mount = options.mount || composer;
     const select = document.getElementById("post-category");
 
-    if (!mount || !select) return;
+    if (!composer || !select) return;
 
-    const existing = mount.querySelector(".feed-topic-picker");
+    const existing = composer.querySelector(".feed-topic-picker");
+
     if (existing) {
         existing.remove();
         return;
@@ -1647,17 +1378,16 @@ function openFeedTopicPicker(options = {}) {
 
     const picker = document.createElement("div");
     picker.className = "feed-topic-picker";
+
     picker.innerHTML = `
       <div class="feed-picker-title">Choose topic</div>
       <div class="feed-topic-grid"></div>
     `;
 
-    const toolbar = options.mount ? null : mount.querySelector(".composer-toolbar");
-    const commentRow = options.mount ? mount.querySelector(".comment-input-row") : null;
-
-    if (toolbar) mount.insertBefore(picker, toolbar);
-    else if (commentRow) mount.insertBefore(picker, commentRow);
-    else mount.appendChild(picker);
+    composer.insertBefore(
+        picker,
+        composer.querySelector(".composer-toolbar")
+    );
 
     const grid = picker.querySelector(".feed-topic-grid");
 
@@ -1665,36 +1395,47 @@ function openFeedTopicPicker(options = {}) {
         .filter(option => option.value)
         .forEach(option => {
             const button = document.createElement("button");
+
             button.type = "button";
             button.className = "feed-topic-option";
-            button.textContent = "#" + option.textContent.trim();
+            button.textContent = "#" + option.textContent;
 
             button.addEventListener("click", () => {
-                if (options.targetInput) {
-                    appendCommentToken(
-                        options.targetInput,
-                        "#" + option.textContent.trim().replace(/^#/, "")
-                    );
-                } else {
-                    select.value = option.value;
-                }
+                select.value = option.value;
                 picker.remove();
             });
 
             grid.appendChild(button);
         });
-
-    if (options.mount) {
-        picker.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
 }
 
 function preparePostMention(post) {
-    openCommentBox(post.id, "mention");
+    insertComposerMention(
+        post.author_uid,
+        post.author_username || post.author_uid
+    );
+
+    document
+        .querySelector("#tab-feed .composer")
+        ?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
 }
 
 function preparePostTopic(post) {
-    openCommentBox(post.id, "topic");
+    const select = document.getElementById("post-category");
+
+    if (select && post.category) {
+        select.value = post.category;
+    }
+
+    document
+        .querySelector("#tab-feed .composer")
+        ?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
 }
 
 export function renderPost(post, opts) {

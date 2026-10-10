@@ -1070,7 +1070,7 @@ function renderCommentItem(c) {
     `;
 }
 
-async function openCommentBox(postId, initialPickerMode = null) {
+async function openCommentBox(postId) {
     closeOverlay();
     const overlay = document.createElement("div");
     overlay.className = "feed-modal-overlay";
@@ -1083,8 +1083,6 @@ async function openCommentBox(postId, initialPickerMode = null) {
         <div class="comment-list" id="comment-list"><div class="section-title">Loading…</div></div>
         <div class="comment-reply-context hidden" id="comment-reply-context"></div>
         <div class="comment-input-row">
-          <button type="button" class="comment-token-btn" id="comment-mention-btn" aria-label="Mention a person">@</button>
-          <button type="button" class="comment-token-btn" id="comment-topic-btn" aria-label="Insert a topic">#</button>
           <input class="input-box" id="comment-input" placeholder="Add a comment…">
           <button class="send-btn" id="comment-send-btn"><i class="fa-solid fa-paper-plane"></i></button>
         </div>
@@ -1095,27 +1093,6 @@ async function openCommentBox(postId, initialPickerMode = null) {
 
     const listEl = overlay.querySelector("#comment-list");
     let replyTo = null;
-
-    const commentInput = overlay.querySelector("#comment-input");
-    const commentBox = overlay.querySelector(".comment-box");
-
-    overlay.querySelector("#comment-mention-btn").addEventListener("click", () => {
-        openFeedMentionPicker({
-            mount: commentBox,
-            targetInput: commentInput,
-            onChoose: user => appendCommentToken(
-                commentInput,
-                "@" + String(user.username || user.uid)
-            )
-        });
-    });
-
-    overlay.querySelector("#comment-topic-btn").addEventListener("click", () => {
-        openFeedTopicPicker({
-            mount: commentBox,
-            targetInput: commentInput
-        });
-    });
 
     async function refresh() {
         try {
@@ -1165,22 +1142,6 @@ async function openCommentBox(postId, initialPickerMode = null) {
     });
 
     refresh();
-
-    if (initialPickerMode === "mention") {
-        openFeedMentionPicker({
-            mount: overlay.querySelector(".comment-box"),
-            targetInput: commentInput,
-            onChoose: user => appendCommentToken(
-                commentInput,
-                "@" + String(user.username || user.uid)
-            )
-        });
-    } else if (initialPickerMode === "topic") {
-        openFeedTopicPicker({
-            mount: overlay.querySelector(".comment-box"),
-            targetInput: commentInput
-        });
-    }
 }
 
 async function openSharePicker(post) {
@@ -1280,32 +1241,6 @@ function ensureComposerMentions() {
     return pendingMentionUids;
 }
 
-
-function appendCommentToken(input, token) {
-    if (!input) return;
-
-    const start = Number.isInteger(input.selectionStart)
-        ? input.selectionStart
-        : input.value.length;
-    const end = Number.isInteger(input.selectionEnd)
-        ? input.selectionEnd
-        : start;
-
-    const before = input.value.slice(0, start);
-    const after = input.value.slice(end);
-    const prefix = before && !/\s$/.test(before) ? " " : "";
-    const suffix = after && !/^\s/.test(after) ? " " : " ";
-
-    const insertion = prefix + token + suffix;
-    input.value = before + insertion + after;
-
-    const caret = before.length + insertion.length;
-    input.focus();
-    if (typeof input.setSelectionRange === "function") {
-        input.setSelectionRange(caret, caret);
-    }
-}
-
 function insertComposerMention(uid, username) {
     const textarea = document.getElementById("post-content");
     if (!textarea) return;
@@ -1325,12 +1260,11 @@ function insertComposerMention(uid, username) {
     textarea.focus();
 }
 
-function openFeedMentionPicker(options = {}) {
+function openFeedMentionPicker() {
     const composer = document.querySelector("#tab-feed .composer");
-    const mount = options.mount || composer;
-    if (!mount) return;
+    if (!composer) return;
 
-    const existing = mount.querySelector(".feed-mention-picker");
+    const existing = composer.querySelector(".feed-mention-picker");
     if (existing) {
         existing.querySelector("input")?.focus();
         existing.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1354,12 +1288,9 @@ function openFeedMentionPicker(options = {}) {
       </div>
     `;
 
-    const toolbar = options.mount ? null : mount.querySelector(".composer-toolbar");
-    const commentRow = options.mount ? mount.querySelector(".comment-input-row") : null;
-
-    if (toolbar) mount.insertBefore(picker, toolbar);
-    else if (commentRow) mount.insertBefore(picker, commentRow);
-    else mount.appendChild(picker);
+    const toolbar = composer.querySelector(".composer-toolbar");
+    if (toolbar) composer.insertBefore(picker, toolbar);
+    else composer.appendChild(picker);
 
     const input = picker.querySelector("input");
     const results = picker.querySelector(".feed-mention-results");
@@ -1382,11 +1313,7 @@ function openFeedMentionPicker(options = {}) {
         const uid = String(user.uid);
         const username = String(user.username || uid);
 
-        if (typeof options.onChoose === "function") {
-            options.onChoose({ uid, username });
-        } else {
-            insertComposerMention(uid, username);
-        }
+        insertComposerMention(uid, username);
         picker.remove();
     }
 
@@ -1624,22 +1551,18 @@ function openFeedMentionPicker(options = {}) {
         if (event.key === "Escape") picker.remove();
     });
 
-    if (options.mount) {
-        picker.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    } else {
-        picker.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    picker.scrollIntoView({ behavior: "smooth", block: "center" });
     loadKliques();
 }
 
-function openFeedTopicPicker(options = {}) {
+function openFeedTopicPicker() {
     const composer = document.querySelector("#tab-feed .composer");
-    const mount = options.mount || composer;
     const select = document.getElementById("post-category");
 
-    if (!mount || !select) return;
+    if (!composer || !select) return;
 
-    const existing = mount.querySelector(".feed-topic-picker");
+    const existing = composer.querySelector(".feed-topic-picker");
+
     if (existing) {
         existing.remove();
         return;
@@ -1647,17 +1570,16 @@ function openFeedTopicPicker(options = {}) {
 
     const picker = document.createElement("div");
     picker.className = "feed-topic-picker";
+
     picker.innerHTML = `
       <div class="feed-picker-title">Choose topic</div>
       <div class="feed-topic-grid"></div>
     `;
 
-    const toolbar = options.mount ? null : mount.querySelector(".composer-toolbar");
-    const commentRow = options.mount ? mount.querySelector(".comment-input-row") : null;
-
-    if (toolbar) mount.insertBefore(picker, toolbar);
-    else if (commentRow) mount.insertBefore(picker, commentRow);
-    else mount.appendChild(picker);
+    composer.insertBefore(
+        picker,
+        composer.querySelector(".composer-toolbar")
+    );
 
     const grid = picker.querySelector(".feed-topic-grid");
 
@@ -1665,36 +1587,45 @@ function openFeedTopicPicker(options = {}) {
         .filter(option => option.value)
         .forEach(option => {
             const button = document.createElement("button");
+
             button.type = "button";
             button.className = "feed-topic-option";
-            button.textContent = "#" + option.textContent.trim();
+            button.textContent = "#" + option.textContent;
 
             button.addEventListener("click", () => {
-                if (options.targetInput) {
-                    appendCommentToken(
-                        options.targetInput,
-                        "#" + option.textContent.trim().replace(/^#/, "")
-                    );
-                } else {
-                    select.value = option.value;
-                }
+                select.value = option.value;
                 picker.remove();
             });
 
             grid.appendChild(button);
         });
-
-    if (options.mount) {
-        picker.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    }
 }
 
 function preparePostMention(post) {
-    openCommentBox(post.id, "mention");
+    // A post's @ button opens the picker; it must not auto-mention its author.
+    openFeedMentionPicker();
+
+    document
+        .querySelector("#tab-feed .composer")
+        ?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
 }
 
 function preparePostTopic(post) {
-    openCommentBox(post.id, "topic");
+    const select = document.getElementById("post-category");
+
+    if (select && post.category) {
+        select.value = post.category;
+    }
+
+    document
+        .querySelector("#tab-feed .composer")
+        ?.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
 }
 
 export function renderPost(post, opts) {
