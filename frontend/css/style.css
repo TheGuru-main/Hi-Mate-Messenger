@@ -3086,6 +3086,76 @@ body.background-network{
     filter: drop-shadow(0 0 5px rgba(0, 229, 255, 0.35));
 }
 
+/* Feed composer sizing and alignment */
+#tab-feed .composer {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+#tab-feed .composer > .input-box,
+#tab-feed .composer > textarea,
+#tab-feed .composer > select {
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+}
+
+#tab-feed .composer textarea.input-box {
+    min-height: 76px;
+    height: 76px;
+    resize: vertical;
+    overflow-y: auto;
+    line-height: 1.45;
+}
+
+#tab-feed .composer .composer-toolbar {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+#tab-feed .composer .composer-toolbar .icon-btn {
+    box-sizing: border-box;
+    flex: 0 0 46px;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
+    min-height: 46px;
+    margin: 0;
+}
+
+#tab-feed .composer .voice-timer {
+    flex: 0 1 auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#tab-feed .composer #btn-create-post {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+}
+
+@media (max-width: 380px) {
+    #tab-feed .composer textarea.input-box {
+        min-height: 72px;
+        height: 72px;
+    }
+
+    #tab-feed .composer .composer-toolbar {
+        gap: 7px;
+    }
+}
+
 /* Composer controls: larger hit areas and explicit touch behavior. */
 #tab-feed .composer .composer-toolbar {
     display: flex;
