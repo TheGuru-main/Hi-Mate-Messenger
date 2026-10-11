@@ -1793,7 +1793,7 @@ export function renderPost(post, opts) {
     if (contentBox) {
         const fullText = contentBox.textContent || "";
         const words = fullText.trim()
-            ? fullText.trim().split(/\\s+/)
+            ? fullText.trim().split(/\s+/)
             : [];
 
         if (words.length > 20) {
