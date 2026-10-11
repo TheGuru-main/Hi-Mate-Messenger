@@ -1,6 +1,9 @@
 // LiveSports search v2: scope toggles (All / Live / Upcoming / Past 3d), past-matches feed,
 // grouped results with scorers for finished games. Replaces the legacy input wiring.
 import { api } from "./api.js";
+import { createSportsMore, dayLabel, groupResults } from "./sports-more.js";
+
+export { dayLabel, groupResults };
 
 const SCOPES = [
   ["all", "All"],
@@ -14,6 +17,7 @@ const RECENT_KEY = "hm:recent-matches:v1";
 let scope = "all";
 let ticket = 0;
 let recentCache = null;
+let sports = null;
 
 const TZ = (() => {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; }
@@ -26,16 +30,6 @@ function esc(value) {
 }
 
 /* ----------------------------- helpers ----------------------------- */
-
-export function dayLabel(iso, now = new Date()) {
-  const d = new Date(iso);
-  if (isNaN(d)) return "Earlier";
-  const startOf = (x) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
-  const diff = Math.round((startOf(now) - startOf(d)) / 86400000);
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  return d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "short" });
-}
 
 function kickoffText(iso) {
   const d = new Date(iso);
@@ -74,26 +68,6 @@ export function resultHtml(m, deps) {
       ${finished ? goalsLine(m) : ""}
     </div>
     <i class="fa-solid fa-chevron-right"></i>`;
-}
-
-export function groupResults(list, scopeSel) {
-  if (scopeSel === "past") {
-    const groups = [];
-    for (const m of list) {
-      const label = dayLabel(m.starting_at);
-      const last = groups[groups.length - 1];
-      if (last && last.label === label) last.items.push(m);
-      else groups.push({ label, items: [m] });
-    }
-    return groups;
-  }
-  if (scopeSel === "all") {
-    const defs = [["live", "Live now"], ["upcoming", "Upcoming"], ["past", "Past matches"]];
-    return defs
-      .map(([key, label]) => ({ label, items: list.filter((m) => m.scope === key) }))
-      .filter((g) => g.items.length);
-  }
-  return [{ label: "", items: list }];
 }
 
 /* ------------------------------ render ----------------------------- */
@@ -139,6 +113,16 @@ function writeRecent(list) {
 
 async function run(input, results, deps) {
   const query = input.value.trim();
+  if (sports && sports.active()) {
+    const mineSport = ++ticket;
+    results.classList.remove("hidden");
+    await sports.render({
+      query, scope, results,
+      stillCurrent: () => mineSport === ticket,
+      refresh: () => run(input, results, deps),
+    });
+    return;
+  }
   if (!query && scope !== "past") {
     results.classList.add("hidden");
     results.innerHTML = "";
@@ -181,6 +165,11 @@ export function initScopedMatchSearch(deps) {
     `<button type="button" class="ms-scope${key === scope ? " ms-scope-on" : ""}" data-scope="${key}">${label}</button>`
   ).join("");
   results.parentNode.insertBefore(row, results);
+
+  sports = createSportsMore({ onChange: () => run(input, results, deps) });
+  const searchBlock = results.parentNode.querySelector(".livesports-search");
+  results.parentNode.insertBefore(sports.row, searchBlock || row);
+  sports.attach(results.parentNode);
 
   row.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-scope]");

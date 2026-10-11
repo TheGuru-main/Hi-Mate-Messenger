@@ -85,6 +85,10 @@ export const api = {
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMatchDetail: (fixtureId, q = "") => request(`/matches/${fixtureId}/detail${q}`),
+  getSportList: (sport, scope = "all", q = "", days = 3, tz = "UTC") =>
+    request(`/matches/sport/${sport}/list?scope=${scope}&q=${encodeURIComponent(q)}&days=${days}&timezone_name=${encodeURIComponent(tz)}`),
+  getSportDetail: (sport, id, tz = "UTC") =>
+    request(`/matches/sport/${sport}/${id}/detail?timezone_name=${encodeURIComponent(tz)}`),
   searchMatchesScoped: (q, scope = "all", days = 3, tz = "UTC") =>
     request(`/matches/search?q=${encodeURIComponent(q)}&scope=${scope}&days=${days}&timezone_name=${encodeURIComponent(tz)}`),
   getRecentMatches: (days = 3, tz = "UTC") =>

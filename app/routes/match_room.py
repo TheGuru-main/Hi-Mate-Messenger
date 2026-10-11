@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.message import Group
 from app.models.match_room import MatchRoom
 from app.services import news, placement
+from app.services import sports_data
 from app.services import match_search
 from app.services import match_detail as match_detail_service
 
@@ -200,3 +201,39 @@ async def recent_matches(
     except Exception:
         raise HTTPException(status_code=502, detail="Sports data provider unavailable")
     return [dict(m, scope="past") for m in items]
+
+
+@router.get("/sport/{sport}/list")
+async def sport_matches(
+    sport: str,
+    scope: str = "all",
+    q: str = "",
+    days: int = 3,
+    timezone_name: str = "UTC",
+    current_user: User = Depends(get_current_user),
+):
+    """Basketball / tennis / cricket lists. scope = all | live | upcoming | past."""
+    if sport not in sports_data.SPORTS:
+        raise HTTPException(status_code=404, detail="Unsupported sport")
+    try:
+        return await sports_data.list_matches(sport, scope, q.strip(), days, timezone_name)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Sports data provider unavailable")
+
+
+@router.get("/sport/{sport}/{match_id}/detail")
+async def sport_match_detail(
+    sport: str,
+    match_id: int,
+    timezone_name: str = "UTC",
+    current_user: User = Depends(get_current_user),
+):
+    if sport not in sports_data.SPORTS:
+        raise HTTPException(status_code=404, detail="Unsupported sport")
+    try:
+        data = await sports_data.fetch_detail(sport, match_id, timezone_name)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Sports data provider unavailable")
+    if not data:
+        raise HTTPException(status_code=404, detail="Match detail not available")
+    return data
