@@ -85,6 +85,10 @@ export const api = {
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMatchDetail: (fixtureId, q = "") => request(`/matches/${fixtureId}/detail${q}`),
+  searchMatchesScoped: (q, scope = "all", days = 3, tz = "UTC") =>
+    request(`/matches/search?q=${encodeURIComponent(q)}&scope=${scope}&days=${days}&timezone_name=${encodeURIComponent(tz)}`),
+  getRecentMatches: (days = 3, tz = "UTC") =>
+    request(`/matches/recent?days=${days}&timezone_name=${encodeURIComponent(tz)}`),
 
   getLocationRegions: (countryIso) => request(`/location/regions?country=${encodeURIComponent(countryIso)}`, { auth: false }),
   getLocationLocalities: (region) => request(`/location/localities?region=${encodeURIComponent(region)}`, { auth: false }),

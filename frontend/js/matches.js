@@ -1,3 +1,4 @@
+import { initScopedMatchSearch } from "./match-search.js";
 import { mountMatchDetail } from "./match-detail.js";
 import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
@@ -508,7 +509,7 @@ function renderScoreboard(m) {
         hour: "2-digit",
         minute: "2-digit"
       })}`
-    : `${minute} · LIVE`;
+    : m.finished ? "FULL TIME" : `${minute} · LIVE`;
 
   el.innerHTML = `
     <div class="match-scoreboard-teams">
@@ -1228,7 +1229,7 @@ async function searchLiveSports() {
 }
 
 
-function initMatchSearch() {
+function initMatchSearchLegacy() {
   const input =
     document.getElementById(
       "matches-search-input"
@@ -1367,4 +1368,9 @@ async function loadStatsFold(fixtureId) {
   } catch (e) {
     await loadStatsFoldLegacy(fixtureId);
   }
+}
+
+
+function initMatchSearch() {
+  initScopedMatchSearch({ openMatchRoom, liveMinuteText, escapeHtml });
 }

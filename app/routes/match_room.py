@@ -10,6 +10,7 @@ from app.models.user import User
 from app.models.message import Group
 from app.models.match_room import MatchRoom
 from app.services import news, placement
+from app.services import match_search
 from app.services import match_detail as match_detail_service
 
 router = APIRouter(prefix="/matches", tags=["match-rooms"])
@@ -72,7 +73,7 @@ async def list_upcoming_matches(
 
 
 
-@router.get("/search")
+@router.get("/search-legacy")
 async def search_matches(
     q: str,
     current_user: User = Depends(get_current_user),
@@ -109,6 +110,8 @@ async def join_match_room(
         live = await news.fetch_live_fixtures()
         live = live + await news.fetch_upcoming_fixtures()
         match = next((m for m in live if m.get("fixture_id") == fixture_id), None)
+        if not match:
+            match = await match_search.find_recent_fixture(fixture_id)
         if not match:
             raise HTTPException(status_code=404, detail="Match is no longer available")
 
@@ -168,3 +171,32 @@ async def match_detail(
     if not data:
         raise HTTPException(status_code=404, detail="Match detail not available")
     return data
+
+
+@router.get("/search")
+async def search_matches_scoped(
+    q: str = "",
+    scope: str = "all",
+    days: int = 3,
+    timezone_name: str = "UTC",
+    current_user: User = Depends(get_current_user),
+):
+    """Scoped LiveSports search: scope = all | live | upcoming | past (last `days` days)."""
+    try:
+        return await match_search.search(q.strip(), scope, days, timezone_name)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Sports search provider unavailable")
+
+
+@router.get("/recent")
+async def recent_matches(
+    days: int = 3,
+    timezone_name: str = "UTC",
+    current_user: User = Depends(get_current_user),
+):
+    """Finished matches from the last `days` days (max 7), newest first."""
+    try:
+        items = await match_search.fetch_recent_fixtures(days, timezone_name)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Sports data provider unavailable")
+    return [dict(m, scope="past") for m in items]
