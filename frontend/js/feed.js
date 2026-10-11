@@ -212,6 +212,16 @@ function renderCarousel(mediaRefs) {
 
                     <button
                       type="button"
+                      class="himate-audio-control himate-audio-expand"
+                      data-audio-action="expand"
+                      aria-label="Expand audio controls"
+                      aria-expanded="false"
+                    >
+                      <i class="fa-solid fa-chevron-down"></i>
+                    </button>
+
+                    <button
+                      type="button"
                       class="himate-audio-control"
                       data-audio-action="download"
                       aria-label="Download audio"
@@ -703,6 +713,11 @@ function wireAudioPlayer(player) {
             '[data-audio-action="download"]'
         );
 
+    const expandButton =
+        player.querySelector(
+            '[data-audio-action="expand"]'
+        );
+
     const progress =
         player.querySelector(".himate-audio-progress");
 
@@ -720,6 +735,22 @@ function wireAudioPlayer(player) {
     playButton?.addEventListener("click", (e) => {
         e.stopPropagation();
         togglePlay();
+    });
+
+    expandButton?.addEventListener("click", (e) => {
+        e.stopPropagation();
+
+        const expanded = player.classList.toggle("is-expanded");
+
+        expandButton.setAttribute("aria-expanded", String(expanded));
+        expandButton.setAttribute(
+            "aria-label",
+            expanded ? "Collapse audio controls" : "Expand audio controls"
+        );
+
+        expandButton.innerHTML = expanded
+            ? '<i class="fa-solid fa-chevron-up"></i>'
+            : '<i class="fa-solid fa-chevron-down"></i>';
     });
 
     muteButton?.addEventListener("click", (e) => {
@@ -1756,6 +1787,43 @@ export function renderPost(post, opts) {
       </div>
       </div>
     `;
+
+    const contentBox = div.querySelector(".content");
+
+    if (contentBox) {
+        const fullText = contentBox.textContent || "";
+        const words = fullText.trim()
+            ? fullText.trim().split(/\\s+/)
+            : [];
+
+        if (words.length > 20) {
+            const preview = document.createElement("span");
+            preview.className = "post-text-preview";
+            preview.textContent = words.slice(0, 20).join(" ") + "… ";
+
+            const full = document.createElement("span");
+            full.className = "post-text-full";
+            full.textContent = fullText;
+            full.hidden = true;
+
+            const toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "post-text-toggle";
+            toggle.textContent = "See more";
+            toggle.setAttribute("aria-expanded", "false");
+
+            toggle.addEventListener("click", () => {
+                const expand = full.hidden;
+
+                preview.hidden = expand;
+                full.hidden = !expand;
+                toggle.textContent = expand ? "See less" : "See more";
+                toggle.setAttribute("aria-expanded", String(expand));
+            });
+
+            contentBox.replaceChildren(preview, full, toggle);
+        }
+    }
 
     const me0 = getCachedUser();
     if (me0 && post.author_uid === me0.uid) {

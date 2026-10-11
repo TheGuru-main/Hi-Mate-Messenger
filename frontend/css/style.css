@@ -3657,3 +3657,113 @@ body.background-network{
 .sp-info{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid rgba(128,128,128,.12);font-size:14px}
 .sp-info span{opacity:.65}
 .sp-info strong{font-weight:600;text-align:right}
+
+/* Audio player: compact by default, detailed controls on demand. */
+.himate-audio-main {
+  min-width: 0;
+}
+
+.himate-audio-content {
+  min-width: 0;
+}
+
+.himate-audio:not(.is-expanded) .himate-audio-time,
+.himate-audio:not(.is-expanded) .himate-audio-progress,
+.himate-audio:not(.is-expanded) .himate-audio-wave,
+.himate-audio:not(.is-expanded) [data-audio-action="mute"],
+.himate-audio:not(.is-expanded) .himate-audio-volume,
+.himate-audio:not(.is-expanded) [data-audio-action="download"] {
+  display: none;
+}
+
+.himate-audio:not(.is-expanded) .himate-audio-top {
+  margin-bottom: 0;
+}
+
+.himate-audio:not(.is-expanded) .himate-audio-main {
+  gap: 9px;
+}
+
+.himate-audio-expand {
+  flex: 0 0 32px;
+}
+
+.himate-audio.is-expanded .himate-audio-content {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 520px) {
+  .himate-audio.is-expanded .himate-audio-volume {
+    display: block;
+    width: 44px;
+    flex: 0 0 44px;
+  }
+
+  .himate-audio-expand {
+    width: 30px;
+    flex-basis: 30px;
+  }
+}
+
+/* Compact feed cards: let content determine each post's height. */
+#feed-list > .feed-card,
+#video-feed-list > .feed-card {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    box-sizing: border-box;
+    margin-bottom: 10px;
+}
+
+/* Text preview and expansion control. */
+.feed-card .content {
+    min-width: 0;
+    max-height: none;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+    margin-bottom: 8px;
+}
+
+.post-text-preview,
+.post-text-full {
+    overflow-wrap: anywhere;
+}
+
+.post-text-toggle {
+    display: inline-block;
+    margin: 4px 0 0 4px;
+    padding: 3px 6px;
+    border: 0;
+    background: transparent;
+    color: var(--neon-blue, #00e5ff);
+    font: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* Reduce excess space around post reactions while preserving tap targets. */
+.feed-card .reaction-frame {
+    flex: 0 0 auto;
+    margin: 6px 10px 8px;
+    padding: 3px 5px;
+}
+
+.feed-card .reaction-frame .action-row {
+    gap: 5px;
+    padding: 4px 6px;
+    margin-top: 0;
+}
+
+@media (max-width: 520px) {
+    .feed-card .reaction-frame {
+        margin: 5px 8px 7px;
+        padding: 2px 4px;
+    }
+
+    .feed-card .reaction-frame .action-row {
+        padding: 3px 4px;
+    }
+}
