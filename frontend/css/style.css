@@ -3767,3 +3767,19 @@ body.background-network{
         padding: 3px 4px;
     }
 }
+/* ---- club profile + favorite clubs (club-profile.js) ---- */
+.pc-head{text-align:center;margin:0 0 14px}
+.pc-logo{width:72px;height:72px;object-fit:contain;display:block;margin:0 auto 8px}
+.pc-logo-ph{display:flex;align-items:center;justify-content:center;font-size:44px}
+.pc-name{font-size:20px;font-weight:800}
+.pc-sub,.pc-followers{font-size:13px;opacity:.7;margin-top:2px}
+.pc-follow{margin-top:10px;padding:9px 26px;border-radius:999px;border:1px solid rgba(128,128,128,.5);background:transparent;color:inherit;font-weight:700;cursor:pointer}
+.pc-follow-on{background:rgba(128,128,128,.25)}
+.pc-link{background:none;border:0;padding:0;color:inherit;font:inherit;font-weight:600;cursor:pointer;text-decoration:none}
+.pc-link:active{opacity:.6}
+.pc-section{margin:10px 14px}
+.pc-section-title{font-size:12px;opacity:.65;text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px}
+.pc-chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
+.pc-chip{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:5px 12px 5px 6px;border-radius:999px;border:1px solid rgba(128,128,128,.35);background:rgba(128,128,128,.12);color:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.pc-chip-logo{width:22px;height:22px;object-fit:contain;border-radius:50%}
+.pc-chip .pc-logo-ph{font-size:16px}

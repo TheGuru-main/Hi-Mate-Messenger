@@ -84,6 +84,14 @@ export const api = {
     request(`/matches/search?q=${encodeURIComponent(q)}`),
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
+  getMyClubs: () => request("/clubs/mine"),
+  getUserClubs: (uid) => request(`/clubs/user/${encodeURIComponent(uid)}`),
+  getClubProfile: (teamKey, sport = "football", name = "", logo = "") =>
+    request(`/clubs/${encodeURIComponent(teamKey)}?sport=${sport}&name=${encodeURIComponent(name || "")}&logo=${encodeURIComponent(logo || "")}`),
+  followClub: (teamKey, body, sport = "football") =>
+    request(`/clubs/${encodeURIComponent(teamKey)}/follow?sport=${sport}`, { method: "POST", body }),
+  unfollowClub: (teamKey, sport = "football") =>
+    request(`/clubs/${encodeURIComponent(teamKey)}/follow?sport=${sport}`, { method: "DELETE" }),
   getMatchDetail: (fixtureId, q = "") => request(`/matches/${fixtureId}/detail${q}`),
   getSportList: (sport, scope = "all", q = "", days = 3, tz = "UTC") =>
     request(`/matches/sport/${sport}/list?scope=${scope}&q=${encodeURIComponent(q)}&days=${days}&timezone_name=${encodeURIComponent(tz)}`),

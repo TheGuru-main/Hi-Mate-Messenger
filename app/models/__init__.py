@@ -19,3 +19,5 @@ from app.models.notification import Notification
 from app.models.contact_link import ContactLink  # noqa: F401
 from app.models.edu_journal import EduJournalEntry  # noqa: F401
 from app.models.push_subscription import PushSubscription  # noqa: F401
+
+from app.models.favorite_club import FavoriteClub  # noqa: F401
