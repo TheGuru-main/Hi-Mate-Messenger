@@ -237,3 +237,20 @@ async def sport_match_detail(
     if not data:
         raise HTTPException(status_code=404, detail="Match detail not available")
     return data
+
+
+@router.get("/browse")
+async def browse_matches(
+    scope: str = "all",
+    days: int = 3,
+    hours: int = 48,
+    country: str = "",
+    timezone_name: str = "UTC",
+    current_user: User = Depends(get_current_user),
+):
+    """Filter-chip lists (no search text): scope = all | live | upcoming | past.
+    hours = upcoming horizon, country = Country / league filter."""
+    try:
+        return await match_search.search("", scope, days, timezone_name, hours, country)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Sports data provider unavailable")

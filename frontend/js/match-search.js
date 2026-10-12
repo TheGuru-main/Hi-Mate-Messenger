@@ -75,12 +75,13 @@ export function resultHtml(m, deps) {
 
 /* ------------------------------ render ----------------------------- */
 
-function paint(results, list, query, scopeSel, deps) {
+function paint(results, list, query, scopeSel, deps, f = { country: "" }) {
   results.innerHTML = "";
   if (!list.length) {
     const where = scopeSel === "all" ? "live, upcoming or past 3 days" : scopeSel === "past" ? "the past 3 days" : scopeSel;
     results.innerHTML = `<div class="match-search-empty"><i class="fa-solid fa-magnifying-glass"></i>
-      ${query ? `No ${esc(where)} match found for <strong>${esc(query)}</strong>.` : `No ${esc(where)} matches right now.`}</div>`;
+      ${query ? `No ${esc(where)} match found for <strong>${esc(query)}</strong>.`
+        : f.country ? `No ${esc(where)} matches for <strong>${esc(f.country)}</strong>.` : `No ${esc(where)} matches right now.`}</div>`;
     return;
   }
   for (const group of groupResults(list, scopeSel)) {
@@ -100,22 +101,36 @@ function paint(results, list, query, scopeSel, deps) {
   }
 }
 
-function readList(query, scopeSel) {
-  const key = `${scopeSel}|${query}`;
+// The existing filter bar (Country / league + Next 12h/34h/3d/7d) refines the chip lists.
+function filterState() {
+  const hoursEl = document.getElementById("matches-filter-hours");
+  const countryEl = document.getElementById("matches-filter-country");
+  return {
+    hours: hoursEl ? Number(hoursEl.value) || 0 : 0,
+    country: countryEl ? countryEl.value.trim() : "",
+  };
+}
+
+function cacheKey(query, scopeSel, f) {
+  return `${scopeSel}|${query}|${f.hours}|${f.country.toLowerCase()}`;
+}
+
+function readList(query, scopeSel, f) {
+  const key = cacheKey(query, scopeSel, f);
   if (listCache.has(key)) return listCache.get(key);
-  if (!query) { // unfiltered lists survive an app restart, so a chip tap paints instantly
+  if (!query && !f.country) { // unfiltered lists survive an app restart, so a chip tap paints instantly
     try {
-      const raw = JSON.parse(localStorage.getItem(PERSIST_PREFIX + scopeSel) || "null");
+      const raw = JSON.parse(localStorage.getItem(`${PERSIST_PREFIX}${scopeSel}:${f.hours}`) || "null");
       if (raw && Array.isArray(raw.list)) { listCache.set(key, raw.list); return raw.list; }
     } catch (e) { /* ignore */ }
   }
   return null;
 }
 
-function writeList(query, scopeSel, list) {
-  listCache.set(`${scopeSel}|${query}`, list);
-  if (!query) {
-    try { localStorage.setItem(PERSIST_PREFIX + scopeSel, JSON.stringify({ t: Date.now(), list: list.slice(0, 60) })); } catch (e) { /* ignore */ }
+function writeList(query, scopeSel, f, list) {
+  listCache.set(cacheKey(query, scopeSel, f), list);
+  if (!query && !f.country) {
+    try { localStorage.setItem(`${PERSIST_PREFIX}${scopeSel}:${f.hours}`, JSON.stringify({ t: Date.now(), list: list.slice(0, 60) })); } catch (e) { /* ignore */ }
   }
 }
 
@@ -151,15 +166,18 @@ async function run(input, results, deps) {
 
   const mine = ++ticket;
   results.classList.remove("hidden");
-  const cached = readList(query, effective);
-  if (cached) paint(results, cached, query, effective, deps);
+  const f = filterState();
+  const cached = readList(query, effective, f);
+  if (cached) paint(results, cached, query, effective, deps, f);
   else results.innerHTML = `<div class="match-search-loading"><i class="fa-solid fa-spinner fa-spin"></i> ${query ? "Searching clubs…" : "Loading matches…"}</div>`;
 
   try {
-    const list = await api.searchMatchesScoped(query, effective, DAYS, TZ);
+    const list = query
+      ? await api.searchMatchesScoped(query, effective, DAYS, TZ)
+      : await api.browseMatches(effective, DAYS, TZ, f.hours, f.country);
     if (mine !== ticket) return;
-    if (!cached || JSON.stringify(cached) !== JSON.stringify(list)) paint(results, list, query, effective, deps);
-    writeList(query, effective, list);
+    if (!cached || JSON.stringify(cached) !== JSON.stringify(list)) paint(results, list, query, effective, deps, f);
+    writeList(query, effective, f, list);
     if ((effective === "all" || effective === "live") && list.some((m) => m.scope === "live")) {
       const tick = () => {
         if (document.hidden) { refreshTimer = setTimeout(tick, REFRESH_MS); return; }
@@ -191,6 +209,11 @@ export function initScopedMatchSearch(deps) {
   results.parentNode.insertBefore(row, results);
   scopeRow = row;
 
+  // Keep the filter bar (and the sport dropdown in it) above the results, so switching sport
+  // never needs a scroll past a long list.
+  const bar = results.parentNode.querySelector(".matches-filter-bar");
+  if (bar && bar.parentNode === results.parentNode) results.parentNode.insertBefore(results, bar.nextSibling);
+
   sports = createSportsMore({ onChange: () => run(input, results, deps) });
   sports.attach(results.parentNode);
 
@@ -215,4 +238,14 @@ export function initScopedMatchSearch(deps) {
     }
   });
   button.addEventListener("click", () => run(input, results, deps));
+
+  // Filter bar -> chip lists update as you change them (no Apply needed for the chips).
+  const hoursEl = document.getElementById("matches-filter-hours");
+  const countryEl = document.getElementById("matches-filter-country");
+  const rerunChips = () => { if (scope && !input.value.trim() && !(sports && sports.active())) run(input, results, deps); };
+  if (hoursEl) hoursEl.addEventListener("change", rerunChips);
+  if (countryEl) {
+    let ctimer;
+    countryEl.addEventListener("input", () => { clearTimeout(ctimer); ctimer = setTimeout(rerunChips, 300); });
+  }
 }

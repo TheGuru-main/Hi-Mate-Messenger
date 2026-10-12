@@ -97,6 +97,8 @@ export const api = {
     request(`/matches/sport/${sport}/list?scope=${scope}&q=${encodeURIComponent(q)}&days=${days}&timezone_name=${encodeURIComponent(tz)}`),
   getSportDetail: (sport, id, tz = "UTC") =>
     request(`/matches/sport/${sport}/${id}/detail?timezone_name=${encodeURIComponent(tz)}`),
+  browseMatches: (scope = "all", days = 3, tz = "UTC", hours = 0, country = "") =>
+    request(`/matches/browse?scope=${scope}&days=${days}&hours=${hours || 48}&country=${encodeURIComponent(country || "")}&timezone_name=${encodeURIComponent(tz)}`),
   searchMatchesScoped: (q, scope = "all", days = 3, tz = "UTC") =>
     request(`/matches/search?q=${encodeURIComponent(q)}&scope=${scope}&days=${days}&timezone_name=${encodeURIComponent(tz)}`),
   getRecentMatches: (days = 3, tz = "UTC") =>

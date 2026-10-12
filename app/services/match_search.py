@@ -274,8 +274,18 @@ def _epoch(m: dict) -> float:
         return 0.0
 
 
-async def _browse(scope: str, days: int, display_timezone: str) -> list[dict]:
-    """No query: just list what the filter chip asks for (this is what makes the chips work on tap)."""
+async def _browse(scope: str, days: int, display_timezone: str, hours=None, country: str = "") -> list[dict]:
+    """No query: list what the filter chip asks for (this is what makes the chips work on tap).
+    `hours` (the Next 12h/34h/3d/7d dropdown) sets the upcoming horizon; `country` is the
+    Country / league box, matched against country and league like the legacy list does."""
+    try:
+        horizon_hours = max(1, min(int(hours), 168)) if hours else BROWSE_UPCOMING_HOURS
+    except (TypeError, ValueError):
+        horizon_hours = BROWSE_UPCOMING_HOURS
+    needle = (country or "").strip().lower()
+
+    def wanted(m: dict) -> bool:
+        return not needle or needle in (m.get("country") or "").lower() or needle in (m.get("league") or "").lower()
     jobs = {}
     if scope in ("all", "live"):
         jobs["live"] = news.fetch_live_fixtures()
@@ -291,13 +301,13 @@ async def _browse(scope: str, days: int, display_timezone: str) -> list[dict]:
         raise next(iter(sources.values()))
 
     caps = BROWSE_CAPS_ALL if scope == "all" else BROWSE_CAPS_ONE
-    horizon = (datetime.now(timezone.utc) + timedelta(hours=BROWSE_UPCOMING_HOURS)).timestamp()
+    horizon = (datetime.now(timezone.utc) + timedelta(hours=horizon_hours)).timestamp()
     out = []
     for name in ("live", "upcoming", "past"):
         items = sources.get(name)
         if not items or isinstance(items, Exception):
             continue
-        tagged = _tag(items, name)
+        tagged = [m for m in _tag(items, name) if wanted(m)]
         if name == "live":
             tagged.sort(key=lambda m: (m.get("league") or "", _epoch(m)))
         elif name == "upcoming":
@@ -309,13 +319,14 @@ async def _browse(scope: str, days: int, display_timezone: str) -> list[dict]:
     return out
 
 
-async def search(query: str, scope: str = "all", days: int = 3, display_timezone: str = "UTC") -> list[dict]:
+async def search(query: str, scope: str = "all", days: int = 3, display_timezone: str = "UTC",
+                 hours=None, country: str = "") -> list[dict]:
     scope = scope if scope in ("all", "live", "upcoming", "past") else "all"
     days = _clamp_days(days)
     variants = query_variants(query)
 
     if not variants:
-        return await _browse(scope, days, display_timezone)
+        return await _browse(scope, days, display_timezone, hours, country)
 
     jobs = {}
     if scope in ("all", "live"):
