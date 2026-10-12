@@ -12,12 +12,15 @@ const SCOPES = [
   ["past", "Past 3d"],
 ];
 const DAYS = 3;
-const RECENT_KEY = "hm:recent-matches:v1";
+const PERSIST_PREFIX = "hm:ms-list:v1:";
+const REFRESH_MS = 20000;
 
-let scope = "all";
+let scope = null;        // null = no chip active: the original football list stays as it was
+let scopeRow = null;
 let ticket = 0;
-let recentCache = null;
+let refreshTimer = null;
 let sports = null;
+const listCache = new Map();
 
 const TZ = (() => {
   try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (e) { return "UTC"; }
@@ -72,15 +75,15 @@ export function resultHtml(m, deps) {
 
 /* ------------------------------ render ----------------------------- */
 
-function paint(results, list, query, deps) {
+function paint(results, list, query, scopeSel, deps) {
   results.innerHTML = "";
   if (!list.length) {
-    const where = scope === "all" ? "live, upcoming or past 3 days" : scope === "past" ? "the past 3 days" : scope;
+    const where = scopeSel === "all" ? "live, upcoming or past 3 days" : scopeSel === "past" ? "the past 3 days" : scopeSel;
     results.innerHTML = `<div class="match-search-empty"><i class="fa-solid fa-magnifying-glass"></i>
-      ${query ? `No ${esc(where)} match found for <strong>${esc(query)}</strong>.` : `No finished matches in the past ${DAYS} days.`}</div>`;
+      ${query ? `No ${esc(where)} match found for <strong>${esc(query)}</strong>.` : `No ${esc(where)} matches right now.`}</div>`;
     return;
   }
-  for (const group of groupResults(list, scope)) {
+  for (const group of groupResults(list, scopeSel)) {
     if (group.label) {
       const h = document.createElement("div");
       h.className = "ms-group";
@@ -97,55 +100,76 @@ function paint(results, list, query, deps) {
   }
 }
 
-function readRecent() {
-  if (recentCache) return recentCache;
-  try {
-    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) || "null");
-    if (raw && Array.isArray(raw.list)) { recentCache = raw.list; return recentCache; }
-  } catch (e) { /* ignore */ }
+function readList(query, scopeSel) {
+  const key = `${scopeSel}|${query}`;
+  if (listCache.has(key)) return listCache.get(key);
+  if (!query) { // unfiltered lists survive an app restart, so a chip tap paints instantly
+    try {
+      const raw = JSON.parse(localStorage.getItem(PERSIST_PREFIX + scopeSel) || "null");
+      if (raw && Array.isArray(raw.list)) { listCache.set(key, raw.list); return raw.list; }
+    } catch (e) { /* ignore */ }
+  }
   return null;
 }
 
-function writeRecent(list) {
-  recentCache = list;
-  try { localStorage.setItem(RECENT_KEY, JSON.stringify({ t: Date.now(), list })); } catch (e) { /* ignore */ }
+function writeList(query, scopeSel, list) {
+  listCache.set(`${scopeSel}|${query}`, list);
+  if (!query) {
+    try { localStorage.setItem(PERSIST_PREFIX + scopeSel, JSON.stringify({ t: Date.now(), list: list.slice(0, 60) })); } catch (e) { /* ignore */ }
+  }
+}
+
+function syncScopeRow() {
+  if (!scopeRow) return;
+  scopeRow.querySelectorAll(".ms-scope").forEach((b) => b.classList.toggle("ms-scope-on", b.dataset.scope === scope));
 }
 
 async function run(input, results, deps) {
+  clearTimeout(refreshTimer);
   const query = input.value.trim();
+  const effective = scope || "all";
+  // While a chip is active the original football list steps aside so the chip visibly filters.
+  if (sports) sports.setResultsMode(!!scope);
+
   if (sports && sports.active()) {
     const mineSport = ++ticket;
     results.classList.remove("hidden");
     await sports.render({
-      query, scope, results,
+      query, scope: effective, results,
       stillCurrent: () => mineSport === ticket,
       refresh: () => run(input, results, deps),
     });
     return;
   }
-  if (!query && scope !== "past") {
+
+  if (!query && !scope) {
+    ++ticket;
     results.classList.add("hidden");
     results.innerHTML = "";
     return;
   }
+
   const mine = ++ticket;
   results.classList.remove("hidden");
-
-  // Past matches with no query: paint the cached list instantly, then refresh behind it.
-  const cached = !query && scope === "past" ? readRecent() : null;
-  if (cached) paint(results, cached, query, deps);
-  else results.innerHTML = `<div class="match-search-loading"><i class="fa-solid fa-spinner fa-spin"></i> ${query ? "Searching clubs…" : "Loading recent matches…"}</div>`;
+  const cached = readList(query, effective);
+  if (cached) paint(results, cached, query, effective, deps);
+  else results.innerHTML = `<div class="match-search-loading"><i class="fa-solid fa-spinner fa-spin"></i> ${query ? "Searching clubs…" : "Loading matches…"}</div>`;
 
   try {
-    const list = query
-      ? await api.searchMatchesScoped(query, scope, DAYS, TZ)
-      : await api.getRecentMatches(DAYS, TZ);
+    const list = await api.searchMatchesScoped(query, effective, DAYS, TZ);
     if (mine !== ticket) return;
-    if (!query) writeRecent(list);
-    paint(results, list, query, deps);
+    if (!cached || JSON.stringify(cached) !== JSON.stringify(list)) paint(results, list, query, effective, deps);
+    writeList(query, effective, list);
+    if ((effective === "all" || effective === "live") && list.some((m) => m.scope === "live")) {
+      const tick = () => {
+        if (document.hidden) { refreshTimer = setTimeout(tick, REFRESH_MS); return; }
+        run(input, results, deps);
+      };
+      refreshTimer = setTimeout(tick, REFRESH_MS);
+    }
   } catch (e) {
     if (mine !== ticket) return;
-    if (cached) return; // keep the cached view if the refresh fails
+    if (cached) return; // keep what is on screen if the refresh fails
     results.innerHTML = `<div class="match-data-error">${esc(e.message)}</div>`;
   }
 }
@@ -162,20 +186,20 @@ export function initScopedMatchSearch(deps) {
   const row = document.createElement("div");
   row.className = "ms-scopes";
   row.innerHTML = SCOPES.map(([key, label]) =>
-    `<button type="button" class="ms-scope${key === scope ? " ms-scope-on" : ""}" data-scope="${key}">${label}</button>`
+    `<button type="button" class="ms-scope" data-scope="${key}">${label}</button>`
   ).join("");
   results.parentNode.insertBefore(row, results);
+  scopeRow = row;
 
   sports = createSportsMore({ onChange: () => run(input, results, deps) });
-  const searchBlock = results.parentNode.querySelector(".livesports-search");
-  results.parentNode.insertBefore(sports.row, searchBlock || row);
   sports.attach(results.parentNode);
 
   row.addEventListener("click", (event) => {
     const btn = event.target.closest("[data-scope]");
     if (!btn) return;
-    scope = btn.dataset.scope;
-    row.querySelectorAll(".ms-scope").forEach((b) => b.classList.toggle("ms-scope-on", b.dataset.scope === scope));
+    // tap a chip to filter; tap the active chip again to clear the filter
+    scope = scope === btn.dataset.scope ? null : btn.dataset.scope;
+    syncScopeRow();
     run(input, results, deps);
   });
 

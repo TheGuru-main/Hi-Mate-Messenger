@@ -19,6 +19,9 @@ RECENT_FRESH = 300          # seconds a recent-matches list is served without re
 RECENT_STALE = 6 * 3600     # served instantly (and refreshed behind the scenes) up to this age
 MIN_SCORE = 30.0
 MAX_RESULTS = 60
+BROWSE_UPCOMING_HOURS = 48                                   # "Upcoming"/"All" with no query: next 48h
+BROWSE_CAPS_ONE = {"live": 150, "upcoming": 100, "past": 80}  # one filter active
+BROWSE_CAPS_ALL = {"live": 100, "upcoming": 60, "past": 40}   # "All": keep the screen light
 
 # ------------------------------------------------------------------ lexicon
 
@@ -264,15 +267,55 @@ def _tag(items, scope):
 _SCOPE_ORDER = {"live": 0, "upcoming": 1, "past": 2}
 
 
+def _epoch(m: dict) -> float:
+    try:
+        return datetime.fromisoformat(str(m.get("starting_at")).replace("Z", "+00:00")).timestamp()
+    except Exception:
+        return 0.0
+
+
+async def _browse(scope: str, days: int, display_timezone: str) -> list[dict]:
+    """No query: just list what the filter chip asks for (this is what makes the chips work on tap)."""
+    jobs = {}
+    if scope in ("all", "live"):
+        jobs["live"] = news.fetch_live_fixtures()
+    if scope in ("all", "upcoming"):
+        # same 168h list the search already caches; narrowed to the next 48h below
+        jobs["upcoming"] = news.fetch_upcoming_fixtures(hours=168, display_timezone=display_timezone)
+    if scope in ("all", "past"):
+        jobs["past"] = fetch_recent_fixtures(days, display_timezone)
+
+    names = list(jobs)
+    sources = dict(zip(names, await asyncio.gather(*jobs.values(), return_exceptions=True)))
+    if all(isinstance(v, Exception) for v in sources.values()):
+        raise next(iter(sources.values()))
+
+    caps = BROWSE_CAPS_ALL if scope == "all" else BROWSE_CAPS_ONE
+    horizon = (datetime.now(timezone.utc) + timedelta(hours=BROWSE_UPCOMING_HOURS)).timestamp()
+    out = []
+    for name in ("live", "upcoming", "past"):
+        items = sources.get(name)
+        if not items or isinstance(items, Exception):
+            continue
+        tagged = _tag(items, name)
+        if name == "live":
+            tagged.sort(key=lambda m: (m.get("league") or "", _epoch(m)))
+        elif name == "upcoming":
+            tagged = [m for m in tagged if _epoch(m) <= horizon]
+            tagged.sort(key=_epoch)
+        else:
+            tagged.sort(key=_epoch, reverse=True)
+        out.extend(tagged[: caps[name]])
+    return out
+
+
 async def search(query: str, scope: str = "all", days: int = 3, display_timezone: str = "UTC") -> list[dict]:
     scope = scope if scope in ("all", "live", "upcoming", "past") else "all"
     days = _clamp_days(days)
     variants = query_variants(query)
 
-    if scope == "past" and not variants:
-        return _tag(await fetch_recent_fixtures(days, display_timezone), "past")[:MAX_RESULTS]
     if not variants:
-        return []
+        return await _browse(scope, days, display_timezone)
 
     jobs = {}
     if scope in ("all", "live"):

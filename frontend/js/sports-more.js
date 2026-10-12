@@ -196,35 +196,63 @@ export async function openSportDetail(m) {
 
 const listCache = new Map();
 
+/* -------------------- existing sport dropdown (populated, not replaced) -------------------- */
+
+const FOOTBALL_RE = /football|soccer/i;
+
+function explicitKey(option) {
+  const hint = option.dataset && option.dataset.hmSport;
+  if (hint) return hint;
+  const text = `${option.value} ${option.textContent}`;
+  if (FOOTBALL_RE.test(text)) return "football";
+  const low = text.toLowerCase();
+  for (const [key] of SPORTS) if (key !== "football" && low.includes(key)) return key;
+  return null;
+}
+
+function hasFootballOption(select) {
+  return Array.from(select.options || []).some((o) => FOOTBALL_RE.test(`${o.value} ${o.textContent}`));
+}
+
+function findSportSelect(root) {
+  const pick = (scope) => Array.from(scope.querySelectorAll("select")).find(hasFootballOption) || null;
+  return pick(root) || pick(document);
+}
+
+function populate(select) {
+  const present = new Set(Array.from(select.options).map(explicitKey).filter(Boolean));
+  for (const [key, emoji, label] of SPORTS) {
+    if (present.has(key)) continue;
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = `${emoji} ${label}`;
+    opt.dataset.hmSport = key;
+    select.appendChild(opt);
+  }
+}
+
+function selectedSport(select) {
+  const opt = select.options[select.selectedIndex];
+  return (opt && explicitKey(opt)) || "football";
+}
+
 export function createSportsMore({ onChange }) {
   let sport = "football";
   let shell = null;
+  let select = null;
+  let resultsMode = false;
   let timer = null;
-
-  const row = document.createElement("div");
-  row.className = "ms-sports";
-  row.innerHTML = SPORTS.map(([key, emoji, label]) =>
-    `<button type="button" class="ms-sport${key === sport ? " ms-sport-on" : ""}" data-sport="${key}">${emoji} ${label}</button>`
-  ).join("");
 
   function applyVisibility() {
     if (!shell) return;
-    const keep = (el) => el === row || el.id === "matches-search-results"
+    const hide = sport !== "football" || resultsMode;
+    const keep = (el) => el.id === "matches-search-results"
+      || (select && (el === select || (el.contains && el.contains(select))))
       || ["livesports-header", "livesports-search", "ms-scopes", "hm-sheet"].some((c) => el.classList.contains(c));
     Array.from(shell.children).forEach((el) => {
-      el.classList.toggle("ms-football-hidden", sport !== "football" && !keep(el));
+      el.classList.toggle("ms-football-hidden", hide && !keep(el));
     });
   }
-
-  row.addEventListener("click", (event) => {
-    const btn = event.target.closest("[data-sport]");
-    if (!btn || btn.dataset.sport === sport) return;
-    sport = btn.dataset.sport;
-    row.querySelectorAll(".ms-sport").forEach((b) => b.classList.toggle("ms-sport-on", b.dataset.sport === sport));
-    clearTimeout(timer);
-    applyVisibility();
-    onChange();
-  });
 
   function paint(results, list, query, scope) {
     results.innerHTML = "";
@@ -252,9 +280,35 @@ export function createSportsMore({ onChange }) {
   }
 
   return {
-    row,
     active: () => sport !== "football",
-    attach(parent) { shell = parent; applyVisibility(); },
+    setResultsMode(flag) { resultsMode = !!flag; applyVisibility(); },
+    attach(parent) {
+      shell = parent;
+      select = findSportSelect(parent);
+      if (!select) {
+        // No dropdown with a football option was found: add a compact one rather than lose the feature.
+        select = document.createElement("select");
+        select.className = "ms-sport-select";
+        const base = document.createElement("option");
+        base.value = "football";
+        base.textContent = "⚽ Football";
+        select.appendChild(base);
+        const searchBlock = parent.querySelector(".livesports-search");
+        parent.insertBefore(select, searchBlock || parent.children[1] || null);
+        console.warn("[hi-mate] no football sport dropdown found; added one");
+      }
+      populate(select);
+      sport = selectedSport(select);
+      select.addEventListener("change", () => {
+        const next = selectedSport(select);
+        if (next === sport) return;
+        sport = next;
+        clearTimeout(timer);
+        applyVisibility();
+        onChange();
+      });
+      applyVisibility();
+    },
     async render({ query, scope, results, stillCurrent, refresh }) {
       clearTimeout(timer);
       const key = `${sport}|${scope}|${query}`;
