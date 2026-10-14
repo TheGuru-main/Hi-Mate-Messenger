@@ -2196,8 +2196,25 @@ export function initFeed() {
             const list = document.getElementById("feed-list");
             if (list) {
                 const emptyState = list.querySelector(".section-title");
-                if (emptyState && list.children.length === 1) list.innerHTML = "";
+                if (emptyState && list.children.length === 1) {
+                    list.innerHTML = "";
+                }
+
+                const scroller = document.getElementById("tab-feed");
+                const previousScrollTop = scroller ? scroller.scrollTop : 0;
+                const previousScrollHeight = scroller ? scroller.scrollHeight : 0;
+                const preserveReadingPosition = previousScrollTop > 40;
+
                 list.insertBefore(renderPost(newPost), list.firstChild);
+
+                if (scroller && preserveReadingPosition) {
+                    requestAnimationFrame(() => {
+                        const addedHeight = scroller.scrollHeight - previousScrollHeight;
+                        if (addedHeight > 0) {
+                            scroller.scrollTop = previousScrollTop + addedHeight;
+                        }
+                    });
+                }
             }
         } catch (e) {
             updateToast(toast, `Failed: ${e.message}`);

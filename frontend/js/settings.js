@@ -113,6 +113,15 @@ function renderBackgroundModeControl() {
                 >
                     Network
                 </button>
+
+                <button
+                    type="button"
+                    class="chip background-mode-btn ${currentMode === "peach-aqua" ? "active" : ""}"
+                    data-background-mode="peach-aqua"
+                    style="flex:1;font-size:10px;"
+                >
+                    Peach Ice + Aqua Blue
+                </button>
             </div>
         </div>
     `;
@@ -126,14 +135,17 @@ function renderBackgroundModeControl() {
             } else {
                 document.body.classList.remove(
                     "background-classic",
-                    "background-network"
+                    "background-network",
+                    "background-peach-aqua"
                 );
 
-                document.body.classList.add(
-                    mode === "network"
-                        ? "background-network"
-                        : "background-classic"
-                );
+                const modeClass = {
+                    network: "background-network",
+                    "peach-aqua": "background-peach-aqua",
+                    classic: "background-classic"
+                }[mode] || "background-classic";
+
+                document.body.classList.add(modeClass);
 
                 localStorage.setItem(
                     "himate_background_mode",

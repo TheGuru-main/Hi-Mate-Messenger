@@ -13,15 +13,19 @@
 
     const CLASSIC_COLORS = ["#00E5FF", "#A855F7"];
     const NETWORK_COLORS = ["#FFFFFF", "#34C759"];
+    const PEACH_AQUA_COLORS = ["#267F91", "#6487B5", "#C47D69"];
 
     function isNetworkMode() {
         return document.body.classList.contains("background-network");
     }
 
+    function isPeachAquaMode() {
+        return document.body.classList.contains("background-peach-aqua");
+    }
+
     function getParticleColors() {
-        return isNetworkMode()
-            ? NETWORK_COLORS
-            : CLASSIC_COLORS;
+        if (isPeachAquaMode()) return PEACH_AQUA_COLORS;
+        return isNetworkMode() ? NETWORK_COLORS : CLASSIC_COLORS;
     }
 
     function setBackgroundMode(mode) {
@@ -29,15 +33,18 @@
 
         body.classList.remove(
             "background-classic",
-            "background-network"
+            "background-network",
+            "background-peach-aqua"
         );
 
-        if (mode === "network") {
-            body.classList.add("background-network");
-        } else {
-            mode = "classic";
-            body.classList.add("background-classic");
-        }
+        const modeClasses = {
+            classic: "background-classic",
+            network: "background-network",
+            "peach-aqua": "background-peach-aqua"
+        };
+
+        if (!modeClasses[mode]) mode = "classic";
+        body.classList.add(modeClasses[mode]);
 
         localStorage.setItem(
             "himate_background_mode",
@@ -104,9 +111,11 @@
                     ctx.beginPath();
                     ctx.moveTo(particles[i].x, particles[i].y);
                     ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = isNetworkMode()
-                        ? "rgba(255,255,255,0.16)"
-                        : "rgba(0,229,255,0.08)";
+                    ctx.strokeStyle = isPeachAquaMode()
+                        ? "rgba(38,127,145,0.18)"
+                        : isNetworkMode()
+                            ? "rgba(255,255,255,0.16)"
+                            : "rgba(0,229,255,0.08)";
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 }
@@ -129,13 +138,18 @@
 
     document.body.classList.remove(
         "background-classic",
-        "background-network"
+        "background-network",
+        "background-peach-aqua"
     );
 
+    const initialModeClasses = {
+        classic: "background-classic",
+        network: "background-network",
+        "peach-aqua": "background-peach-aqua"
+    };
+
     document.body.classList.add(
-        savedMode === "network"
-            ? "background-network"
-            : "background-classic"
+        initialModeClasses[savedMode] || "background-classic"
     );
 
     createParticles();

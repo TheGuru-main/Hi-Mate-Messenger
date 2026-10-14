@@ -3597,3 +3597,389 @@ body.background-network{
 .ps-line{ padding:8px 12px; font-size:13px; border-bottom:1px solid rgba(255,255,255,.06); }
 
 .pp-chip-num{ min-width:20px; height:20px; margin-right:6px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; background:rgba(0,229,255,.12); color:var(--neon-blue); }
+
+
+/* =========================================================
+   PEACH ICE + AQUA BLUE
+   Theme-specific contrast and surfaces.
+   Existing Classic and Network modes remain unchanged.
+   ========================================================= */
+
+body.background-peach-aqua {
+    --deep-blue: #DDF7FA;
+    --deep-blue-2: #FFF0E8;
+    --neon-blue: #187C8A;
+    --neon-purple: #6B78B8;
+    --neon-purple-2: #306F7A;
+    --glass-border: rgba(23, 56, 68, 0.18);
+    --text-primary: #173844;
+    --text-secondary: #355C65;
+    --text-faint: #587781;
+    color: var(--text-primary);
+    background: linear-gradient(
+        135deg,
+        #FFF0E8 0%,
+        #F8F2F0 45%,
+        #DDF7FA 100%
+    );
+    background-attachment: fixed;
+}
+
+body.background-peach-aqua .glass-header {
+    background: rgba(255, 255, 255, 0.64);
+    border-color: var(--glass-border);
+    box-shadow: 0 12px 34px rgba(35, 91, 104, 0.10);
+}
+
+body.background-peach-aqua .glass-header h1,
+body.background-peach-aqua .glass-header h2 {
+    background: linear-gradient(90deg, #267F91, #A65F78);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+body.background-peach-aqua .card,
+body.background-peach-aqua .composer,
+body.background-peach-aqua .settings-item,
+body.background-peach-aqua .list-item,
+body.background-peach-aqua .scoreboard,
+body.background-peach-aqua .fold-header,
+body.background-peach-aqua .fold-body {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.70);
+    border-color: var(--glass-border);
+    box-shadow: 0 8px 24px rgba(35, 91, 104, 0.06);
+}
+
+body.background-peach-aqua .input-box,
+body.background-peach-aqua .phone-input,
+body.background-peach-aqua select,
+body.background-peach-aqua .composer .input-box,
+body.background-peach-aqua .composer select,
+body.background-peach-aqua .composer textarea {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(23, 56, 68, 0.22);
+}
+
+body.background-peach-aqua .input-box::placeholder {
+    color: #647F86;
+}
+
+body.background-peach-aqua .bottom-nav,
+body.background-peach-aqua .chat-input-row {
+    background: rgba(255, 255, 255, 0.88);
+    border-color: var(--glass-border);
+}
+
+body.background-peach-aqua .chip,
+body.background-peach-aqua .reaction-btn,
+body.background-peach-aqua .icon-btn,
+body.background-peach-aqua .back-btn {
+    color: var(--text-secondary);
+    background: rgba(255, 255, 255, 0.60);
+    border-color: var(--glass-border);
+}
+
+body.background-peach-aqua .chip.active,
+body.background-peach-aqua .primary-btn,
+body.background-peach-aqua .send-btn,
+body.background-peach-aqua .bubble.mine {
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #267F91, #6B78B8);
+    border-color: transparent;
+}
+
+body.background-peach-aqua .nav-btn.active,
+body.background-peach-aqua .action-btn,
+body.background-peach-aqua .nav-btn {
+    color: var(--text-secondary);
+}
+
+body.background-peach-aqua .nav-btn.active {
+    color: #187C8A;
+}
+
+body.background-peach-aqua .bubble.theirs {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid var(--glass-border);
+}
+
+body.background-peach-aqua .match-list-item,
+body.background-peach-aqua .ms-scopes {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.78);
+    border-color: var(--glass-border);
+}
+
+body.background-peach-aqua .ms-scope {
+    color: var(--text-secondary);
+}
+
+body.background-peach-aqua .ms-scope.ms-scope-on {
+    color: #FFFFFF;
+    background: linear-gradient(135deg, #267F91, #6B78B8);
+}
+
+body.background-peach-aqua .pc-name,
+body.background-peach-aqua .pc-sub,
+body.background-peach-aqua .pc-followers,
+body.background-peach-aqua .ps-name,
+body.background-peach-aqua .ps-sub,
+body.background-peach-aqua .ps-line {
+    color: var(--text-primary);
+}
+
+/* =========================================================
+   FEED SCROLL + PROMO HERO POLISH
+   Keeps existing themes and feed components intact.
+   ========================================================= */
+
+/* One continuous page scroll: no forced snapping or nested feed scroll. */
+#home {
+    height: 100dvh;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+#home > .top-bar {
+    flex: 0 0 auto;
+}
+
+#home > .tab-content:not(.hidden) {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+    scroll-snap-type: none;
+    scroll-behavior: auto;
+    touch-action: pan-y;
+    padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+#feed-list,
+#video-feed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    overscroll-behavior: auto;
+    -webkit-overflow-scrolling: auto;
+    scroll-snap-type: none;
+    scroll-padding: 0;
+    margin-top: 8px;
+    padding: 0;
+}
+
+#feed-list > .feed-card,
+#video-feed-list > .feed-card {
+    flex: 0 0 auto;
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    overflow: visible;
+    scroll-snap-align: none;
+    scroll-snap-stop: normal;
+    margin: 0;
+}
+
+#feed-list > .feed-card > .content,
+#video-feed-list > .feed-card > .content,
+.feed-card .content {
+    flex: 0 0 auto;
+    max-height: none;
+    overflow: visible;
+    overflow-wrap: anywhere;
+}
+
+/* Keep horizontal media carousels swipeable without trapping vertical scroll. */
+#feed-list .media-carousel,
+#video-feed-list .media-carousel {
+    max-width: 100%;
+    touch-action: pan-y;
+}
+
+#feed-list .carousel-track,
+#video-feed-list .carousel-track {
+    touch-action: pan-x pan-y;
+}
+
+/* Promo slider: photo underlay, dark readability overlay, polished copy. */
+#promo-carousel {
+    position: relative;
+    isolation: isolate;
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.16);
+}
+
+#promo-track {
+    position: relative;
+    z-index: 0;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+#promo-track::-webkit-scrollbar {
+    display: none;
+}
+
+#promo-track .promo-slide {
+    position: relative;
+    isolation: isolate;
+    flex: 0 0 100%;
+    box-sizing: border-box;
+    min-height: 112px;
+    padding: 20px 22px 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    overflow: hidden;
+    scroll-snap-align: center;
+    text-align: left;
+    line-height: 1.4;
+    font-size: 15px;
+    font-weight: 750;
+    letter-spacing: .01em;
+    color: #fff;
+    text-shadow: 0 2px 8px rgba(0,0,0,.55);
+    background-color: #17243b;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* Overlay sits above the image and below the writing. */
+#promo-track .promo-slide::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(
+        100deg,
+        rgba(5,10,24,.82) 0%,
+        rgba(5,10,24,.53) 55%,
+        rgba(5,10,24,.22) 100%
+    );
+    pointer-events: none;
+}
+
+#promo-track .promo-slide i {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border: 1px solid rgba(255,255,255,.35);
+    border-radius: 13px;
+    background: rgba(255,255,255,.14);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-size: 20px;
+    color: #fff;
+    text-shadow: none;
+}
+
+#promo-track .promo-slide {
+    background-image:
+        linear-gradient(rgba(5,10,24,.15), rgba(5,10,24,.15)),
+        linear-gradient(135deg, #344b68, #18263e);
+}
+
+#promo-track .promo-slide:nth-child(1) {
+    background-image: url("https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(2) {
+    background-image: url("https://images.unsplash.com/photo-1516979187457-637abb4f9353?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(3) {
+    background-image: url("https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(4) {
+    background-image: url("https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(5) {
+    background-image: url("https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(6) {
+    background-image: url("https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(7) {
+    background-image: url("https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(8) {
+    background-image: url("https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(9) {
+    background-image: url("https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(10) {
+    background-image: url("https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(11) {
+    background-image: url("https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-track .promo-slide:nth-child(12) {
+    background-image: url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=1000&q=80");
+}
+
+#promo-dots {
+    z-index: 2;
+    bottom: 8px;
+    gap: 6px;
+}
+
+#promo-dots .dot {
+    width: 6px;
+    height: 6px;
+    background: rgba(255,255,255,.5);
+}
+
+#promo-dots .dot.active {
+    width: 17px;
+    border-radius: 999px;
+    background: #fff;
+}
+
+@media (max-width: 380px) {
+    #promo-track .promo-slide {
+        min-height: 100px;
+        padding: 16px 14px 24px;
+        gap: 10px;
+        font-size: 13.5px;
+    }
+
+    #promo-track .promo-slide i {
+        width: 36px;
+        height: 36px;
+        font-size: 17px;
+    }
+}
