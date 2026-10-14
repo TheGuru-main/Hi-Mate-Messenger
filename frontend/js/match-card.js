@@ -93,6 +93,7 @@ export function footballCardEl(m, { liveMinuteText, onOpen }) {
   }, () => onOpen(m));
   el.dataset.fixtureId = String(m.fixture_id ?? "");
   el.__matchData = m;
+  wireTeamTaps(el, m);
   return el;
 }
 
@@ -120,5 +121,29 @@ export function sportCardEl(m, onOpen) {
   }, onOpen);
   el.dataset.fixtureId = String(m.fixture_id ?? "");
   el.__matchData = m;
+  wireTeamTaps(el, m);
   return el;
+}
+
+
+function wireTeamTaps(el, m) {
+  el.querySelectorAll(".match-club-name").forEach((node) => {
+    node.classList.add("match-team-tap");
+
+    node.addEventListener("click", (e) => {
+      e.stopPropagation();
+
+      const side = node.dataset.side;
+
+      document.dispatchEvent(new CustomEvent("hm:team-tap", {
+        detail: {
+          teamKey: m[side + "_team_key"] || null,
+          name: m[side + "_team"] || node.textContent.trim(),
+          logo: m[side + "_logo"] || null,
+          sport: m.sport || "football",
+          fixtureId: m.fixture_id ?? null
+        }
+      }));
+    });
+  });
 }

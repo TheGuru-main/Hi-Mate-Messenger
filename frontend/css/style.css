@@ -3807,3 +3807,15 @@ body.background-network{
 .ms-scope:active{ transform:scale(.97); }
 .ms-scope.ms-scope-on{ background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple-2)); color:#050718; box-shadow:0 3px 10px rgba(0,229,255,.25); }
 .ms-retry{ margin-left:8px; padding:4px 10px; border:0; border-radius:8px; background:rgba(0,229,255,.12); color:var(--neon-blue); font-size:11px; font-weight:700; }
+
+/* ===== TAPPABLE TEAMS + PLAYER SHEET ===== */
+.match-team-tap{ cursor:pointer; text-decoration:underline dotted rgba(255,255,255,.28); text-underline-offset:3px; -webkit-tap-highlight-color:transparent; }
+.match-team-tap:active{ opacity:.6; }
+.match-scoreboard-teams .match-team-tap{ padding:4px 2px; }
+.ps-head{ display:flex; align-items:center; gap:12px; padding:14px 12px 6px; }
+.ps-num{ min-width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; font-weight:800; background:rgba(0,229,255,.10); border:1px solid rgba(0,229,255,.25); color:var(--neon-blue); }
+.ps-name{ font-size:17px; font-weight:800; }
+.ps-sub{ margin-top:2px; font-size:12px; opacity:.65; }
+.ps-fav{ display:block; width:calc(100% - 24px); margin:10px 12px; height:42px; border:1px solid rgba(0,229,255,.3); border-radius:12px; background:transparent; color:var(--neon-blue); font-size:14px; font-weight:700; }
+.ps-fav.ps-fav-on{ background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple-2)); color:#050718; border-color:transparent; }
+.ps-line{ padding:8px 12px; font-size:13px; border-bottom:1px solid rgba(255,255,255,.06); }

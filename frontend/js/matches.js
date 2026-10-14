@@ -4,6 +4,7 @@ import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { onMessage } from "./socket.js";
 import { footballCardEl } from "./match-card.js";
+import "./player-sheet.js";
 
 let activeFixtureId = null;
 let activeGroupId = null;
@@ -426,11 +427,11 @@ function renderScoreboard(m) {
       })}`
     : m.finished ? "FULL TIME" : `${minute} · LIVE`;
 
-  el.innerHTML = `
+  const html = `
     <div class="match-scoreboard-teams">
-      <span>${escapeHtml(m.home_team || "?")}</span>
+      <span class="match-team-tap" data-side="home">${escapeHtml(m.home_team || "?")}</span>
       <strong>VS</strong>
-      <span>${escapeHtml(m.away_team || "?")}</span>
+      <span class="match-team-tap" data-side="away">${escapeHtml(m.away_team || "?")}</span>
     </div>
 
     <div class="match-scoreboard-score">
@@ -443,6 +444,11 @@ function renderScoreboard(m) {
       ${escapeHtml(state)}
     </div>
   `;
+
+  if (el._lastHtml !== html) {
+    el._lastHtml = html;
+    el.innerHTML = html;
+  }
 
   renderMatchEvents(m);
 }
@@ -890,6 +896,7 @@ export async function openMatchRoom(match) {
 
 export function initMatches() {
   initMatchSearch();
+  wireScoreboardTaps();
   const back =
     document.getElementById("btn-back-from-match");
 
@@ -1288,4 +1295,32 @@ async function loadStatsFold(fixtureId) {
 
 function initMatchSearch() {
   initScopedMatchSearch({ openMatchRoom, liveMinuteText, escapeHtml });
+}
+
+
+function wireScoreboardTaps() {
+  const el = document.getElementById("match-scoreboard");
+
+  if (!el || el._teamTapBound) return;
+
+  el._teamTapBound = true;
+
+  el.addEventListener("click", (e) => {
+    const t = e.target.closest(".match-team-tap");
+
+    if (!t || !activeMatchSnapshot) return;
+
+    const side = t.dataset.side;
+    const m = activeMatchSnapshot;
+
+    document.dispatchEvent(new CustomEvent("hm:team-tap", {
+      detail: {
+        teamKey: m[side + "_team_key"] || null,
+        name: m[side + "_team"] || t.textContent.trim(),
+        logo: m[side + "_logo"] || null,
+        sport: "football",
+        fixtureId: activeFixtureId
+      }
+    }));
+  });
 }
