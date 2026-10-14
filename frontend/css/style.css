@@ -4005,3 +4005,53 @@ body.background-peach-aqua .ps-line {
 .match-scoreboard-teams .fc:first-child{ justify-self:end; }
 .match-scoreboard-teams .fc:last-child{ justify-self:start; }
 .match-scoreboard-teams .fc > .match-team-tap{ text-align:center !important; }
+
+/* ===== PER-BACKGROUND TOKENS: classic / network / peach-aqua ===== */
+.fc > .md-player, .fc > .md-team, .fc > .pc-link, .fc > .match-club-name, .fc > .match-team-tap{ color:inherit !important; }
+
+body.background-classic .hm-sheet-panel{ background:#0F1430 !important; color:#F5F7FF !important; }
+body.background-network .hm-sheet-panel{ background:#262626 !important; color:#F2F2F2 !important; }
+body.background-peach-aqua .hm-sheet-panel{ background:#FFF6F0 !important; color:#173844 !important; }
+
+body.background-network{
+  --neon-blue:#34C759; --neon-purple:#D0D0D0; --neon-purple-2:#A8A8A8;
+  --glass-border:rgba(245,245,245,.18);
+  --text-primary:#F2F2F2; --text-secondary:#CFCFCF; --text-faint:#A6A6A6;
+  --fc-team-bg:rgba(52,199,89,.14); --fc-team-border:rgba(52,199,89,.38);
+  --fc-player-bg:rgba(245,245,245,.10); --fc-player-border:rgba(245,245,245,.30);
+  --fc-plus-bg:linear-gradient(135deg,#34C759,#A8A8A8); --fc-plus-text:#050718;
+  --fc-on-bg:rgba(255,255,255,.16); --fc-on-text:#34C759;
+  color:var(--text-primary);
+  background:linear-gradient(324deg,#242424 0%,#292929 70%,#3b3b3b 100%);
+}
+body.background-network .glass-header{ background:rgba(255,255,255,.06); border-color:var(--glass-border); }
+body.background-network .card, body.background-network .composer, body.background-network .settings-item,
+body.background-network .list-item, body.background-network .scoreboard{ background:rgba(255,255,255,.07); border-color:var(--glass-border); }
+body.background-network .fold-header{ background:#333; }
+body.background-network .fold-body{ background:#2c2c2c; }
+body.background-network .input-box, body.background-network .phone-input, body.background-network select{ background:#333; border-color:rgba(245,245,245,.22); color:var(--text-primary); }
+body.background-network .bottom-nav, body.background-network .chat-input-row{ background:rgba(36,36,36,.94); border-color:var(--glass-border); }
+body.background-network .chip{ background:rgba(255,255,255,.08); border-color:rgba(245,245,245,.2); }
+body.background-network #tab-matches{ background:#202020; }
+body.background-network .match-list-item, body.background-network .livesports-search{ background:#303030; border-color:var(--glass-border); }
+body.background-network .ms-scopes, body.background-network .livesports-search-results{ background:#2b2b2b; border-color:var(--glass-border); }
+
+body.background-peach-aqua{
+  --text-faint:#4F6F79;
+  --fc-team-bg:rgba(38,127,145,.12); --fc-team-border:rgba(38,127,145,.38);
+  --fc-player-bg:rgba(166,95,120,.14); --fc-player-border:rgba(166,95,120,.40);
+  --fc-plus-bg:linear-gradient(135deg,#267F91,#6B78B8); --fc-plus-text:#FFFFFF;
+  --fc-on-bg:rgba(23,56,68,.10); --fc-on-text:#187C8A;
+}
+body.background-peach-aqua #tab-matches{ background:rgba(255,255,255,.55); }
+body.background-peach-aqua .livesports-search, body.background-peach-aqua .livesports-search-results{ background:rgba(255,255,255,.78); border-color:var(--glass-border); }
+body.background-peach-aqua .match-score-box{ background:rgba(23,56,68,.08); }
+
+/* ===== NETWORK ALERT BANNER ===== */
+.net-banner{ position:fixed; left:10px; right:10px; top:calc(env(safe-area-inset-top,0px) + 8px); z-index:100000; display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:14px; font-size:12.5px; font-weight:600; color:#fff; box-shadow:0 8px 24px rgba(0,0,0,.35); transform:translateY(-160%); transition:transform .25s ease; pointer-events:none; }
+.net-banner.show{ transform:translateY(0); pointer-events:auto; }
+.net-banner.net-bad{ background:rgba(190,40,60,.97); }
+.net-banner.net-warn{ background:rgba(154,90,0,.97); }
+.net-banner.net-ok{ background:rgba(17,119,63,.97); }
+.net-banner .net-text{ flex:1; line-height:1.3; }
+.net-retry{ flex:0 0 auto; padding:6px 12px; border:1px solid rgba(255,255,255,.55); border-radius:10px; background:rgba(255,255,255,.16); color:#fff; font-size:12px; font-weight:700; cursor:pointer; }

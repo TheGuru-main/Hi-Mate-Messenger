@@ -27,6 +27,8 @@ app = FastAPI(
                  "live sports match rooms.",
 )
 
+from starlette.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=800)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -59,6 +61,11 @@ app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")
 app.include_router(ws_router)
 app.include_router(calls_ws_router)
+
+
+@app.get("/health")
+def health():
+    return {"ok": True}
 
 
 @app.on_event("startup")
