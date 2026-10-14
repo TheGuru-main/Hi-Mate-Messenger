@@ -172,3 +172,32 @@ export function renderProfilePlayers(uid, sync = true) {
 }
 
 document.addEventListener("hm:players-changed", () => { if (profileUid != null) renderProfilePlayers(profileUid, false); });
+
+
+/* ---------- used by the follow capsules ---------- */
+
+export function playerFavId(info) {
+  if (info.playerId) return `p:${info.playerId}`;
+  const g = gather(readDetail(info.fixtureId), info);
+  return `n:${info.name}|${g.team || info.team || ""}`;
+}
+
+export function toggleFavoritePlayer(info) {
+  const g = gather(readDetail(info.fixtureId), info);
+  g.team = g.team || info.team || null;
+  g.teamKey = g.teamKey || info.teamKey || null;
+  const id = info.playerId ? `p:${info.playerId}` : `n:${info.name}|${g.team || ""}`;
+  let favs = loadFavs();
+  const was = favs.some((f) => f.id === id);
+  if (was) {
+    favs = favs.filter((f) => f.id !== id);
+    api.unfollowPlayer(id).catch(() => {});
+  } else {
+    const entry = { id, name: info.name, playerId: info.playerId || null, team: g.team, teamKey: g.teamKey, number: g.number, position: g.position, added: Date.now() };
+    favs.push(entry);
+    api.followPlayer(entry).catch(() => {});
+  }
+  saveFavs(favs);
+  document.dispatchEvent(new CustomEvent("hm:players-changed"));
+  return !was;
+}

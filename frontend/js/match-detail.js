@@ -310,6 +310,7 @@ export async function mountMatchDetail(fixtureId, container, hints = {}) {
   const token = {};
   container._mdToken = token;
   container._mdFixture = fixtureId;
+  container.dataset.fixture = String(fixtureId);
   if (!sameFixture) container._mdTab = "summary";
   const alive = () => container.isConnected && container._mdToken === token;
 

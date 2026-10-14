@@ -3983,3 +3983,25 @@ body.background-peach-aqua .ps-line {
         font-size: 17px;
     }
 }
+
+/* ===== FOLLOW CAPSULES: team + player names with (+) ===== */
+:root{
+  --fc-team-bg: rgba(0,229,255,.10);
+  --fc-team-border: rgba(0,229,255,.26);
+  --fc-player-bg: rgba(168,85,247,.14);
+  --fc-player-border: rgba(168,85,247,.34);
+  --fc-plus-bg: linear-gradient(135deg, var(--neon-blue), var(--neon-purple-2));
+  --fc-plus-text: #050718;
+  --fc-on-bg: rgba(255,255,255,.14);
+  --fc-on-text: var(--neon-blue);
+}
+.fc{ display:inline-flex; align-items:center; max-width:100%; min-width:0; vertical-align:middle; overflow:hidden; border-radius:16px; background:var(--fc-team-bg); border:1px solid var(--fc-team-border); }
+.fc-player{ background:var(--fc-player-bg); border-color:var(--fc-player-border); }
+.fc > .md-player, .fc > .md-team, .fc > .pc-link, .fc > .match-club-name, .fc > .match-team-tap{ background:transparent !important; border:0 !important; box-shadow:none !important; margin:0 !important; padding:5px 4px 5px 10px !important; min-width:0; color:var(--fc-text, var(--text-primary, #eef2ff)); font:inherit; text-decoration:none !important; text-align:left !important; }
+.fc-plus{ flex:0 0 auto; width:24px; height:24px; margin:2px; padding:0; border:0; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:16px; line-height:1; font-weight:900; color:var(--fc-plus-text); background:var(--fc-plus-bg); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.fc-plus:active{ transform:scale(.88); }
+.fc.fc-on .fc-plus{ background:var(--fc-on-bg); color:var(--fc-on-text); font-size:13px; }
+.fc.fc-busy .fc-plus{ opacity:.5; }
+.match-scoreboard-teams .fc:first-child{ justify-self:end; }
+.match-scoreboard-teams .fc:last-child{ justify-self:start; }
+.match-scoreboard-teams .fc > .match-team-tap{ text-align:center !important; }

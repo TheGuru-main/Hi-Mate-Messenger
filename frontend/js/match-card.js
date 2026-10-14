@@ -127,21 +127,35 @@ export function sportCardEl(m, onOpen) {
 
 
 function wireTeamTaps(el, m) {
+  const sport = m.sport || "football";
+
   el.querySelectorAll(".match-club-name").forEach((node) => {
-    if (!m[node.dataset.side + "_team_key"]) return;
+    const side = node.dataset.side;
+    const key = m[side + "_team_key"];
+
+    if (!key) return;
+
+    const name = m[side + "_team"] || node.textContent.trim();
+    const logo = m[side + "_logo"] || "";
+
     node.classList.add("match-team-tap");
+
+    if (sport === "football") {
+      node.dataset.tid = String(key);
+      node.dataset.name = name;
+      node.dataset.logo = logo;
+      node.dataset.sport = "football";
+    }
 
     node.addEventListener("click", (e) => {
       e.stopPropagation();
 
-      const side = node.dataset.side;
-
       document.dispatchEvent(new CustomEvent("hm:team-tap", {
         detail: {
-          teamKey: m[side + "_team_key"] || null,
-          name: m[side + "_team"] || node.textContent.trim(),
-          logo: m[side + "_logo"] || null,
-          sport: m.sport || "football",
+          teamKey: key,
+          name,
+          logo: logo || null,
+          sport,
           fixtureId: m.fixture_id ?? null
         }
       }));
