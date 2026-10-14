@@ -3786,3 +3786,24 @@ body.background-network{
 /* ---- sport dropdown (sports-more.js); the pill row is gone ---- */
 .ms-sport-select{margin:8px 0;padding:8px 12px;border-radius:10px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font-size:14px}
 .ms-scope-on{background:rgba(128,128,128,.28);font-weight:700}
+
+
+/* ===== UNIFIED LIVESPORTS CARD: single source of truth, keep LAST ===== */
+.livesports-search-results{ background:transparent; border:0; border-radius:0; overflow:visible; }
+.match-list-item{ display:block; width:100%; box-sizing:border-box; padding:13px; margin:0 0 9px; border-radius:17px; background:#18213f; border:1px solid rgba(255,255,255,.07); box-shadow:0 7px 20px rgba(0,0,0,.20); cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.match-list-item:active{ transform:scale(.985); }
+.match-list-item.live{ border-color:rgba(255,70,70,.18); }
+.match-list-item.upcoming{ border-color:rgba(0,229,255,.12); }
+.match-state-pill.past{ background:rgba(255,255,255,.07); color:var(--text-faint); }
+.match-list-item .match-list-sub{ margin-top:9px; text-align:center; font-size:10px; line-height:1.35; color:var(--text-faint); }
+.match-list-item .ms-goals, .match-list-item .ms-periods{ margin-top:8px; font-size:10px; }
+.match-club-name.ms-win{ color:var(--neon-blue); }
+.ms-group{ margin:12px 4px 8px; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-faint); }
+
+/* ===== LIVESPORTS CAPSULE (All / Live / Upcoming / Past): keep LAST ===== */
+.ms-football-hidden{ display:none !important; }
+.ms-scopes{ position:sticky; top:0; z-index:5; display:grid; grid-template-columns:repeat(4,1fr); gap:4px; padding:4px; margin:0 0 10px; border-radius:16px; background:#111936; border:1px solid rgba(0,229,255,.14); box-shadow:0 6px 16px rgba(0,0,0,.25); }
+.ms-scope{ min-height:38px; padding:0 6px; border:0; border-radius:12px; background:transparent; color:var(--text-faint); font-size:12px; font-weight:700; white-space:nowrap; cursor:pointer; -webkit-tap-highlight-color:transparent; transition:background .15s,color .15s; }
+.ms-scope:active{ transform:scale(.97); }
+.ms-scope.ms-scope-on{ background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple-2)); color:#050718; box-shadow:0 3px 10px rgba(0,229,255,.25); }
+.ms-retry{ margin-left:8px; padding:4px 10px; border:0; border-radius:8px; background:rgba(0,229,255,.12); color:var(--neon-blue); font-size:11px; font-weight:700; }

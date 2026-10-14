@@ -2,6 +2,7 @@
 // sport selector row, sport-aware result cards, and a match detail sheet.
 import { api } from "./api.js";
 import { openSheet } from "./sheet.js";
+import { sportCardEl } from "./match-card.js";
 
 export const SPORTS = [
   ["football", "⚽", "Football"],
@@ -270,11 +271,7 @@ export function createSportsMore({ onChange }) {
         results.appendChild(h);
       }
       for (const m of group.items) {
-        const div = document.createElement("div");
-        div.className = "match-search-result";
-        div.innerHTML = sportCardHtml(m);
-        div.onclick = () => openSportDetail(m);
-        results.appendChild(div);
+        results.appendChild(sportCardEl(m, () => openSportDetail(m)));
       }
     }
   }

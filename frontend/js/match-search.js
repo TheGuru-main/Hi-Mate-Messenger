@@ -2,6 +2,7 @@
 // grouped results with scorers for finished games. Replaces the legacy input wiring.
 import { api } from "./api.js";
 import { createSportsMore, dayLabel, groupResults } from "./sports-more.js";
+import { footballCardEl } from "./match-card.js";
 
 export { dayLabel, groupResults };
 
@@ -15,7 +16,7 @@ const DAYS = 3;
 const PERSIST_PREFIX = "hm:ms-list:v1:";
 const REFRESH_MS = 20000;
 
-let scope = null;        // null = no chip active: the original football list stays as it was
+let scope = "all";   // "All" is always on by default
 let scopeRow = null;
 let ticket = 0;
 let refreshTimer = null;
@@ -92,11 +93,7 @@ function paint(results, list, query, scopeSel, deps, f = { country: "" }) {
       results.appendChild(h);
     }
     for (const m of group.items) {
-      const div = document.createElement("div");
-      div.className = "match-search-result";
-      div.innerHTML = resultHtml(m, deps);
-      div.onclick = () => deps.openMatchRoom(m);
-      results.appendChild(div);
+      results.appendChild(footballCardEl(m, { liveMinuteText: deps.liveMinuteText, onOpen: deps.openMatchRoom }));
     }
   }
 }
@@ -121,7 +118,7 @@ function readList(query, scopeSel, f) {
   if (!query && !f.country) { // unfiltered lists survive an app restart, so a chip tap paints instantly
     try {
       const raw = JSON.parse(localStorage.getItem(`${PERSIST_PREFIX}${scopeSel}:${f.hours}`) || "null");
-      if (raw && Array.isArray(raw.list)) { listCache.set(key, raw.list); return raw.list; }
+      if (raw && Array.isArray(raw.list) && Date.now() - (raw.t || 0) < 600000) { listCache.set(key, raw.list); return raw.list; }
     } catch (e) { /* ignore */ }
   }
   return null;
@@ -188,7 +185,9 @@ async function run(input, results, deps) {
   } catch (e) {
     if (mine !== ticket) return;
     if (cached) return; // keep what is on screen if the refresh fails
-    results.innerHTML = `<div class="match-data-error">${esc(e.message)}</div>`;
+    results.innerHTML = `<div class="match-data-error">${esc(e.message)} <button type="button" class="ms-retry">Retry</button></div>`;
+    const rb = results.querySelector(".ms-retry");
+    if (rb) rb.onclick = () => run(input, results, deps);
   }
 }
 
@@ -221,7 +220,8 @@ export function initScopedMatchSearch(deps) {
     const btn = event.target.closest("[data-scope]");
     if (!btn) return;
     // tap a chip to filter; tap the active chip again to clear the filter
-    scope = scope === btn.dataset.scope ? null : btn.dataset.scope;
+    if (scope === btn.dataset.scope) return;   // a chip is always active
+    scope = btn.dataset.scope;
     syncScopeRow();
     run(input, results, deps);
   });
@@ -238,6 +238,10 @@ export function initScopedMatchSearch(deps) {
     }
   });
   button.addEventListener("click", () => run(input, results, deps));
+  syncScopeRow();
+  run(input, results, deps);
+  const navBtn = document.querySelector('.nav-btn[data-tab="matches"]');
+  if (navBtn) navBtn.addEventListener("click", () => run(input, results, deps));
 
   // Filter bar -> chip lists update as you change them (no Apply needed for the chips).
   const hoursEl = document.getElementById("matches-filter-hours");

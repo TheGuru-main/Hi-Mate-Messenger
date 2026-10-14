@@ -3,6 +3,7 @@ import { mountMatchDetail } from "./match-detail.js";
 import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { onMessage } from "./socket.js";
+import { footballCardEl } from "./match-card.js";
 
 let activeFixtureId = null;
 let activeGroupId = null;
@@ -10,6 +11,7 @@ let activeGroupId = null;
 let matchesRefreshTimer = null;
 let matchRoomRefreshTimer = null;
 let matchClockTimer = null;
+let listClockTimer = null;
 
 let activeMatchSnapshot = null;
 let activeMatchFetchedAt = 0;
@@ -115,94 +117,7 @@ function renderClubName(name) {
 
 
 function renderMatchListItem(m) {
-  const div = document.createElement("div");
-
-  div.className =
-    `match-list-item ${m.upcoming ? "upcoming" : "live"}`;
-  div.dataset.fixtureId = String(m.fixture_id ?? "");
-  div.__matchData = m;
-
-  div.dataset.fixtureId =
-    String(m.fixture_id ?? "");
-
-  div.__matchData = m;
-
-  const fetchedAt =
-    m._fetched_at || Date.now();
-
-  let meta;
-
-  if (m.upcoming) {
-    const kickoff =
-      new Date(m.starting_at);
-
-    meta =
-      `Kickoff ${kickoff.toLocaleString([], {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        hour: "2-digit",
-        minute: "2-digit"
-      })}`;
-  } else {
-    meta =
-      `${liveMinuteText(m, fetchedAt)} · LIVE`;
-  }
-
-  if (m.league) {
-    meta += ` · ${m.league}`;
-  }
-
-  div.innerHTML = `
-    <div class="match-list-topline">
-      <span class="match-state-pill ${m.upcoming ? "upcoming" : "live"}">
-        ${m.upcoming ? "UPCOMING" : "LIVE"}
-      </span>
-
-      ${m.has_room ? `
-        <span class="match-room-pill">
-          <i class="fa-solid fa-comments"></i>
-          Room
-        </span>
-      ` : ""}
-    </div>
-
-    <div class="match-clubs">
-
-      <div class="match-club">
-        ${renderClubName(m.home_team)}
-      </div>
-
-      <div class="match-score-box">
-        <strong>${m.upcoming ? "VS" : `${m.home_score ?? 0} - ${m.away_score ?? 0}`}</strong>
-      </div>
-
-      <div class="match-club away">
-        ${renderClubName(m.away_team)}
-      </div>
-
-    </div>
-
-    <div class="match-list-sub">
-      ${escapeHtml(meta)}
-    </div>
-
-    ${renderMatchEventSummary(m)}
-
-    <div class="match-card-footer">
-      <span>
-        <i class="fa-solid fa-comments"></i>
-        ${m.upcoming ? "Join match room" : "Open live room"}
-      </span>
-
-      <i class="fa-solid fa-chevron-right"></i>
-    </div>
-  `;
-
-  div.onclick = () =>
-    openMatchRoom(m);
-
-  return div;
+  return footballCardEl(m, { liveMinuteText, onOpen: openMatchRoom });
 }
 
 
@@ -435,13 +350,13 @@ async function refreshLiveCardsInBackground() {
 function updateLiveCardClocks() {
   const cards =
     document.querySelectorAll(
-      ".matches-live-section .match-list-item.live"
+      "#tab-matches .match-list-item.live"
     );
 
   cards.forEach((card) => {
     const match = card.__matchData;
 
-    if (!match) return;
+    if (!match || (match.sport && match.sport !== "football")) return;
 
     const sub =
       card.querySelector(".match-list-sub");
@@ -473,11 +388,11 @@ function startMatchesPolling() {
     15000
   );
 
-  if (matchClockTimer) {
-    clearInterval(matchClockTimer);
+  if (listClockTimer) {
+    clearInterval(listClockTimer);
   }
 
-  matchClockTimer = setInterval(
+  listClockTimer = setInterval(
     updateLiveCardClocks,
     1000
   );
