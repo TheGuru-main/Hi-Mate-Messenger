@@ -68,6 +68,7 @@ function html(info, g, following) {
       </div>
     </div>
     <button type="button" class="ps-fav${following ? " ps-fav-on" : ""}">${following ? "★ Following" : "☆ Follow player"}</button>
+    ${statsBlock(info)}
     <div class="md-block">
       <div class="md-title">${info.fixtureId ? "This match" : "Followed player"}</div>
       ${g.lines.length ? g.lines.map((l) => `<div class="ps-line">${esc(l)}</div>`).join("")
@@ -86,6 +87,7 @@ document.addEventListener("hm:player-tap", (event) => {
   const id = info.playerId ? `p:${info.playerId}` : `n:${info.name}|${g.team || ""}`;
   let following = loadFavs().some((f) => f.id === id);
   const sheet = openSheet({ title: info.name, html: html(info, g, following) });
+  loadProfile(info, () => { if (sheet.isOpen()) sheet.setHtml(html(info, g, following)); });
   sheet.body.addEventListener("click", (e) => {
     const btn = e.target.closest(".ps-fav");
     if (!btn) return;
@@ -200,4 +202,86 @@ export function toggleFavoritePlayer(info) {
   saveFavs(favs);
   document.dispatchEvent(new CustomEvent("hm:players-changed"));
   return !was;
+}
+
+
+/* ---------- real season + career stats ---------- */
+
+const profiles = new Map();
+const PROFILE_PREFIX = "hm:player-profile:v1:";
+const PROFILE_TTL = 12 * 3600 * 1000;
+
+function readProfileCache(pid) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(PROFILE_PREFIX + pid) || "null");
+    if (raw && Date.now() - raw.t < PROFILE_TTL) return raw.data;
+  } catch (e) { /* ignore */ }
+  return null;
+}
+
+function loadProfile(info, done) {
+  const pid = info.playerId ? String(info.playerId) : "";
+  if (!pid) return;
+  const cached = readProfileCache(pid);
+  if (cached) {
+    profiles.set(pid, { state: "ok", data: cached });
+    done();
+    return;
+  }
+  profiles.set(pid, { state: "loading" });
+  api.getPlayerProfile(pid)
+    .then((data) => {
+      profiles.set(pid, { state: "ok", data });
+      try { localStorage.setItem(PROFILE_PREFIX + pid, JSON.stringify({ t: Date.now(), data })); } catch (e) { /* ignore */ }
+    })
+    .catch((e) => profiles.set(pid, { state: "error", message: (e && e.message) || "unavailable" }))
+    .then(done);
+}
+
+function psCell(label, value) {
+  return `<div class="ps-cell"><div class="ps-val">${esc(value ?? "—")}</div><div class="ps-lab">${esc(label)}</div></div>`;
+}
+
+function profileHtml(d) {
+  const bits = [d.position, d.age ? `${d.age} yrs` : "", d.country, d.team].filter(Boolean).map(esc).join(" · ");
+  const s = d.season;
+  const season = s ? `
+    <div class="md-block">
+      <div class="md-title">This season<span class="md-sub">${esc(s.label || "")}</span></div>
+      <div class="ps-grid">
+        ${psCell("Apps", s.apps)}${psCell("Minutes", s.minutes)}${psCell("Goals", s.goals)}
+        ${psCell("Assists", s.assists)}${psCell("Yellow", s.yellow)}${psCell("Red", s.red)}
+        ${s.rating ? psCell("Rating", s.rating) : ""}
+      </div>
+    </div>` : "";
+  const rows = (d.career || []).slice(0, 15).map((r) =>
+    `<tr><td>${esc(r.season)}</td><td class="ps-team">${esc(r.teams)}</td><td>${esc(r.apps)}</td><td>${esc(r.goals)}</td><td>${esc(r.assists)}</td></tr>`
+  ).join("");
+  const t = d.totals || {};
+  const career = rows ? `
+    <div class="md-block">
+      <div class="md-title">Career</div>
+      <div class="ps-scroll"><table class="ps-tbl">
+        <tr><th>Season</th><th>Team</th><th>Apps</th><th>G</th><th>A</th></tr>
+        ${rows}
+        <tr class="ps-total"><td>Total</td><td></td><td>${esc(t.apps ?? 0)}</td><td>${esc(t.goals ?? 0)}</td><td>${esc(t.assists ?? 0)}</td></tr>
+      </table></div>
+    </div>` : "";
+  const empty = !season && !career
+    ? `<div class="md-block"><div class="md-title">Player stats</div><div class="md-muted md-pad">No season or career data from the provider yet.</div></div>`
+    : "";
+  return `${bits ? `<div class="md-info">${bits}</div>` : ""}${season}${career}${empty}`;
+}
+
+function statsBlock(info) {
+  const pid = info.playerId ? String(info.playerId) : "";
+  if (!pid) {
+    return `<div class="md-block"><div class="md-title">Player stats</div><div class="md-muted md-pad">Season and career stats aren't available for this player.</div></div>`;
+  }
+  const p = profiles.get(pid);
+  if (!p || p.state === "loading") return `<div class="md-skel"></div><div class="md-skel"></div>`;
+  if (p.state === "error") {
+    return `<div class="md-block"><div class="md-title">Player stats</div><div class="md-muted md-pad">Stats unavailable right now.</div></div>`;
+  }
+  return profileHtml(p.data);
 }

@@ -9,7 +9,7 @@
     const ctx = canvas.getContext("2d");
 
     let particles = [];
-    const PARTICLE_COUNT = 45;
+    const PARTICLE_COUNT = window.innerWidth < 600 ? 26 : 45;
 
     const CLASSIC_COLORS = ["#00E5FF", "#A855F7"];
     const NETWORK_COLORS = ["#FFFFFF", "#34C759"];
@@ -85,8 +85,28 @@
         }
     }
 
+    let lastFrame = 0;
+    const FRAME_MS = 1000 / 30;
+    const reduceMotion = window.matchMedia &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function schedule() {
+        if (reduceMotion) return;
+        requestAnimationFrame((t) => {
+            if (t - lastFrame < FRAME_MS) return schedule();
+            lastFrame = t;
+            step();
+        });
+    }
+
     function step() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const lineColor = isPeachAquaMode()
+            ? "rgba(38,127,145,0.18)"
+            : isNetworkMode()
+                ? "rgba(255,255,255,0.16)"
+                : "rgba(0,229,255,0.08)";
 
         particles.forEach(p => {
             p.x += p.vx;
@@ -106,16 +126,12 @@
             for (let j = i + 1; j < particles.length; j++) {
                 const dx = particles[i].x - particles[j].x;
                 const dy = particles[i].y - particles[j].y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                if (dist < 110) {
+                const dist = dx * dx + dy * dy;
+                if (dist < 12100) {
                     ctx.beginPath();
                     ctx.moveTo(particles[i].x, particles[i].y);
                     ctx.lineTo(particles[j].x, particles[j].y);
-                    ctx.strokeStyle = isPeachAquaMode()
-                        ? "rgba(38,127,145,0.18)"
-                        : isNetworkMode()
-                            ? "rgba(255,255,255,0.16)"
-                            : "rgba(0,229,255,0.08)";
+                    ctx.strokeStyle = lineColor;
                     ctx.lineWidth = 1;
                     ctx.stroke();
                 }
@@ -123,7 +139,7 @@
         }
 
         ctx.globalAlpha = 1;
-        requestAnimationFrame(step);
+        schedule();
     }
 
     window.addEventListener("resize", () => {

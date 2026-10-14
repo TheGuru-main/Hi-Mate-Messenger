@@ -1,5 +1,7 @@
 """Follow a player (shown as 'Favorite players' on the profile)."""
 
+import re
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
@@ -9,6 +11,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.favorite_player import FavoritePlayer
 from app.models.user import User
+from app.services import player_profile
 
 router = APIRouter(prefix="/players", tags=["players"])
 
@@ -96,3 +99,18 @@ def unfollow_player(
     db.query(FavoritePlayer).filter_by(user_uid=current_user.uid, sport=sport, player_key=k).delete()
     db.commit()
     return {"following": False}
+
+
+
+@router.get("/{player_key}/profile")
+async def player_profile_view(
+    player_key: str,
+    debug: bool = False,
+    current_user: User = Depends(get_current_user),
+):
+    if not re.fullmatch(r"[0-9]{1,12}", player_key or ""):
+        raise HTTPException(status_code=400, detail="Invalid player")
+    try:
+        return await player_profile.get_profile(player_key, debug)
+    except Exception:
+        raise HTTPException(status_code=502, detail="Player data unavailable right now")

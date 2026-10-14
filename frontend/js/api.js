@@ -86,6 +86,7 @@ export const api = {
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMyClubs: () => request("/clubs/mine"),
   getMyPlayers: () => request("/players/mine"),
+  getPlayerProfile: (id) => request(`/players/${encodeURIComponent(id)}/profile`),
   getUserPlayers: (uid) => request(`/players/user/${encodeURIComponent(uid)}`),
   followPlayer: (f) => request("/players/follow", {
     method: "POST",

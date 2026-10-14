@@ -191,12 +191,17 @@ async def delete_post(post_id: str, db: Session = Depends(get_db), current_user:
 
 
 @router.get("/feed")
-async def get_feed(media: str | None = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_feed(media: str | None = None, limit: int = 50, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     def fetch_at_row(row: int) -> list[Candidate]:
         users_at_row = db.query(User).filter(User.start_row == row).all()
+        uids = [u.uid for u in users_at_row]
+        with_posts = (
+            {r[0] for r in db.query(Post.author_uid).filter(Post.author_uid.in_(uids)).distinct().all()}
+            if uids else set()
+        )
         candidates = []
         for u in users_at_row:
-            if db.query(Post).filter(Post.author_uid == u.uid).count() == 0:
+            if u.uid not in with_posts:
                 continue
             candidates.append(Candidate(
                 id=u.uid, row=row, field=u.business_role, role="User", country=u.country,
@@ -212,9 +217,14 @@ async def get_feed(media: str | None = None, db: Session = Depends(get_db), curr
     )
 
     author_uids = [r.candidate.id for r in results]
-    posts = db.query(Post).filter(Post.author_uid.in_(author_uids)).order_by(Post.created_at.desc()).all()
+    cap = max(1, min(limit, 100))
+    posts = (
+        db.query(Post).filter(Post.author_uid.in_(author_uids)).order_by(Post.created_at.desc())
+        .limit(cap * 4 if media == "video" else cap).all()
+    )
     if media == "video":
         posts = [p for p in posts if _post_has_video(p)]
+    posts = posts[:cap]
     if not posts:
         return []
 
