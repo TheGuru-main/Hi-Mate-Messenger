@@ -85,6 +85,22 @@ export const api = {
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMyClubs: () => request("/clubs/mine"),
+  getMyPlayers: () => request("/players/mine"),
+  getUserPlayers: (uid) => request(`/players/user/${encodeURIComponent(uid)}`),
+  followPlayer: (f) => request("/players/follow", {
+    method: "POST",
+    body: {
+      key: f.id,
+      name: f.name,
+      sport: "football",
+      player_id: f.playerId ? String(f.playerId) : null,
+      team: f.team || null,
+      team_key: f.teamKey ? String(f.teamKey) : null,
+      number: f.number != null && f.number !== "" ? String(f.number) : null,
+      position: f.position || null,
+    },
+  }),
+  unfollowPlayer: (key) => request(`/players/follow?key=${encodeURIComponent(key)}`, { method: "DELETE" }),
   getUserClubs: (uid) => request(`/clubs/user/${encodeURIComponent(uid)}`),
   getClubProfile: (teamKey, sport = "football", name = "", logo = "") =>
     request(`/clubs/${encodeURIComponent(teamKey)}?sport=${sport}&name=${encodeURIComponent(name || "")}&logo=${encodeURIComponent(logo || "")}`),

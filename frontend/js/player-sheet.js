@@ -1,6 +1,6 @@
 // Player tap -> details sheet + follow (favorite). Favorites live on the device for now.
 import { openSheet } from "./sheet.js";
-import { getCachedUser } from "./api.js";
+import { api, getCachedUser } from "./api.js";
 
 const FAV_KEY = "hm:fav-players:v1";
 const DETAIL_PREFIX = "hm:match-detail:v1:";
@@ -93,6 +93,9 @@ document.addEventListener("hm:player-tap", (event) => {
     if (following) favs = favs.filter((f) => f.id !== id);
     else favs.push({ id, name: info.name, playerId: info.playerId || null, team: g.team, teamKey: g.teamKey, number: g.number, position: g.position, added: Date.now() });
     saveFavs(favs);
+    const entry = favs.find((f) => f.id === id);
+    if (following) api.unfollowPlayer(id).catch(() => {});
+    else if (entry) api.followPlayer(entry).catch(() => {});
     document.dispatchEvent(new CustomEvent("hm:players-changed"));
     following = !following;
     sheet.setHtml(html(info, g, following));
@@ -125,13 +128,31 @@ function ensureBox() {
   return box;
 }
 
-export function renderProfilePlayers(uid) {
-  profileUid = uid;
-  const box = ensureBox();
-  if (!box) return;
-  let own = false;
-  try { const me = getCachedUser(); own = !!(me && String(me.uid) === String(uid)); } catch (e) { /* ignore */ }
-  if (!own) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+const FAV_SYNCED = "hm:fav-players:synced";
+let lastSync = 0;
+
+async function syncFavs() {
+  if (Date.now() - lastSync < 20000) return false;
+  lastSync = Date.now();
+  try {
+    const server = await api.getMyPlayers();
+    if (!Array.isArray(server)) return false;
+    if (!localStorage.getItem(FAV_SYNCED)) {
+      const have = new Set(server.map((s) => s.id));
+      for (const f of loadFavs()) {
+        if (have.has(f.id)) continue;
+        try { await api.followPlayer(f); server.push(f); } catch (e) { /* keep going */ }
+      }
+      try { localStorage.setItem(FAV_SYNCED, "1"); } catch (e) { /* ignore */ }
+    }
+    saveFavs(server);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function paintPlayers(box) {
   const favs = loadFavs();
   box.innerHTML = `<div class="pc-section-title">Favorite players</div>` + (favs.length
     ? `<div class="pc-chips">${favs.map((f) => `<button type="button" class="pc-chip pp-chip" data-id="${esc(f.id)}"><span class="pp-chip-num">${esc(f.number || "•")}</span><span>${esc(f.name)}</span></button>`).join("")}</div>`
@@ -139,4 +160,15 @@ export function renderProfilePlayers(uid) {
   box.classList.remove("hidden");
 }
 
-document.addEventListener("hm:players-changed", () => { if (profileUid != null) renderProfilePlayers(profileUid); });
+export function renderProfilePlayers(uid, sync = true) {
+  profileUid = uid;
+  const box = ensureBox();
+  if (!box) return;
+  let own = false;
+  try { const me = getCachedUser(); own = !!(me && String(me.uid) === String(uid)); } catch (e) { /* ignore */ }
+  if (!own) { box.classList.add("hidden"); box.innerHTML = ""; return; }
+  paintPlayers(box);
+  if (sync) syncFavs().then((ok) => { if (ok && profileUid === uid) paintPlayers(box); });
+}
+
+document.addEventListener("hm:players-changed", () => { if (profileUid != null) renderProfilePlayers(profileUid, false); });

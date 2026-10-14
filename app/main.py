@@ -52,6 +52,8 @@ app.include_router(settings_route.router, prefix="/v1")
 app.include_router(match_room.router, prefix="/v1")
 from app.routes import clubs
 app.include_router(clubs.router, prefix="/v1")
+from app.routes import players
+app.include_router(players.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")
