@@ -429,9 +429,9 @@ function renderScoreboard(m) {
 
   const html = `
     <div class="match-scoreboard-teams">
-      <span class="match-team-tap" data-side="home">${escapeHtml(m.home_team || "?")}</span>
+      <span class="${m.home_team_key ? "match-team-tap" : ""}" data-side="home">${escapeHtml(m.home_team || "?")}</span>
       <strong>VS</strong>
-      <span class="match-team-tap" data-side="away">${escapeHtml(m.away_team || "?")}</span>
+      <span class="${m.away_team_key ? "match-team-tap" : ""}" data-side="away">${escapeHtml(m.away_team || "?")}</span>
     </div>
 
     <div class="match-scoreboard-score">

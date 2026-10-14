@@ -128,6 +128,7 @@ export function sportCardEl(m, onOpen) {
 
 function wireTeamTaps(el, m) {
   el.querySelectorAll(".match-club-name").forEach((node) => {
+    if (!m[node.dataset.side + "_team_key"]) return;
     node.classList.add("match-team-tap");
 
     node.addEventListener("click", (e) => {

@@ -198,14 +198,9 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .post-meta{ font-size:11.5px; color:var(--text-faint); margin-top:1px; }
 .feed-card .content{ padding:0 14px; margin-bottom:10px; }
 
-.media-carousel{ position:relative; width:100%; margin-bottom:10px; }
-.carousel-track{ display:flex; overflow-x:auto; scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-.carousel-track::-webkit-scrollbar{ display:none; }
 .carousel-slide{ flex:0 0 100%; scroll-snap-align:center; }
 .carousel-media{ width:100%; max-height:420px; object-fit:cover; display:block; }
 .carousel-dots{ position:absolute; bottom:8px; left:0; right:0; display:flex; justify-content:center; gap:5px; }
-.carousel-dot{ width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.4); }
-.carousel-dot.active{ background:var(--neon-blue); }
 
 .action-row{ display:flex; align-items:center; gap:18px; padding:8px 14px 14px; border-top:1px solid rgba(255,255,255,.05); margin-top:4px; }
 .action-btn{ background:none; border:none; color:var(--text-secondary); font-size:15px; display:flex; align-items:center; gap:6px; cursor:pointer; padding:4px; }
@@ -400,14 +395,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 }
 
 /* ---------- Toasts ---------- */
-#hm-toast-box{ position:fixed; bottom:76px; left:0; right:0; display:flex; flex-direction:column; align-items:center; gap:6px; z-index:200; pointer-events:none; }
-.hm-toast{
-  background:rgba(11,16,48,.95); border:1px solid rgba(255,255,255,.12); color:var(--text-primary);
-  padding:8px 16px; border-radius:20px; font-size:13px; opacity:0; transform:translateY(10px);
-  transition:opacity .25s, transform .25s; box-shadow:0 4px 16px rgba(0,0,0,.3);
-}
-.hm-toast.show{ opacity:1; transform:translateY(0); }
-.hm-toast-error{ border-color:var(--danger); color:var(--danger); }
 
 /* ---------- Media preview / crop editor ---------- */
 .media-editor-overlay{ position:fixed; inset:0; z-index:150; background:rgba(6,9,38,.96); display:flex; align-items:center; justify-content:center; padding:16px; }
@@ -436,189 +423,15 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
    MATCH ROOM CHAT — DISTINCT LEFT / RIGHT BUBBLES
    ========================================================= */
 
-#match-chat-messages {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 8px 4px 100px;
-}
-
-#match-chat-messages .bubble-row {
-  width: 100%;
-  display: flex;
-  margin: 2px 0;
-  padding: 0 8px;
-  box-sizing: border-box;
-}
-
-#match-chat-messages .bubble-row.theirs {
-  justify-content: flex-start;
-}
-
-#match-chat-messages .bubble-row.mine {
-  justify-content: flex-end;
-}
-
-#match-chat-messages .bubble {
-  position: relative;
-  max-width: min(78%, 360px);
-  padding: 10px 13px;
-  font-size: 14px;
-  line-height: 1.42;
-  word-break: break-word;
-  overflow-wrap: anywhere;
-  box-shadow: 0 3px 12px rgba(0, 0, 0, .16);
-}
-
 /* RECEIVED — LEFT */
-#match-chat-messages .bubble.theirs {
-  align-self: flex-start;
-  background: rgba(255, 255, 255, .09);
-  color: var(--text-primary, #fff);
-  border: 1px solid rgba(255, 255, 255, .08);
-  border-radius: 4px 17px 17px 17px;
-  margin-right: auto;
-}
 
 /* SENT — RIGHT */
-#match-chat-messages .bubble.mine {
-  align-self: flex-end;
-  background: linear-gradient(
-    135deg,
-    var(--neon-blue),
-    var(--neon-purple)
-  );
-  color: #050718;
-  border: 1px solid rgba(255, 255, 255, .14);
-  border-radius: 17px 4px 17px 17px;
-  margin-left: auto;
-  font-weight: 500;
-}
 
 /* Small visual tail */
-#match-chat-messages .bubble.theirs::before {
-  content: "";
-  position: absolute;
-  left: -5px;
-  bottom: 0;
-  width: 9px;
-  height: 9px;
-  background: rgba(255, 255, 255, .09);
-  clip-path: polygon(100% 0, 100% 100%, 0 100%);
-}
-
-#match-chat-messages .bubble.mine::after {
-  content: "";
-  position: absolute;
-  right: -5px;
-  bottom: 0;
-  width: 9px;
-  height: 9px;
-  background: var(--neon-purple);
-  clip-path: polygon(0 0, 100% 100%, 0 100%);
-}
 
 /* =========================================================
    MATCH STATISTICS FOLD
    ========================================================= */
-
-.match-stats-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.match-stat-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 34px;
-  padding: 7px 9px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, .045);
-  border: 1px solid rgba(255, 255, 255, .045);
-}
-
-.match-stat-label {
-  color: var(--text-faint);
-  font-size: 11.5px;
-}
-
-.match-stat-value {
-  color: var(--text-primary, #fff);
-  font-size: 12px;
-  text-align: right;
-}
-
-.match-stat-group {
-  overflow: hidden;
-  border-radius: 11px;
-  background: rgba(255, 255, 255, .035);
-  border: 1px solid rgba(255, 255, 255, .055);
-}
-
-.match-stat-group-title {
-  padding: 9px 11px;
-  color: var(--neon-blue);
-  font-size: 12px;
-  font-weight: 700;
-  background: rgba(0, 229, 255, .045);
-}
-
-.match-stat-group-body {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 7px;
-}
-
-.match-stat-card {
-  padding: 8px;
-  border-radius: 9px;
-  background: rgba(0, 0, 0, .12);
-}
-
-.match-stat-card-title {
-  margin-bottom: 5px;
-  color: var(--text-secondary);
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.match-stats-loading,
-.match-stats-empty,
-.match-stats-error {
-  padding: 14px 10px;
-  text-align: center;
-  color: var(--text-faint);
-  font-size: 12px;
-}
-
-.match-stats-error {
-  border-radius: 10px;
-  background: rgba(255, 70, 70, .08);
-  border: 1px solid rgba(255, 70, 70, .15);
-}
-
-.match-stats-error-title {
-  margin-bottom: 4px;
-  color: #ff7777;
-  font-weight: 700;
-}
-
-.stats-loader-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: var(--neon-blue);
-  box-shadow: 0 0 10px var(--neon-blue);
-  animation: matchStatsPulse 1s ease-in-out infinite;
-}
 
 @keyframes matchStatsPulse {
   0%, 100% {
@@ -631,7 +444,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
     transform: scale(1);
   }
 }
-
 
 /* =========================================================
    MATCH ROOM CHAT — DISTINCT LEFT / RIGHT BUBBLES
@@ -833,8 +645,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   }
 }
 
-
-
 /* ============================================================
    HI-MATE MATCH ROOM — FINAL OVERRIDES
    These classes are intentionally unique to LiveSports.
@@ -856,10 +666,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   border: 1px solid rgba(255,255,255,.08);
   box-shadow: 0 5px 18px rgba(0,0,0,.14);
   cursor: pointer;
-}
-
-.match-list-item:active {
-  transform: scale(.985);
 }
 
 .match-list-icon {
@@ -911,7 +717,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 .match-data-error {
   color: var(--danger);
 }
-
 
 /* ---------- Match scoreboard ---------- */
 
@@ -972,7 +777,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   font-size: 11px;
   color: var(--text-faint);
 }
-
 
 /* ---------- Statistics ---------- */
 
@@ -1142,7 +946,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   }
 }
 
-
 /* ---------- Match room chat ---------- */
 
 #match-chat-messages {
@@ -1272,7 +1075,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   opacity: .85;
 }
 
-
 /* ============================================================
    CLUB SEARCH
    ============================================================ */
@@ -1385,7 +1187,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   text-align: center;
 }
 
-
 /* ============================================================
    DISTINCT MATCH CARDS
    ============================================================ */
@@ -1404,14 +1205,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
 
   border: 1px solid rgba(255,255,255,.07);
   box-shadow: 0 7px 20px rgba(0,0,0,.20);
-}
-
-.match-list-item.live {
-  border-color: rgba(255,70,70,.18);
-}
-
-.match-list-item.upcoming {
-  border-color: rgba(0,229,255,.12);
 }
 
 .match-list-topline {
@@ -1561,7 +1354,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   gap: 5px;
 }
 
-
 /* ============================================================
    MATCH EVENT FEED
    ============================================================ */
@@ -1669,7 +1461,6 @@ footer{ margin-top:auto; padding:20px 10px 10px; text-align:center; font-size:12
   margin-right: auto;
 }
 
-
 body.background-classic{
   background: linear-gradient(
     324deg,
@@ -1685,7 +1476,6 @@ body.background-network{
     #F5F5F5
   );
 }
-
 
 /* ---------- Klique My Groups ---------- */
 
@@ -1781,7 +1571,6 @@ body.background-network{
 .my-groups-empty{
   padding: 16px 4px;
 }
-
 
 /* ---------- Hi-Mate Feed Media ---------- */
 
@@ -2014,7 +1803,6 @@ body.background-network{
   -webkit-user-drag:none;
 }
 
-
 /* ---------- Hi-Mate Voice / Audio Player ---------- */
 
 .carousel-slide.himate-audio-slide{
@@ -2218,8 +2006,6 @@ body.background-network{
     min-width:2px;
   }
 }
-
-
 
 /* =========================================================
    Hi-Mate 🌐 Header Identity
@@ -2591,7 +2377,6 @@ body.background-network{
   }
 }
 
-
 /* =========================================================
    Hi-Mate Status multi-media viewer
    ========================================================= */
@@ -2689,7 +2474,6 @@ body.background-network{
         min-height:360px;
     }
 }
-
 
 /* =========================================================
    Hi-Mate Feed media + reaction frames
@@ -2917,8 +2701,6 @@ body.background-network{
     font-size:12px;
 }
 
-
-
 /* ---------- Feed profile images ---------- */
 
 .feed-profile-avatar{
@@ -3033,7 +2815,6 @@ body.background-network{
     font-size:11px;
     cursor:pointer;
 }
-
 
 /* PATCH 3: Hi-Mate icon logo and accessible feed shortcuts */
 
@@ -3283,8 +3064,6 @@ body.background-network{
     }
 }
 
-
-
 /* HI-MATE FULL-HEIGHT SNAP FEED PATCH */
 
 /* Compact post-level @ and # controls without shrinking the tap target too far. */
@@ -3451,7 +3230,6 @@ body.background-network{
     }
 }
 
-
 /* PATCH: one vertical feed flow; composer, status and posts scroll together. */
 #home {
     height: 100dvh;
@@ -3558,7 +3336,6 @@ body.background-network{
         min-height: calc(100dvh - 150px);
     }
 }
-
 
 /* PATCH: bound home feed to the viewport including page padding. */
 #home {
@@ -3787,7 +3564,6 @@ body.background-network{
 .ms-sport-select{margin:8px 0;padding:8px 12px;border-radius:10px;border:1px solid rgba(128,128,128,.4);background:transparent;color:inherit;font-size:14px}
 .ms-scope-on{background:rgba(128,128,128,.28);font-weight:700}
 
-
 /* ===== UNIFIED LIVESPORTS CARD: single source of truth, keep LAST ===== */
 .livesports-search-results{ background:transparent; border:0; border-radius:0; overflow:visible; }
 .match-list-item{ display:block; width:100%; box-sizing:border-box; padding:13px; margin:0 0 9px; border-radius:17px; background:#18213f; border:1px solid rgba(255,255,255,.07); box-shadow:0 7px 20px rgba(0,0,0,.20); cursor:pointer; -webkit-tap-highlight-color:transparent; }
@@ -3819,3 +3595,5 @@ body.background-network{
 .ps-fav{ display:block; width:calc(100% - 24px); margin:10px 12px; height:42px; border:1px solid rgba(0,229,255,.3); border-radius:12px; background:transparent; color:var(--neon-blue); font-size:14px; font-weight:700; }
 .ps-fav.ps-fav-on{ background:linear-gradient(135deg,var(--neon-blue),var(--neon-purple-2)); color:#050718; border-color:transparent; }
 .ps-line{ padding:8px 12px; font-size:13px; border-bottom:1px solid rgba(255,255,255,.06); }
+
+.pp-chip-num{ min-width:20px; height:20px; margin-right:6px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; background:rgba(0,229,255,.12); color:var(--neon-blue); }
