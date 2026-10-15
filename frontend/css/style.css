@@ -4082,3 +4082,34 @@ body.background-peach-aqua .match-score-box{ background:rgba(23,56,68,.08); }
 #promo-track .promo-slide:nth-child(10){ background-image:url("../img/slides/slide-10.svg"); }
 #promo-track .promo-slide:nth-child(11){ background-image:url("../img/slides/slide-11.svg"); }
 #promo-track .promo-slide:nth-child(12){ background-image:url("../img/slides/slide-12.svg"); }
+
+/* ===== PEACH: dark buttons + dark text ===== */
+body.background-peach-aqua{
+  --text-secondary:#264B55;
+  --text-faint:#3F6068;
+  --fc-plus-bg:linear-gradient(135deg,#0F4C5C,#1D3557);
+  --fc-plus-text:#FFFFFF;
+  --fc-on-text:#0F4C5C;
+}
+body.background-peach-aqua .chip.active,
+body.background-peach-aqua .primary-btn,
+body.background-peach-aqua .send-btn,
+body.background-peach-aqua .bubble.mine,
+body.background-peach-aqua .ms-scope.ms-scope-on{
+  color:#FFFFFF; background:linear-gradient(135deg,#0F4C5C,#1D3557); border-color:transparent;
+}
+body.background-peach-aqua .chip,
+body.background-peach-aqua .reaction-btn,
+body.background-peach-aqua .icon-btn,
+body.background-peach-aqua .back-btn{
+  color:#173844; background:rgba(255,255,255,.80); border:1px solid rgba(23,56,68,.38);
+}
+body.background-peach-aqua .action-btn,
+body.background-peach-aqua .comment-action-btn,
+body.background-peach-aqua .react-btn,
+body.background-peach-aqua .gem-btn,
+body.background-peach-aqua .nav-btn{ color:#173844; }
+body.background-peach-aqua .action-btn.active,
+body.background-peach-aqua .gem-btn.active,
+body.background-peach-aqua .nav-btn.active{ color:#0F4C5C; }
+body.background-peach-aqua .ms-scope{ color:#173844; }

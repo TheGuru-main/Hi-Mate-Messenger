@@ -1,7 +1,9 @@
-// Network alerts: offline banner, "server waking up" notice, repeated-failure alert, auto-recover.
+// Network alerts + auto-retry: offline banner, "server waking up" notice, repeated-failure alert,
+// and automatic retry of GET requests while a cold server wakes up.
 const API_RE = /\/v1\//;
 const SLOW_MS = 6000;
 const FAIL_LIMIT = 2;
+const RETRY_DELAYS = [2000, 4000, 8000, 12000, 15000];
 const realFetch = window.fetch.bind(window);
 
 let seq = 0;
@@ -12,6 +14,8 @@ let probeTimer = null;
 let hideTimer = null;
 const slow = new Set();
 const timers = new Map();
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function banner() {
   let b = document.getElementById("net-banner");
@@ -63,20 +67,19 @@ function startProbe() {
   if (!probeTimer) probeTimer = setInterval(probe, 6000);
 }
 
-function done(id, ok) {
+function finish(id) {
   clearTimeout(timers.get(id));
   timers.delete(id);
   slow.delete(id);
-
   if (mode === "waking" && !slow.size) hide();
-  if (ok === "skip") return;
+}
 
-  if (ok) {
-    fails = 0;
-    if (mode === "unreachable" || mode === "offline") recovered();
-    return;
-  }
+function noteOk() {
+  fails = 0;
+  if (mode === "unreachable" || mode === "offline") recovered();
+}
 
+function noteFail() {
   fails += 1;
 
   if (!navigator.onLine) {
@@ -88,6 +91,45 @@ function done(id, ok) {
   }
 }
 
+async function send(input, init, safe, id) {
+  let n = 0;
+
+  for (;;) {
+    try {
+      const res = await realFetch(input, init);
+
+      if (res.status >= 502 && res.status <= 504) {
+        noteFail();
+
+        if (safe && n < RETRY_DELAYS.length) {
+          await sleep(RETRY_DELAYS[n++]);
+          continue;
+        }
+      } else {
+        noteOk();
+      }
+
+      finish(id);
+      return res;
+    } catch (err) {
+      if (err && err.name === "AbortError") {
+        finish(id);
+        throw err;
+      }
+
+      noteFail();
+
+      if (safe && navigator.onLine && n < RETRY_DELAYS.length) {
+        await sleep(RETRY_DELAYS[n++]);
+        continue;
+      }
+
+      finish(id);
+      throw err;
+    }
+  }
+}
+
 window.fetch = function (input, init) {
   const url = typeof input === "string" ? input : (input && input.url) || "";
 
@@ -95,6 +137,8 @@ window.fetch = function (input, init) {
 
   try { lastOrigin = new URL(url, location.href).origin; } catch (e) { /* ignore */ }
 
+  const method = String((init && init.method) || (input && input.method) || "GET").toUpperCase();
+  const safe = method === "GET" || method === "HEAD";
   const id = ++seq;
 
   timers.set(id, setTimeout(() => {
@@ -105,10 +149,7 @@ window.fetch = function (input, init) {
     }
   }, SLOW_MS));
 
-  return realFetch(input, init).then(
-    (res) => { done(id, !(res.status >= 502 && res.status <= 504)); return res; },
-    (err) => { done(id, err && err.name === "AbortError" ? "skip" : false); throw err; }
-  );
+  return send(input, init, safe, id);
 };
 
 window.addEventListener("offline", () => {
