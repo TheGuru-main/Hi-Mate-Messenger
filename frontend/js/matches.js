@@ -430,9 +430,9 @@ function renderScoreboard(m) {
 
   const html = `
     <div class="match-scoreboard-teams">
-      <span class="${m.home_team_key ? "match-team-tap" : ""}" data-side="home" data-tid="${escapeHtml(m.home_team_key || "")}" data-name="${escapeHtml(m.home_team || "")}" data-logo="${escapeHtml(m.home_logo || "")}">${escapeHtml(m.home_team || "?")}</span>
+      <span class="${m.home_team_key ? "match-team-tap" : ""}" data-side="home" data-tid="${escapeHtml(m.home_team_key || "")}" data-name="${escapeHtml(m.home_team || "")}" data-logo="${escapeHtml(m.home_logo || m.home_team_logo || "")}">${escapeHtml(m.home_team || "?")}</span>
       <strong>VS</strong>
-      <span class="${m.away_team_key ? "match-team-tap" : ""}" data-side="away" data-tid="${escapeHtml(m.away_team_key || "")}" data-name="${escapeHtml(m.away_team || "")}" data-logo="${escapeHtml(m.away_logo || "")}">${escapeHtml(m.away_team || "?")}</span>
+      <span class="${m.away_team_key ? "match-team-tap" : ""}" data-side="away" data-tid="${escapeHtml(m.away_team_key || "")}" data-name="${escapeHtml(m.away_team || "")}" data-logo="${escapeHtml(m.away_logo || m.away_team_logo || "")}">${escapeHtml(m.away_team || "?")}</span>
     </div>
 
     <div class="match-scoreboard-score">

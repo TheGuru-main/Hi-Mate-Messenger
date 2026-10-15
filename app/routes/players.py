@@ -105,12 +105,15 @@ def unfollow_player(
 @router.get("/{player_key}/profile")
 async def player_profile_view(
     player_key: str,
+    team_key: str | None = None,
     debug: bool = False,
     current_user: User = Depends(get_current_user),
 ):
     if not re.fullmatch(r"[0-9]{1,12}", player_key or ""):
         raise HTTPException(status_code=400, detail="Invalid player")
+    if team_key and not re.fullmatch(r"[0-9]{1,12}", team_key):
+        team_key = None
     try:
-        return await player_profile.get_profile(player_key, debug)
+        return await player_profile.get_profile(player_key, team_key, debug)
     except Exception:
         raise HTTPException(status_code=502, detail="Player data unavailable right now")

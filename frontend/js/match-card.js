@@ -45,9 +45,12 @@ function periodLine(m) {
     `<span>${esc(String(p.label).replace("Set ", "S"))} ${p.home ?? "–"}-${p.away ?? "–"}</span>`).join("")}</div>`;
 }
 
-function club(name, side, win) {
+function club(name, side, win, logo) {
+  const img = logo
+    ? `<img class="match-club-logo" src="${esc(logo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`
+    : "";
   return `<span class="match-club-name${win ? " ms-win" : ""}" data-side="${side}">
-    <i class="fa-solid fa-shield-halved match-club-badge"></i><span>${esc(name || "?")}</span></span>`;
+    <span class="match-club-badge-wrap"><i class="fa-solid fa-shield-halved match-club-badge"></i>${img}</span><span>${esc(name || "?")}</span></span>`;
 }
 
 export function buildCard(c, onOpen) {
@@ -59,9 +62,9 @@ export function buildCard(c, onOpen) {
       ${c.room ? `<span class="match-room-pill"><i class="fa-solid fa-comments"></i> Room</span>` : ""}
     </div>
     <div class="match-clubs">
-      <div class="match-club">${club(c.home, "home", c.homeWin)}</div>
+      <div class="match-club">${club(c.home, "home", c.homeWin, c.homeLogo)}</div>
       <div class="match-score-box"><strong>${esc(c.score)}</strong></div>
-      <div class="match-club away">${club(c.away, "away", c.awayWin)}</div>
+      <div class="match-club away">${club(c.away, "away", c.awayWin, c.awayLogo)}</div>
     </div>
     <div class="match-list-sub">${esc(c.meta)}</div>
     ${c.extra || ""}
@@ -85,6 +88,7 @@ export function footballCardEl(m, { liveMinuteText, onOpen }) {
     pill: state === "past" ? "FT" : state === "upcoming" ? "UPCOMING" : "LIVE",
     room: !!m.has_room,
     home: m.home_team, away: m.away_team,
+    homeLogo: m.home_logo || m.home_team_logo || "", awayLogo: m.away_logo || m.away_team_logo || "",
     score: state === "upcoming" ? "VS" : `${m.home_score ?? 0} - ${m.away_score ?? 0}`,
     meta,
     extra: state === "past" ? goalsLine(m) : eventSummary(m),
@@ -113,6 +117,7 @@ export function sportCardEl(m, onOpen) {
     home: (m.home_team || "?") + (m.serving === "home" ? " 🎾" : ""),
     away: (m.away_team || "?") + (m.serving === "away" ? " 🎾" : ""),
     homeWin: m.winner === "home", awayWin: m.winner === "away",
+    homeLogo: m.home_logo || m.home_team_logo || "", awayLogo: m.away_logo || m.away_team_logo || "",
     score,
     meta: sub ? `${status} · ${sub}` : status,
     extra: periodLine(m),
@@ -136,7 +141,7 @@ function wireTeamTaps(el, m) {
     if (!key) return;
 
     const name = m[side + "_team"] || node.textContent.trim();
-    const logo = m[side + "_logo"] || "";
+    const logo = m[side + "_logo"] || m[side + "_team_logo"] || "";
 
     node.classList.add("match-team-tap");
 
