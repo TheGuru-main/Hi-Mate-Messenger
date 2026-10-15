@@ -45,12 +45,19 @@ function periodLine(m) {
     `<span>${esc(String(p.label).replace("Set ", "S"))} ${p.home ?? "–"}-${p.away ?? "–"}</span>`).join("")}</div>`;
 }
 
+function initials(name) {
+  const words = String(name || "?").replace(/[^\p{L}\p{N} ]/gu, " ").split(/\s+/).filter(Boolean);
+  if (!words.length) return "?";
+  const letters = words.length === 1 ? words[0].slice(0, 2) : words[0][0] + words[1][0];
+  return letters.toUpperCase();
+}
+
 function club(name, side, win, logo) {
   const img = logo
     ? `<img class="match-club-logo" src="${esc(logo)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`
     : "";
   return `<span class="match-club-name${win ? " ms-win" : ""}" data-side="${side}">
-    <span class="match-club-badge-wrap"><i class="fa-solid fa-shield-halved match-club-badge"></i>${img}</span><span>${esc(name || "?")}</span></span>`;
+    <span class="match-club-badge-wrap"><span class="match-club-init">${esc(initials(name))}</span>${img}</span><span>${esc(name || "?")}</span></span>`;
 }
 
 export function buildCard(c, onOpen) {

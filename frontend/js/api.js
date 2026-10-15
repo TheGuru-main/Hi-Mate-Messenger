@@ -62,7 +62,14 @@ export const api = {
   login: (payload) => request("/auth/login", { method: "POST", body: payload, auth: false }),
   getMe: () => request("/users/me"),
 
-  getFeed: (media) => request(media ? `/feed?media=${media}` : "/feed"),
+  getFeed: (media, opts = {}) => {
+    const q = new URLSearchParams();
+    if (media) q.set("media", media);
+    if (opts.limit) q.set("limit", opts.limit);
+    if (opts.before) q.set("before", opts.before);
+    const s = q.toString();
+    return request(s ? `/feed?${s}` : "/feed");
+  },
   createPost: (payload) => request("/posts", { method: "POST", body: payload }),
   deletePost: (postId) => request(`/posts/${postId}`, { method: "DELETE" }),
   react: (postId, emoji) => request(`/posts/${postId}/react`, { method: "POST", body: { emoji } }),

@@ -190,8 +190,18 @@ async def delete_post(post_id: str, db: Session = Depends(get_db), current_user:
     return {"status": "deleted"}
 
 
+def _parse_cursor(value):
+    if not value:
+        return None
+    try:
+        from datetime import datetime
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 @router.get("/feed")
-async def get_feed(media: str | None = None, limit: int = 50, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+async def get_feed(media: str | None = None, limit: int = 50, before: str | None = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     def fetch_at_row(row: int) -> list[Candidate]:
         users_at_row = db.query(User).filter(User.start_row == row).all()
         uids = [u.uid for u in users_at_row]
@@ -218,12 +228,21 @@ async def get_feed(media: str | None = None, limit: int = 50, db: Session = Depe
 
     author_uids = [r.candidate.id for r in results]
     cap = max(1, min(limit, 100))
-    posts = (
-        db.query(Post).filter(Post.author_uid.in_(author_uids)).order_by(Post.created_at.desc())
-        .limit(cap * 4 if media == "video" else cap).all()
-    )
-    if media == "video":
-        posts = [p for p in posts if _post_has_video(p)]
+    cursor = _parse_cursor(before)
+    video_only = media == "video"
+    chunk = cap * 3 if video_only else cap
+    posts = []
+    for _ in range(6 if video_only else 1):
+        q = db.query(Post).filter(Post.author_uid.in_(author_uids))
+        if cursor is not None:
+            q = q.filter(Post.created_at < cursor)
+        rows = q.order_by(Post.created_at.desc()).limit(chunk).all()
+        if not rows:
+            break
+        posts.extend([p for p in rows if _post_has_video(p)] if video_only else rows)
+        cursor = rows[-1].created_at
+        if len(posts) >= cap or len(rows) < chunk or cursor is None:
+            break
     posts = posts[:cap]
     if not posts:
         return []

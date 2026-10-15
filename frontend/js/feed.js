@@ -46,10 +46,10 @@ function renderCarousel(mediaRefs) {
               <div class="carousel-slide">
                 <div class="himate-video">
                   <video
-                    src="${safeRef}"
+                    data-src="${safeRef}"
                     class="carousel-media"
                     playsinline
-                    preload="metadata"
+                    preload="none"
                     data-media-index="${index}"
                   ></video>
 
@@ -1975,21 +1975,101 @@ export function renderPost(post, opts) {
     return div;
 }
 
+const FEED_PAGE = 15;
+
+async function loadPaged(list, media, emptyHtml) {
+    const token = {};
+    list._pageToken = token;
+
+    if (list._pageObserver) {
+        list._pageObserver.disconnect();
+        list._pageObserver = null;
+    }
+
+    list.innerHTML = '<div class="section-title">Loading…</div>';
+
+    let before = null;
+    let done = false;
+    let busy = false;
+    let sentinel = null;
+
+    const alive = () => list._pageToken === token;
+
+    function setSentinel(html) {
+        if (!sentinel) {
+            sentinel = document.createElement("div");
+            sentinel.className = "feed-sentinel";
+            sentinel.addEventListener("click", (e) => {
+                if (e.target.closest(".feed-more-retry")) more(false);
+            });
+        }
+        sentinel.innerHTML = html;
+        list.appendChild(sentinel);
+    }
+
+    function nearBottom() {
+        return !!sentinel && sentinel.isConnected &&
+            sentinel.getBoundingClientRect().top < window.innerHeight + 700;
+    }
+
+    async function more(first) {
+        if (busy || done || !alive()) return;
+        busy = true;
+        let ok = false;
+
+        try {
+            const posts = await api.getFeed(media, { limit: FEED_PAGE, before });
+
+            if (!alive()) return;
+
+            if (first) list.innerHTML = "";
+
+            if (!posts.length) {
+                done = true;
+                if (first) {
+                    list.innerHTML = emptyHtml;
+                    return;
+                }
+            } else {
+                if (sentinel && sentinel.parentNode) sentinel.remove();
+                posts.forEach((p) => list.appendChild(renderPost(p)));
+                before = posts[posts.length - 1].created_at || before;
+                if (posts.length < FEED_PAGE) done = true;
+            }
+
+            setSentinel(done ? "You're all caught up" : "Loading more…");
+            ok = true;
+        } catch (e) {
+            if (!alive()) return;
+
+            if (first) {
+                list.innerHTML = `<div class="error-text">${escapeHtml(e.message)}</div>`;
+            } else {
+                setSentinel('Couldn\'t load more. <button type="button" class="feed-more-retry">Retry</button>');
+            }
+        } finally {
+            busy = false;
+            if (ok && alive() && !done && nearBottom()) setTimeout(() => more(false), 50);
+        }
+    }
+
+    await more(true);
+
+    if (!alive() || done || !sentinel) return;
+
+    if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) more(false);
+        }, { rootMargin: "700px 0px" });
+        list._pageObserver = io;
+        io.observe(sentinel);
+    }
+}
+
 export async function loadFeed() {
     const list = document.getElementById("feed-list");
     if (!list) return;
-    list.innerHTML = '<div class="section-title">Loading…</div>';
-    try {
-        const posts = await api.getFeed();
-        list.innerHTML = "";
-        if (!posts.length) {
-            list.innerHTML = '<div class="section-title">No posts yet — be the first to share something.</div>';
-            return;
-        }
-        posts.forEach(p => list.appendChild(renderPost(p)));
-    } catch (e) {
-        list.innerHTML = `<div class="error-text">${e.message}</div>`;
-    }
+    return loadPaged(list, undefined, '<div class="section-title">No posts yet — be the first to share something.</div>');
 }
 
 function renderMediaPreview() {
@@ -2117,18 +2197,7 @@ function initPromoCarousel() {
 export async function loadVideoFeed() {
     const list = document.getElementById("video-feed-list");
     if (!list) return;
-    list.innerHTML = '<div class="section-title">Loading…</div>';
-    try {
-        const posts = await api.getFeed("video");
-        list.innerHTML = "";
-        if (!posts.length) {
-            list.innerHTML = '<div class="section-title">No videos yet. Post a reel or short from the composer.</div>';
-            return;
-        }
-        posts.forEach(p => list.appendChild(renderPost(p)));
-    } catch (e) {
-        list.innerHTML = `<div class="error-text">${e.message}</div>`;
-    }
+    return loadPaged(list, "video", '<div class="section-title">No videos yet. Post a reel or short from the composer.</div>');
 }
 
 export function initFeed() {
@@ -2222,3 +2291,13 @@ export function initFeed() {
         }
     });
 }
+
+
+document.addEventListener("hm:net-recovered", () => {
+    ["feed-list", "video-feed-list"].forEach((id) => {
+        const l = document.getElementById(id);
+        if (!l || !l.querySelector(".error-text")) return;
+        if (id === "feed-list") loadFeed();
+        else loadVideoFeed();
+    });
+});
