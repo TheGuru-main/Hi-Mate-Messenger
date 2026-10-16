@@ -4140,3 +4140,19 @@ body.background-peach-aqua .ms-scope{ color:#173844; }
 .match-club-badge-wrap{ width:20px; height:20px; flex:0 0 20px; }
 .match-club-init{ width:100%; height:100%; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:800; letter-spacing:.02em; background:var(--fc-team-bg); border:1px solid var(--fc-team-border); color:inherit; box-sizing:border-box; }
 .match-club-logo{ background:#fff; border-radius:50%; padding:1px; box-sizing:border-box; }
+
+/* ===== PEACH: sand home header + create-post card ===== */
+body.background-peach-aqua #home .top-bar,
+body.background-peach-aqua .composer{
+  background:linear-gradient(135deg,#D2BB94,#C4A878);
+  border-color:rgba(70,50,20,.32);
+  color:#2B2118;
+  box-shadow:0 8px 22px rgba(90,65,25,.20);
+}
+body.background-peach-aqua #home .top-bar .icon-btn{ color:#2B2118; background:rgba(255,255,255,.55); border-color:rgba(70,50,20,.30); }
+body.background-peach-aqua .composer label,
+body.background-peach-aqua .composer .meta,
+body.background-peach-aqua .composer .optional-tag,
+body.background-peach-aqua .composer .preview-text{ color:#4A3A26; }
+body.background-peach-aqua .composer .input-box::placeholder,
+body.background-peach-aqua .composer textarea::placeholder{ color:#6B5A44; }
