@@ -56,6 +56,9 @@ from app.routes import clubs
 app.include_router(clubs.router, prefix="/v1")
 from app.routes import players
 app.include_router(players.router, prefix="/v1")
+from app.routes import economy, sandclock
+app.include_router(economy.router, prefix="/v1")
+app.include_router(sandclock.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")
@@ -71,6 +74,16 @@ def health():
 @app.on_event("startup")
 async def on_startup():
     Base.metadata.create_all(bind=engine)
+    try:
+        from app.database import SessionLocal as _Session
+        from app.services import manifest as _manifest
+        _db = _Session()
+        try:
+            _manifest.ensure_seed(_db)
+        finally:
+            _db.close()
+    except Exception as e:
+        print(f"[economy] manifest seed failed: {e}")
 
     # One-time, idempotent column additions that create_all() can't do
     # (it only creates missing tables, never alters existing ones).

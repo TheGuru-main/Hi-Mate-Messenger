@@ -4161,3 +4161,29 @@ body.background-peach-aqua .composer textarea::placeholder{ color:#6B5A44; }
 /* ===== PLAYER CARD: past seasons ===== */
 .ps-career-btn{ padding:9px 14px; border-radius:12px; border:1px solid var(--fc-team-border); background:var(--fc-team-bg); color:inherit; font-size:13px; font-weight:700; cursor:pointer; }
 .ps-nodata{ opacity:.6; }
+
+/* ===== ECONOMY STRIP + BYFLINT + SANDCLOCK ===== */
+.eco-bar{ display:flex; gap:8px; padding:6px 12px 2px; }
+.eco-pill{ flex:1 1 0; min-width:0; display:flex; align-items:center; justify-content:center; gap:7px; padding:7px 10px; border-radius:999px; background:var(--fc-team-bg); border:1px solid var(--fc-team-border); color:var(--text-primary); font-size:12.5px; font-weight:700; cursor:pointer; -webkit-tap-highlight-color:transparent; }
+.eco-pill:active{ transform:scale(.97); }
+.eco-ico{ font-size:14px; }
+.eco-balance{ padding:16px 12px 4px; text-align:center; }
+.eco-big{ font-size:34px; font-weight:800; line-height:1.1; }
+.eco-big small{ font-size:15px; opacity:.7; }
+.eco-sub{ margin-top:4px; font-size:12px; opacity:.75; }
+.eco-checkin{ width:100%; }
+.eco-row{ display:flex; justify-content:space-between; gap:10px; padding:8px 12px; font-size:13px; border-top:1px solid rgba(127,127,127,.2); }
+.eco-row b{ font-weight:700; text-align:right; }
+.eco-track{ height:6px; border-radius:3px; background:rgba(127,127,127,.25); overflow:hidden; margin:0 12px 8px; }
+.eco-fill{ height:100%; background:var(--fc-plus-bg); }
+.sc-wrap{ display:flex; gap:18px; align-items:center; padding:16px 14px 6px; }
+.sc-bucket{ position:relative; width:72px; height:128px; flex:0 0 72px; border:3px solid var(--fc-team-border); border-radius:14px; overflow:hidden; background:rgba(127,127,127,.15); display:flex; align-items:flex-end; }
+.sc-fluid{ width:100%; transition:height .6s ease; }
+.sc-name{ display:flex; align-items:center; gap:8px; font-size:15px; font-weight:800; }
+.sc-dot{ width:12px; height:12px; border-radius:50%; flex:0 0 12px; }
+.sc-pct{ font-size:32px; font-weight:800; line-height:1.15; }
+.sc-boost{ margin-top:4px; font-size:12px; font-weight:700; }
+.sc-ladder{ display:flex; gap:5px; padding:6px 14px 12px; }
+.sc-step{ flex:1; height:10px; border-radius:5px; background:rgba(127,127,127,.28); }
+.sc-step.sc-done{ background:var(--c); }
+.sc-step.sc-now{ background:var(--c); outline:2px solid currentColor; outline-offset:1px; }
