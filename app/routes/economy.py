@@ -1,7 +1,7 @@
 """Byflint wallet, ledger, manifest and daily check-in."""
 
 from fastapi import APIRouter, Depends
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -26,6 +26,8 @@ def _wallet_payload(db: Session, uid: str, m: dict) -> dict:
     ).count()
     today = rewards.today_for(m)
     done = db.query(LedgerEntry.id).filter(LedgerEntry.idem == f"checkin:{uid}:{today.isoformat()}").first() is not None
+    nxt = db.query(func.min(LedgerEntry.release_at)).filter(
+        LedgerEntry.user_uid == uid, LedgerEntry.status == "pending").scalar()
     db.commit()
     rate = float(m["currency"]["naira_per_byflint"])
     return {
@@ -36,6 +38,7 @@ def _wallet_payload(db: Session, uid: str, m: dict) -> dict:
         "checked_in": done,
         "followers": followers,
         "kliques": kliques,
+        "next_release_at": nxt.isoformat() if nxt else None,
     }
 
 

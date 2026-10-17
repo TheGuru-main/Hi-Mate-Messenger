@@ -92,6 +92,18 @@ export const api = {
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMyClubs: () => request("/clubs/mine"),
+  getPortfolioTemplates: () => request("/portfolio/templates"),
+  getPortfolio: (uid) => request(`/portfolio/user/${encodeURIComponent(uid)}`),
+  addPortfolioItem: (body) => request("/portfolio/items", { method: "POST", body }),
+  updatePortfolioItem: (id, body) => request(`/portfolio/items/${id}`, { method: "PATCH", body }),
+  deletePortfolioItem: (id) => request(`/portfolio/items/${id}`, { method: "DELETE" }),
+  addCredential: (body) => request("/portfolio/credentials", { method: "POST", body }),
+  deleteCredential: (id) => request(`/portfolio/credentials/${id}`, { method: "DELETE" }),
+  uploadPortfolioFile: (file) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return request("/media/upload", { method: "POST", body: fd, isForm: true });
+  },
   getManifest: () => request("/economy/manifest"),
   getWallet: () => request("/economy/wallet"),
   getLedger: (limit = 30) => request(`/economy/ledger?limit=${limit}`),

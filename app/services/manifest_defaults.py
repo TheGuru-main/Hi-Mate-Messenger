@@ -74,3 +74,16 @@ DEFAULT_MANIFEST = {
         "rewards": {"completed": 500, "won": 1250},
     },
 }
+
+
+# Rule changes ship as revisions: each becomes a NEW manifest row at startup (see manifest.py).
+REVISIONS = [
+    {
+        "version": 2,
+        "note": "Lower social rewards; comment rewards capped per target account",
+        "patch": {
+            "rewards": {"like": 7, "comment": 10, "spot_gem": 20},
+            "caps": {"comments_per_target_per_day": 3},
+        },
+    },
+]
