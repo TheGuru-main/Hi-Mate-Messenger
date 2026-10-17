@@ -94,6 +94,7 @@ export const api = {
   getMyClubs: () => request("/clubs/mine"),
   getMyPlayers: () => request("/players/mine"),
   getPlayerProfile: (id, teamKey) => request(`/players/${encodeURIComponent(id)}/profile${teamKey ? `?team_key=${encodeURIComponent(teamKey)}` : ""}`),
+  getPlayerCareer: (id, teamKey) => request(`/players/${encodeURIComponent(id)}/career?team_key=${encodeURIComponent(teamKey)}`),
   getUserPlayers: (uid) => request(`/players/user/${encodeURIComponent(uid)}`),
   followPlayer: (f) => request("/players/follow", {
     method: "POST",

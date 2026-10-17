@@ -264,7 +264,7 @@ async def fetch_live_fixtures() -> list[dict]:
     event_live=1 during its transition.
     """
     cache_key = "allsports:live"
-    cached = _get_cached(cache_key, ttl_seconds=5)
+    cached = _get_cached(cache_key, ttl_seconds=30)
 
     if cached is not None:
         return cached
@@ -400,7 +400,7 @@ async def fetch_upcoming_fixtures(
 
     cached = _get_cached(
         cache_key,
-        ttl_seconds=60,
+        ttl_seconds=300,
     )
 
     if cached is not None:
@@ -643,7 +643,7 @@ async def search_live_sports(
 async def fetch_fixture_stats(fixture_id: int) -> dict | None:
     """Detailed stats for a single fixture — the 'fold' content, separate from chat."""
     cache_key = f"allsports:stats:{fixture_id}"
-    cached = _get_cached(cache_key, ttl_seconds=20)
+    cached = _get_cached(cache_key, ttl_seconds=45)
     if cached is not None:
         return cached
 

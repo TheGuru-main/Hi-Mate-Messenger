@@ -117,3 +117,19 @@ async def player_profile_view(
         return await player_profile.get_profile(player_key, team_key, debug)
     except Exception:
         raise HTTPException(status_code=502, detail="Player data unavailable right now")
+
+
+
+@router.get("/{player_key}/career")
+async def player_career_view(
+    player_key: str,
+    team_key: str,
+    seasons: int = 3,
+    current_user: User = Depends(get_current_user),
+):
+    if not re.fullmatch(r"[0-9]{1,12}", player_key or "") or not re.fullmatch(r"[0-9]{1,12}", team_key or ""):
+        raise HTTPException(status_code=400, detail="Invalid player")
+    try:
+        return await player_profile.get_career(player_key, team_key, max(1, min(seasons, 4)))
+    except Exception:
+        raise HTTPException(status_code=502, detail="Season data unavailable right now")

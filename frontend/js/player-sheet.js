@@ -89,6 +89,11 @@ document.addEventListener("hm:player-tap", (event) => {
   const sheet = openSheet({ title: info.name, html: html(info, g, following) });
   loadProfile(info, g.teamKey || info.teamKey || null, () => { if (sheet.isOpen()) sheet.setHtml(html(info, g, following)); });
   sheet.body.addEventListener("click", (e) => {
+    const cb = e.target.closest(".ps-career-btn");
+    if (cb) {
+      loadCareer(info, g.teamKey || info.teamKey || null, () => { if (sheet.isOpen()) sheet.setHtml(html(info, g, following)); });
+      return;
+    }
     const btn = e.target.closest(".ps-fav");
     if (!btn) return;
     let favs = loadFavs();
@@ -205,17 +210,18 @@ export function toggleFavoritePlayer(info) {
 }
 
 
-/* ---------- real stats: club, national team, all teams ---------- */
+/* ---------- real stats: club season (computed), provider data, past seasons ---------- */
 
 try {
   Object.keys(localStorage)
-    .filter((k) => k.startsWith("hm:player-profile:v1:"))
+    .filter((k) => k.startsWith("hm:player-profile:v1:") || k.startsWith("hm:player-profile:v2:"))
     .forEach((k) => localStorage.removeItem(k));
 } catch (e) { /* ignore */ }
 
 const profiles = new Map();
-const PROFILE_PREFIX = "hm:player-profile:v2:";
-const PROFILE_TTL = 12 * 3600 * 1000;
+const careers = new Map();
+const PROFILE_PREFIX = "hm:player-profile:v3:";
+const PROFILE_TTL = 2 * 3600 * 1000;
 
 function readProfileCache(pid, teamKey) {
   try {
@@ -246,6 +252,17 @@ function loadProfile(info, teamKey, done) {
     .then(done);
 }
 
+function loadCareer(info, teamKey, done) {
+  const pid = info.playerId ? String(info.playerId) : "";
+  if (!pid || !teamKey) return;
+  careers.set(pid, { state: "loading" });
+  done();
+  api.getPlayerCareer(pid, teamKey)
+    .then((data) => careers.set(pid, { state: "ok", data }))
+    .catch((e) => careers.set(pid, { state: "error", message: (e && e.message) || "unavailable" }))
+    .then(done);
+}
+
 function profileImage(info) {
   const p = profiles.get(info.playerId ? String(info.playerId) : "");
   return p && p.state === "ok" ? p.data.image : null;
@@ -265,15 +282,41 @@ function psCell(label, value) {
 }
 
 function entryHtml(e) {
-  const title = e.kind === "national" ? "National team" : "Club";
   const core = [["Apps", e.apps], ["Minutes", e.minutes], ["Goals", e.goals], ["Assists", e.assists], ["Yellow", e.yellow], ["Red", e.red]];
   if (e.rating) core.push(["Rating", e.rating]);
   const extras = (e.extras || []).map((x) => psCell(x.label, x.value)).join("");
+  const title = e.title || (e.kind === "national" ? "National team" : "Club");
   return `
     <div class="md-block">
-      <div class="md-title">${title}<span class="md-sub">${esc(e.team)}</span></div>
+      <div class="md-title">${esc(title)}<span class="md-sub">${esc(e.team)}</span></div>
       <div class="ps-grid">${core.map(([l, v]) => psCell(l, v)).join("")}</div>
       ${extras ? `<div class="ps-grid">${extras}</div>` : ""}
+      ${e.note ? `<div class="ps-note">${esc(e.note)}</div>` : ""}
+    </div>`;
+}
+
+function careerHtml(d) {
+  if (!d.team_key) return "";
+  const c = careers.get(String(d.player_id));
+  const head = `<div class="md-title">Past seasons<span class="md-sub">${esc(d.team)}</span></div>`;
+  if (!c) {
+    return `<div class="md-block">${head}<div class="md-pad"><button type="button" class="ps-career-btn">Load past seasons</button></div></div>`;
+  }
+  if (c.state === "loading") return `<div class="md-block">${head}<div class="md-skel"></div></div>`;
+  if (c.state === "error") {
+    return `<div class="md-block">${head}<div class="md-muted md-pad">Couldn't load past seasons.</div><div class="md-pad"><button type="button" class="ps-career-btn">Try again</button></div></div>`;
+  }
+  const rows = (c.data.rows || []).map((r) => (r.ok
+    ? `<tr><td>${esc(r.season)}</td><td>${esc(r.apps)}</td><td>${esc(r.minutes)}</td><td>${esc(r.goals)}</td><td>${esc(r.assists)}</td><td>${esc(r.yellow)}/${esc(r.red)}</td></tr>`
+    : `<tr><td>${esc(r.season)}</td><td colspan="5" class="ps-nodata">No lineup data</td></tr>`)).join("");
+  return `
+    <div class="md-block">
+      ${head}
+      <div class="ps-scroll"><table class="ps-tbl">
+        <tr><th>Season</th><th>Apps</th><th>Min</th><th>G</th><th>A</th><th>Y/R</th></tr>
+        ${rows}
+      </table></div>
+      ${c.data.note ? `<div class="ps-note">${esc(c.data.note)}</div>` : ""}
     </div>`;
 }
 
@@ -282,22 +325,9 @@ function profileHtml(d) {
   const tags = [d.captain ? "Captain" : "", d.injured ? "Injured" : ""].filter(Boolean)
     .map((t) => `<span class="md-chip">${t}</span>`).join("");
   const entries = d.entries || [];
-  const t = d.totals || {};
-  const rows = entries.map((e) =>
-    `<tr><td class="ps-team">${esc(e.team)}</td><td>${esc(e.apps)}</td><td>${esc(e.goals)}</td><td>${esc(e.assists)}</td></tr>`
-  ).join("");
-  const career = rows ? `
-    <div class="md-block">
-      <div class="md-title">All teams</div>
-      <div class="ps-scroll"><table class="ps-tbl">
-        <tr><th>Team</th><th>Apps</th><th>G</th><th>A</th></tr>
-        ${rows}
-        <tr class="ps-total"><td>Total</td><td>${esc(t.apps ?? 0)}</td><td>${esc(t.goals ?? 0)}</td><td>${esc(t.assists ?? 0)}</td></tr>
-      </table></div>
-    </div>` : "";
   const empty = entries.length ? "" :
-    `<div class="md-block"><div class="md-title">Player stats</div><div class="md-muted md-pad">No stats from the provider yet.</div></div>`;
-  return `${bits ? `<div class="md-info">${bits}</div>` : ""}${tags ? `<div class="md-chips">${tags}</div>` : ""}${entries.map(entryHtml).join("")}${empty}${career}${d.note ? `<div class="ps-note">${esc(d.note)}</div>` : ""}`;
+    `<div class="md-block"><div class="md-title">Player stats</div><div class="md-muted md-pad">No stats yet for this season.</div></div>`;
+  return `${bits ? `<div class="md-info">${bits}</div>` : ""}${tags ? `<div class="md-chips">${tags}</div>` : ""}${entries.map(entryHtml).join("")}${empty}${careerHtml(d)}${d.note ? `<div class="ps-note">${esc(d.note)}</div>` : ""}`;
 }
 
 function statsBlock(info) {

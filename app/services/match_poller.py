@@ -16,17 +16,20 @@ from app.services import news
 from app.sockets.manager import manager
 
 POLL_INTERVAL_SECONDS = 30
+IDLE_INTERVAL_SECONDS = 300
 
 
 async def poll_live_matches():
     while True:
+        busy = False
         try:
-            await _check_active_rooms()
+            busy = await _check_active_rooms()
         except Exception as e:
             # Never let a bad API response or transient error kill the
-            # background loop — log and keep polling.
+            # background loop - log and keep polling.
             print(f"[match poller] error: {e}")
-        await asyncio.sleep(POLL_INTERVAL_SECONDS)
+        # Fast only while a room's match is really live; every call costs provider quota.
+        await asyncio.sleep(POLL_INTERVAL_SECONDS if busy else IDLE_INTERVAL_SECONDS)
 
 
 async def _check_active_rooms():
@@ -34,15 +37,17 @@ async def _check_active_rooms():
     try:
         rooms = db.query(MatchRoom).all()
         if not rooms:
-            return
+            return False
 
         live = await news.fetch_live_fixtures()
         live_by_id = {m["fixture_id"]: m for m in live if m.get("fixture_id")}
+        any_live = False
 
         for room in rooms:
             match = live_by_id.get(room.fixture_id)
             if not match:
                 continue  # match ended or not currently live — leave the room's last known score as-is
+            any_live = True
 
             new_home = match.get("home_score") or 0
             new_away = match.get("away_score") or 0
@@ -52,6 +57,7 @@ async def _check_active_rooms():
                 room.last_known_home_score = new_home
                 room.last_known_away_score = new_away
                 db.commit()
+        return any_live
     finally:
         db.close()
 
