@@ -118,3 +118,77 @@ REVISIONS.append({
         },
     },
 })
+
+
+REVISIONS.append({
+    "version": 4,
+    "note": "Livestream gifting, spending and accumulation rules; expanded gig and jobs rules",
+    "patch": {
+        "gift_rules": {
+            "burn_pct": 15,
+            "daily_spend_cap": 30000,
+            "min_seconds_between_gifts": 2,
+            "no_self_gifts": True,
+            "flagged_sender_hold": True,
+            "host_credit_hold_hours": 24,
+            "credit_pool": "mined",
+        },
+        "spending": {
+            "spend_from": "available",
+            "pending_not_spendable": True,
+            "refunds": False,
+            "applies_to": ["gift_sent", "gig_entry"],
+        },
+        "stream": {
+            "min_session_minutes": 10,
+            "viewer_bonus_cap_viewers": 200,
+            "settle_after_stream": True,
+            "boost_applies": True,
+            "viewer_byflint_per_session": 5,
+            "viewer_sessions_per_day": 3,
+            "qualified_viewer": {
+                "min_account_age_days": 7,
+                "one_per_device": True,
+                "max_per_ip": 2,
+                "heartbeat_seconds": 30,
+            },
+            "max_streams_per_ip": 3,
+            "podcast_multiplier": 1.0,
+        },
+        "gig": {
+            "types": ["audition", "challenge"],
+            "entry_fee": {"min": 500, "max": 100000},
+            "host_seed": {"min": 5000, "max": 500000},
+            "max_entrants": 200,
+            "max_active_per_host": 3,
+            "min_lead_minutes": 60,
+            "host_gate": {"mutual_kliques": 50, "followers": 50},
+            "vote": {
+                "live_votes_during_event": True,
+                "poll_window_hours": 24,
+                "viewer_min_watch_minutes": 10,
+                "one_vote_per_account": True,
+                "hide_tally_until_close": True,
+                "tie_break": ["distinct_voters", "earlier_entry"],
+            },
+            "payout": {
+                "hold_hours": 24,
+                "remainder_to": "winner",
+                "refund_on_cancel": True,
+                "no_show_refund": False,
+                "fee_to": "treasury",
+            },
+            "credit_once_per_pair_days": 30,
+        },
+        "jobs": {
+            "posts_per_day": 3,
+            "bids_per_day": 20,
+            "bid_max_attachments": 5,
+            "comment_pins_max": 3,
+            "poster_min_account_age_days": 3,
+            "vacancy_status_durations": ["24h", "3d", "1w"],
+            "portfolio": {"max_items": 30, "max_pinned": 3, "max_credentials": 20},
+            "post_states": ["open", "shortlisting", "filled", "closed"],
+        },
+    },
+})

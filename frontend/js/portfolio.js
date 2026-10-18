@@ -36,10 +36,30 @@ function ensureBox() {
   b.addEventListener("click", (e) => {
     const btn = e.target.closest("[data-pf]");
     if (!btn || !profileUid) return;
-    if (btn.dataset.pf === "items") openPortfolio(profileUid);
-    else openCredentials(profileUid);
+    const uid = profileUid;
+    const k = btn.dataset.pf;
+    if (k === "items") openPortfolio(uid);
+    else if (k === "creds") openCredentials(uid);
+    else if (k === "add") openItemForm(() => renderProfilePortfolio(uid));
+    else if (k === "addcred") openCredentialForm(() => renderProfilePortfolio(uid));
   });
   return b;
+}
+
+function tileHtml(i) {
+  const icon = (KIND[i.kind] || ["", "fa-file"])[1];
+  const art = i.kind === "image" && i.url
+    ? `<img src="${esc(safeUrl(i.url))}" alt="" loading="lazy">`
+    : `<i class="fa-solid ${icon}"></i>`;
+  const tag = i.url ? "a" : "div";
+  const attrs = i.url ? ` href="${esc(safeUrl(i.url))}" target="_blank" rel="noopener noreferrer"` : "";
+  return `<${tag} class="pf-tile"${attrs}><div class="pf-tile-art">${art}</div><div class="pf-tile-title">${esc(i.title)}${i.pinned ? " ★" : ""}</div></${tag}>`;
+}
+
+function credRow(c) {
+  const years = c.type === "work" ? `${c.start_year || "?"} – ${c.end_year || "present"}` : (c.start_year || "");
+  const sub = [c.org, years].filter(Boolean).map(esc).join(" · ");
+  return `<div class="pf-credrow"><div class="pf-title">${esc(c.title)}</div><div class="pf-sub">${sub}${sub ? " · " : ""}${c.type === "work" ? "Work" : "Talent"} · Self-declared</div></div>`;
 }
 
 export async function renderProfilePortfolio(uid) {
@@ -49,17 +69,23 @@ export async function renderProfilePortfolio(uid) {
   try {
     const d = await api.getPortfolio(uid);
     if (profileUid !== uid) return;
-    const n = d.items.length, c = d.credentials.length;
-    if (!isOwn(uid) && !n && !c) {
+    const own = isOwn(uid);
+    const items = d.items || [];
+    const creds = d.credentials || [];
+    if (!own && !items.length && !creds.length) {
       b.classList.add("hidden");
       b.innerHTML = "";
       return;
     }
-    b.innerHTML = `<div class="pc-section-title">Portfolio &amp; credentials</div>
-      <div class="pc-chips">
-        <button type="button" class="pc-chip" data-pf="items"><i class="fa-solid fa-folder-open"></i><span>Portfolio (${n})</span></button>
-        <button type="button" class="pc-chip" data-pf="creds"><i class="fa-solid fa-award"></i><span>Credentials (${c})</span></button>
-      </div>`;
+    const empty = (t) => (own ? `<div class="md-muted">${esc(t)}</div>` : "");
+    const more = (key, n, shown) => (n > shown
+      ? `<button type="button" class="pf-more" data-pf="${key}">See all ${n}</button>`
+      : own ? `<button type="button" class="pf-more" data-pf="${key}">Manage</button>` : "");
+    b.innerHTML = `
+      <div class="pf-head"><div class="pc-section-title">Portfolio</div>${own ? '<button type="button" class="pf-mini" data-pf="add">＋ Add</button>' : ""}</div>
+      ${items.length ? `<div class="pf-grid">${items.slice(0, 6).map(tileHtml).join("")}</div>${more("items", items.length, 6)}` : empty("Add your best work: videos, audio, images, documents or links.")}
+      <div class="pf-head"><div class="pc-section-title">Credentials</div>${own ? '<button type="button" class="pf-mini" data-pf="addcred">＋ Add</button>' : ""}</div>
+      ${creds.length ? `${creds.slice(0, 3).map(credRow).join("")}${more("creds", creds.length, 3)}` : empty("Add your work experience and talent credentials.")}`;
     b.classList.remove("hidden");
   } catch (e) {
     b.classList.add("hidden");

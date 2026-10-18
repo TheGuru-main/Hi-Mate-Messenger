@@ -175,6 +175,8 @@ function byflintHtml(w, m, ledger) {
     </div>
     ${postRewardsHtml(m)}
     ${kliqueHtml(m, w)}
+    ${liveRulesHtml(m)}
+    ${gigRulesHtml(m)}
     <div class="md-block">
       <div class="md-title">Cash-out thresholds<span class="md-sub">locked</span></div>
       ${meter("Balance", tfc, wd.tfc, `${tfc.toFixed(3)} / ${wd.tfc} TFC`)}
@@ -205,6 +207,54 @@ function postRewardsHtml(m) {
       <div class="eco-row"><span>Voice post</span><b>video reward ÷ ${esc(pr.voice.divisor)}</b></div>
       <div class="eco-row"><span>Text post (images included)</span><b>${fmt(pr.text.byflint)} B</b></div>
       <div class="ps-note">Rewarded each day: up to ${esc(v.cap_per_day)} videos, ${esc(pr.voice.cap_per_day)} voice posts and ${esc(pr.text.cap_per_day)} text posts. Extra posts still publish, they just earn no Byflints.</div>
+    </div>`;
+}
+
+function ageText(sec) {
+  const d = Math.floor(sec / 86400);
+  const h = Math.floor((sec % 86400) / 3600);
+  const mi = Math.floor((sec % 3600) / 60);
+  return `${d}d ${h}h ${mi}m`;
+}
+
+function liveRulesHtml(m) {
+  const gifts = m.gifts || [];
+  const s = m.stream;
+  const gr = m.gift_rules;
+  if (!gifts.length || !s || !gr) return "";
+  const share = m.gift_host_share_pct;
+  const v1 = m.gifts_v1 || [];
+  const rows = gifts.map((g) => `<div class="eco-row"><span>${esc(g.name)}${v1.includes(g.id) ? "" : " · later"}</span><b>${fmt(g.cost)} B · host ${fmt(Math.floor((g.cost * share) / 100))} B</b></div>`).join("");
+  const q = s.qualified_viewer || {};
+  return `
+    <div class="md-block">
+      <div class="md-title">Livestream gifts<span class="md-sub">host gets ${esc(share)}%</span></div>
+      ${rows}
+      <div class="ps-note">Senders need an account at least ${esc(ageText(m.gates.gift_min_account_age_seconds))} old. Limits: ${fmt(m.gates.gift_daily_cap_per_host)} B per host per day and ${fmt(gr.daily_spend_cap)} B in total per day. Only Available Byflints can be spent. Gifts can't be refunded, and gifts from flagged accounts are held for review.</div>
+    </div>
+    <div class="md-block">
+      <div class="md-title">Earning from live<span class="md-sub">× colour boost</span></div>
+      <div class="eco-row"><span>Host: each gift</span><b>${esc(share)}% of its cost</b></div>
+      <div class="eco-row"><span>Host: active time</span><b>${esc(s.base_per_min)} B/min + ${esc(s.per_10_viewers_per_min)} per 10 viewers</b></div>
+      <div class="eco-row"><span>Viewer: ${esc(s.qualified_session_minutes)}-minute session</span><b>${esc(s.viewer_byflint_per_session)} B, up to ${esc(s.viewer_sessions_per_day)}/day</b></div>
+      <div class="ps-note">Hosts earn active-time Byflints for up to ${esc(s.max_hours_per_day)} hours a day, after ${esc(s.min_session_minutes)} minutes live, and it is paid when the stream ends. Viewers are counted up to ${esc(s.viewer_bonus_cap_viewers)}. A qualified viewer has an account at least ${esc(q.min_account_age_days)} days old, one device and at most ${esc(q.max_per_ip)} per network. All earnings are held ${esc(gr.host_credit_hold_hours)} hours.</div>
+    </div>`;
+}
+
+function gigRulesHtml(m) {
+  const g = m.gig;
+  if (!g || !g.split || !g.entry_fee) return "";
+  const v = g.vote || {};
+  const p = g.payout || {};
+  return `
+    <div class="md-block">
+      <div class="md-title">Gig contests<span class="md-sub">prize pool</span></div>
+      <div class="eco-row"><span>Winner</span><b>${esc(g.split.winner)}%</b></div>
+      <div class="eco-row"><span>Second place</span><b>${esc(g.split.second)}%</b></div>
+      <div class="eco-row"><span>Platform</span><b>${esc(g.split.fee)}%</b></div>
+      <div class="eco-row"><span>Entry fee (host sets)</span><b>${fmt(g.entry_fee.min)}–${fmt(g.entry_fee.max)} B</b></div>
+      <div class="eco-row"><span>Host payment</span><b>${fmt(g.host_seed.min)}–${fmt(g.host_seed.max)} B</b></div>
+      <div class="ps-note">Every entry fee and the host payment go into the pool. A contest needs at least ${esc(g.min_entrants)} entrants and ${esc(g.min_votes)} votes, otherwise everyone is refunded. Live viewers vote during the event, then a ${esc(v.poll_window_hours)}-hour poll lets people who didn't watch vote. One vote per account, and results stay hidden until voting closes. Prizes are held ${esc(p.hold_hours)} hours. Hosting needs ${esc(g.host_gate.followers)} followers and ${esc(g.host_gate.mutual_kliques)} mutual Kliques.</div>
     </div>`;
 }
 
