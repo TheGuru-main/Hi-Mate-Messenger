@@ -87,3 +87,34 @@ REVISIONS = [
         },
     },
 ]
+
+
+REVISIONS.append({
+    "version": 3,
+    "note": "No per-Klique reward; Klique milestones; post rewards by duration",
+    "patch": {
+        "rewards": {"klique": 0},
+        "klique_milestones": [
+            {"at": 50, "total": 200},
+            {"at": 75, "total": 375},
+            {"at": 150, "total": 675},
+        ],
+        "klique_min_account_age_days": 7,
+        "post_rewards": {
+            "video": {
+                "tiers": [
+                    {"max_minutes": 2, "byflint": 75},
+                    {"max_minutes": 6, "byflint": 150},
+                    {"max_minutes": 18, "byflint": 300},
+                    {"max_minutes": 30, "byflint": 500},
+                    {"max_minutes": 60, "byflint": 700},
+                ],
+                "over_max_byflint": 700,
+                "min_seconds": 5,
+                "cap_per_day": 4,
+            },
+            "voice": {"divisor": 2, "min_seconds": 3, "cap_per_day": 4},
+            "text": {"byflint": 10, "cap_per_day": 10},
+        },
+    },
+})

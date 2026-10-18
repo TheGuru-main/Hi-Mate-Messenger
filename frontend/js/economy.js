@@ -36,7 +36,7 @@ function untilText(iso) {
 
 const KIND = {
   checkin: "Daily check-in", like: "Like reward", comment: "Comment reward", share: "Share reward",
-  spot_gem: "Spot a Gem", klique: "New Klique", gift_sent: "Gift sent", gift_received: "Gift received",
+  spot_gem: "Spot a Gem", klique_milestone: "Klique milestone", post_video: "Video post", post_voice: "Voice post", post_text: "Text post", gift_sent: "Gift sent", gift_received: "Gift received",
   gig_entry: "Gig entry", gig_payout: "Gig prize", gig_refund: "Gig refund",
 };
 
@@ -133,7 +133,7 @@ function byflintHtml(w, m, ledger) {
     <div class="eco-track"><div class="eco-fill" style="width:${pct(cur, need)}%"></div></div>`;
   const rates = [
     ["Daily check-in", m.checkin.byflint], ["Like", m.rewards.like], ["Comment", m.rewards.comment],
-    ["Share", m.rewards.share], ["Spot a Gem", m.rewards.spot_gem], ["New Klique", m.rewards.klique],
+    ["Share", m.rewards.share], ["Spot a Gem", m.rewards.spot_gem], 
   ].map(([l, v]) => `<div class="eco-row"><span>${esc(l)}</span><b>${fmt(v)} B</b></div>`).join("");
   const hist = (ledger || []).map((r) => {
     const label = KIND[r.kind] || r.kind;
@@ -173,6 +173,8 @@ function byflintHtml(w, m, ledger) {
       ${rates}
       <div class="ps-note">Comment rewards: up to ${esc(m.caps.comments_per_target_per_day ?? 3)} per account per day. Gifts have their own weights.</div>
     </div>
+    ${postRewardsHtml(m)}
+    ${kliqueHtml(m, w)}
     <div class="md-block">
       <div class="md-title">Cash-out thresholds<span class="md-sub">locked</span></div>
       ${meter("Balance", tfc, wd.tfc, `${tfc.toFixed(3)} / ${wd.tfc} TFC`)}
@@ -183,6 +185,45 @@ function byflintHtml(w, m, ledger) {
     <div class="md-block">
       <div class="md-title">History</div>
       ${hist || '<div class="md-muted md-pad">Nothing yet. Your first check-in will show here.</div>'}
+    </div>`;
+}
+
+function postRewardsHtml(m) {
+  const pr = m.post_rewards;
+  if (!pr) return "";
+  const v = pr.video;
+  let prev = 0;
+  const rows = v.tiers.map((t) => {
+    const label = prev === 0 ? `Video up to ${t.max_minutes} min` : `Video ${prev}–${t.max_minutes} min`;
+    prev = t.max_minutes;
+    return `<div class="eco-row"><span>${esc(label)}</span><b>${fmt(t.byflint)} B</b></div>`;
+  }).join("");
+  return `
+    <div class="md-block">
+      <div class="md-title">Post rewards<span class="md-sub">× colour boost</span></div>
+      ${rows}
+      <div class="eco-row"><span>Voice post</span><b>video reward ÷ ${esc(pr.voice.divisor)}</b></div>
+      <div class="eco-row"><span>Text post (images included)</span><b>${fmt(pr.text.byflint)} B</b></div>
+      <div class="ps-note">Rewarded each day: up to ${esc(v.cap_per_day)} videos, ${esc(pr.voice.cap_per_day)} voice posts and ${esc(pr.text.cap_per_day)} text posts. Extra posts still publish, they just earn no Byflints.</div>
+    </div>`;
+}
+
+function kliqueHtml(m, w) {
+  const ms = m.klique_milestones || [];
+  if (!ms.length) return "";
+  const q = w.kliques_qualified ?? 0;
+  let prev = 0;
+  const rows = ms.map((x) => {
+    const pay = x.total - prev;
+    prev = x.total;
+    return `<div class="eco-row"><span>${fmt(x.at)} Kliques${q >= x.at ? " ✓" : ""}</span><b>+${fmt(pay)} B</b></div>`;
+  }).join("");
+  const next = ms.find((x) => q < x.at);
+  return `
+    <div class="md-block">
+      <div class="md-title">Klique milestones<span class="md-sub">${fmt(q)} counted</span></div>
+      ${rows}
+      <div class="ps-note">Kliques don't earn Byflints one by one, only at milestones. Only mutual Kliques with accounts at least ${esc(m.klique_min_account_age_days ?? 7)} days old count.${next ? ` Next: ${fmt(next.at)}.` : ""}</div>
     </div>`;
 }
 

@@ -9,13 +9,19 @@ from app.dependencies import get_current_user
 from app.models.economy import LedgerEntry
 from app.models.klique import Follow, KliqueRequest
 from app.models.user import User
-from app.services import rewards, wallet as wallet_service
+from app.services import klique_rewards, rewards, wallet as wallet_service
 from app.services.manifest import get_manifest
 
 router = APIRouter(prefix="/economy", tags=["economy"])
 
 
 def _wallet_payload(db: Session, uid: str, m: dict) -> dict:
+    qcount = 0
+    try:
+        _paid, qcount = klique_rewards.claim_klique_milestones(db, uid, m)
+    except Exception as e:
+        db.rollback()
+        print(f"[economy] klique milestones failed: {e}")
     wallet_service.release_due(db, uid)
     w = wallet_service.get_wallet(db, uid)
     balance, pending = int(w.balance), int(w.pending)
@@ -38,6 +44,7 @@ def _wallet_payload(db: Session, uid: str, m: dict) -> dict:
         "checked_in": done,
         "followers": followers,
         "kliques": kliques,
+        "kliques_qualified": qcount,
         "next_release_at": nxt.isoformat() if nxt else None,
     }
 
