@@ -81,6 +81,13 @@ async def on_startup():
         from app.services import manifest as _manifest
         _db = _Session()
         try:
+            from sqlalchemy import text as _text
+            for _stmt in (
+                "ALTER TABLE sandclock_states ADD COLUMN IF NOT EXISTS klique_filled INTEGER NOT NULL DEFAULT 0",
+                "ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS duration_seconds DOUBLE PRECISION",
+            ):
+                _db.execute(_text(_stmt))
+            _db.commit()
             _manifest.ensure_seed(_db)
         finally:
             _db.close()

@@ -7,7 +7,7 @@ from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.models.media_asset import MediaAsset
-from app.services import storage
+from app.services import media_duration, storage
 
 router = APIRouter(prefix="/media", tags=["media"])
 
@@ -56,6 +56,7 @@ async def upload_file(
         owner_uid=current_user.uid,
         content_type=content_type,
         size_bytes=len(contents),
+        duration_seconds=media_duration.probe(contents, ext),
     )
     db.add(asset)
     db.commit()

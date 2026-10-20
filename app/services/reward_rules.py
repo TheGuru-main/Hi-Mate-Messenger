@@ -2,12 +2,20 @@
 
 
 def _tier(seconds, m):
+    """Tiers up to the top one, then the same tiers again for each extra stretch (62 min = 700 + 75)."""
     cfg = m["post_rewards"]["video"]
-    minutes = float(seconds) / 60.0
-    for t in cfg["tiers"]:
-        if minutes <= t["max_minutes"] + 1e-9:
-            return int(t["byflint"])
-    return int(cfg["over_max_byflint"])
+    tiers = cfg["tiers"]
+    top = tiers[-1]["max_minutes"]
+    seconds = min(float(seconds), float(cfg.get("max_counted_minutes", 1440)) * 60)
+    total = 0
+    while seconds / 60.0 > top + 1e-9:
+        total += int(tiers[-1]["byflint"])
+        seconds -= top * 60
+    minutes = seconds / 60.0
+    for tier in tiers:
+        if minutes <= tier["max_minutes"] + 1e-9:
+            return total + int(tier["byflint"])
+    return total + int(tiers[-1]["byflint"])
 
 
 def video_reward(seconds, m):

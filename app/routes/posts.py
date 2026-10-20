@@ -15,6 +15,20 @@ router = APIRouter(tags=["posts"])
 
 GEM_EMOJI = "💎"
 
+from app.services import activity_rewards
+
+
+def _safe_reward(fn, db, *args):
+    """Rewards must never break the action that earned them."""
+    try:
+        fn(db, *args)
+    except Exception as e:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        print(f"[rewards] {getattr(fn, '__name__', 'reward')} failed: {e}")
+
 
 class PostCreate(BaseModel):
     category: str
@@ -172,6 +186,7 @@ async def create_post(payload: PostCreate, db: Session = Depends(get_db), curren
 
     db.commit()
     db.refresh(post)
+    _safe_reward(activity_rewards.post, db, post, current_user.uid)
     return serialize_post(db, post, current_user, 0)
 
 
@@ -301,6 +316,7 @@ async def react_to_post(
             identity_version=current_user.identity_version,
         ))
         db.commit()
+        _safe_reward(activity_rewards.reaction, db, current_user.uid, post_id, is_gem)
         return {"status": "reacted"}
 
 
@@ -314,6 +330,7 @@ async def comment_on_post(post_id: str, payload: CommentCreate, db: Session = De
     db.add(comment)
     db.commit()
     db.refresh(comment)
+    _safe_reward(activity_rewards.comment, db, current_user.uid, comment)
     return {
         "id": str(comment.id), "post_id": str(comment.post_id),
         "parent_comment_id": str(comment.parent_comment_id) if comment.parent_comment_id else None,

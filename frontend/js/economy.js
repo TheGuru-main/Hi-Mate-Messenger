@@ -206,7 +206,7 @@ function postRewardsHtml(m) {
       ${rows}
       <div class="eco-row"><span>Voice post</span><b>video reward ÷ ${esc(pr.voice.divisor)}</b></div>
       <div class="eco-row"><span>Text post (images included)</span><b>${fmt(pr.text.byflint)} B</b></div>
-      <div class="ps-note">Rewarded each day: up to ${esc(v.cap_per_day)} videos, ${esc(pr.voice.cap_per_day)} voice posts and ${esc(pr.text.cap_per_day)} text posts. Extra posts still publish, they just earn no Byflints.</div>
+      <div class="ps-note">Rewarded each day: up to ${esc(v.cap_per_day)} videos, ${esc(pr.voice.cap_per_day)} voice posts and ${esc(pr.text.cap_per_day)} text posts. Extra posts still publish, they just earn no Byflints. Videos over ${esc(v.tiers[v.tiers.length - 1].max_minutes)} minutes add the same tiers again for the extra time (62 min = 775 B, 90 = 1,200 B, 120 = 1,400 B).</div>
     </div>`;
 }
 
@@ -314,74 +314,77 @@ async function openByflint() {
   await load();
 }
 
-/* ----------------------------- animated hourglass ----------------------------- */
+/* ----------------------------- animated bottle (exact fill) ----------------------------- */
 
 let glassSeq = 0;
+const Y0 = 208;    // 0%: bottom of the bottle
+const Y100 = 66;   // 100%: top of the straight body
+const BOTTLE = "M56 12 H88 V40 C88 46 112 50 112 66 V196 Q112 208 100 208 H44 Q32 208 32 196 V66 C32 50 56 46 56 40 Z";
 
-function hourglassSvg(hex) {
-  const id = `scClip${++glassSeq}`;
-  return `<svg class="sc-glass" viewBox="0 0 120 200" aria-hidden="true">
-    <defs><clipPath id="${id}"><path d="${GLASS}"/></clipPath></defs>
-    <g clip-path="url(#${id})">
-      <rect class="sc-top" x="0" y="16" width="120" height="84" fill="${esc(hex)}" opacity=".5"/>
-      <rect class="sc-bottom" x="0" y="186" width="120" height="0" fill="${esc(hex)}"/>
-      <line class="sc-stream" x1="60" y1="100" x2="60" y2="186" stroke="${esc(hex)}" stroke-width="2.2" stroke-dasharray="3 5"/>
-    </g>
-    <path d="${GLASS}" fill="none" stroke="currentColor" stroke-width="4" stroke-linejoin="round" opacity=".85"/>
-    <g class="sc-grains"></g>
+function bottleSvg(hex) {
+  const id = `scBottle${++glassSeq}`;
+  const ticks = [0, 25, 50, 75, 100].map((p) => {
+    const y = Y0 - ((Y0 - Y100) * p) / 100;
+    return `<line x1="24" y1="${y}" x2="30" y2="${y}" stroke="currentColor" stroke-width="1.5" opacity=".6"/>` +
+      `<text x="21" y="${y + 3}" text-anchor="end" font-size="9" fill="currentColor" opacity=".7">${p}</text>`;
+  }).join("");
+  return `<svg class="sc-glass" viewBox="0 0 160 220" aria-hidden="true">
+    <defs><clipPath id="${id}"><path d="${BOTTLE}"/></clipPath></defs>
+    ${ticks}
+    <path class="sc-fluid" clip-path="url(#${id})" fill="${esc(hex)}" d="M0 ${Y0} H160 V220 H0 Z"/>
+    <g class="sc-bubbles" clip-path="url(#${id})"></g>
+    <path d="${BOTTLE}" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linejoin="round" opacity=".85"/>
+    <line x1="32" y1="${Y100}" x2="112" y2="${Y100}" stroke="currentColor" stroke-width="1" stroke-dasharray="3 3" opacity=".5"/>
+    <g class="sc-marker"><path d="M116 0 L122 -4 L122 4 Z" fill="currentColor"/><text class="sc-marker-text" x="125" y="3.5" font-size="11" font-weight="700" fill="currentColor">0%</text></g>
   </svg>`;
 }
 
-function mountHourglass(host, hex, onTick) {
+function wavePath(y, t, amp) {
+  let d = `M0 ${y.toFixed(2)}`;
+  for (let x = 8; x <= 160; x += 8) {
+    d += ` L${x} ${(y + Math.sin(x / 14 + t / 380) * amp).toFixed(2)}`;
+  }
+  return `${d} V220 H0 Z`;
+}
+
+function mountBottle(host, hex, onTick) {
   const svg = host.querySelector(".sc-glass");
-  const top = svg.querySelector(".sc-top");
-  const bottom = svg.querySelector(".sc-bottom");
-  const stream = svg.querySelector(".sc-stream");
-  const grainsG = svg.querySelector(".sc-grains");
-  const BULB = 84, NECK = 100, FLOOR = 186;
+  const fluid = svg.querySelector(".sc-fluid");
+  const marker = svg.querySelector(".sc-marker");
+  const markText = svg.querySelector(".sc-marker-text");
+  const bubblesG = svg.querySelector(".sc-bubbles");
+  const bubbles = [];
   let shown = 0, tween = 0, alive = true;
-  const grains = [];
 
   for (let i = 0; i < 5; i++) {
     const c = document.createElementNS(NS, "circle");
-    c.setAttribute("r", "1.7");
-    c.setAttribute("fill", hex);
-    c.setAttribute("cx", "60");
-    c.setAttribute("cy", String(NECK));
-    grainsG.appendChild(c);
-    grains.push({ c, off: i / 5 });
+    c.setAttribute("r", String(1.4 + (i % 3) * 0.5));
+    c.setAttribute("fill", "#fff");
+    bubblesG.appendChild(c);
+    bubbles.push({ c, off: i / 5, x: 42 + i * 14 });
   }
 
-  const level = (p) => (p > 0 ? Math.max(p, 2.5) : 0) / 100;
+  // The surface sits exactly at the fill percentage; a tiny fill still gets a 1.5px sliver, the label stays exact.
+  const surfaceY = (p) => {
+    const exact = Y0 - ((Y0 - Y100) * Math.min(Math.max(p, 0), 100)) / 100;
+    return p > 0 ? Math.min(exact, Y0 - 1.5) : Y0;
+  };
 
-  function draw(p) {
-    const v = level(p);
-    const bh = BULB * v, th = BULB * (1 - v);
-    bottom.setAttribute("y", String(FLOOR - bh));
-    bottom.setAttribute("height", String(bh));
-    top.setAttribute("y", String(NECK - th));
-    top.setAttribute("height", String(th));
-    stream.setAttribute("y2", String(FLOOR - bh));
-  }
-
-  function loop(t) {
+  function frame(t) {
     if (!alive || !svg.isConnected) return;
-    const surf = FLOOR - BULB * level(shown);
-    const flowing = shown < 99.9 && !reduceMotion;
-    stream.style.opacity = flowing ? "0.9" : "0";
-    stream.setAttribute("stroke-dashoffset", String(-((t / 40) % 8)));
-    grains.forEach((g) => {
-      const ph = ((t / 900) + g.off) % 1;
-      g.c.setAttribute("cx", String(60 + Math.sin(t / 130 + g.off * 9) * 1.4));
-      g.c.setAttribute("cy", String(Math.min(surf - 1, NECK + ph * Math.max(0, surf - NECK - 2))));
-      g.c.style.opacity = flowing ? "0.9" : "0";
+    const y = surfaceY(shown);
+    fluid.setAttribute("d", wavePath(y, t, shown > 0 && shown < 100 && !reduceMotion ? 1.6 : 0));
+    marker.setAttribute("transform", `translate(0 ${Math.min(Math.max(y, Y100 + 6), Y0 - 4)})`);
+    markText.textContent = pctText(shown);
+    bubbles.forEach((b) => {
+      const ph = ((t / 2600) + b.off) % 1;
+      b.c.setAttribute("cx", String(b.x + Math.sin(t / 300 + b.off * 7) * 3));
+      b.c.setAttribute("cy", String(Y0 - 4 - ph * Math.max(0, Y0 - 4 - y)));
+      b.c.style.opacity = shown > 4 && !reduceMotion ? String(0.5 * (1 - ph)) : "0";
     });
-    requestAnimationFrame(loop);
+    requestAnimationFrame(frame);
   }
-
-  draw(0);
-  if (onTick) onTick(0);
-  requestAnimationFrame(loop);
+  requestAnimationFrame(frame);
 
   return {
     to(target, ms, done) {
@@ -391,7 +394,6 @@ function mountHourglass(host, hex, onTick) {
         const k = dur === 0 ? 1 : Math.min(1, (now - start) / dur);
         const e = 1 - Math.pow(1 - k, 3);
         shown = from + (target - from) * e;
-        draw(shown);
         if (onTick) onTick(shown);
         if (k < 1) tween = requestAnimationFrame(step);
         else if (done) done();
@@ -439,11 +441,16 @@ function sandHtml(s, m) {
     ["Live session (10 min)", `${f.live_session}%`], ["Gig-section active day", `${f.gig_active_day}%`],
     ["Gig completed", `${f.gig_completed}%`], ["Gig won", `${f.gig_won}%`],
     ["Daily check-in", `${m.checkin.fill_pct}%`],
+    ...(f.spot_gem !== undefined ? [
+      ["Spot a Gem", `${f.spot_gem}%`],
+      ["New Klique", `${f.klique}% (max ${m.caps.klique_fill_per_day}% a day)`],
+      ["Klique milestones", Object.entries(f.klique_milestone || {}).map(([a, p]) => `${a}: ${p}%`).join(" · ")],
+    ] : []),
   ].map(([l, v]) => `<div class="eco-row"><span>${esc(l)}</span><b>${esc(v)}</b></div>`).join("");
 
   return `
     <div class="sc-wrap">
-      <div class="sc-hourglass">${hourglassSvg(s.color.hex)}</div>
+      <div class="sc-hourglass">${bottleSvg(s.color.hex)}</div>
       <div class="sc-info">
         <div class="sc-name"><span class="sc-dot" style="background:${esc(s.color.hex)}"></span>${esc(s.color.name)}</div>
         <div class="sc-pct">${pctText(0)}</div>
@@ -468,7 +475,7 @@ function mountView(sheet, s) {
   const host = sheet.body.querySelector(".sc-hourglass");
   const pctEl = sheet.body.querySelector(".sc-pct");
   if (!host || !pctEl) return;
-  const hg = mountHourglass(host, s.color.hex, (v) => { pctEl.textContent = pctText(v); });
+  const hg = mountBottle(host, s.color.hex, (v) => { pctEl.textContent = pctText(v); });
   hg.to(s.fill, 1500);
   live = {
     sheet,

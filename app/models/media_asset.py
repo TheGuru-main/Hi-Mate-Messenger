@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, BigInteger, ForeignKey
+from sqlalchemy import Column, String, DateTime, BigInteger, Float, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
@@ -20,4 +20,5 @@ class MediaAsset(Base):
     owner_uid = Column(String, ForeignKey("users.uid"), nullable=False)
     content_type = Column(String, nullable=True)
     size_bytes = Column(BigInteger, nullable=True)
+    duration_seconds = Column(Float, nullable=True)   # measured on upload when the file carries a length
     created_at = Column(DateTime, default=datetime.utcnow)

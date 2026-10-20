@@ -192,3 +192,18 @@ REVISIONS.append({
         },
     },
 })
+
+
+REVISIONS.append({
+    "version": 5,
+    "note": "Fill for Spot a Gem, Klique and Klique milestones; long videos repeat the tiers",
+    "patch": {
+        "fill": {
+            "spot_gem": 0.30,
+            "klique": 0.10,
+            "klique_milestone": {"50": 1.0, "75": 2.0, "150": 5.0},
+        },
+        "caps": {"klique_fill_per_day": 1.0},
+        "post_rewards": {"video": {"over_max": "repeat_tiers", "max_counted_minutes": 1440}},
+    },
+})

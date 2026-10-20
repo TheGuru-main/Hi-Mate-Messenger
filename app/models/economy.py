@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Column, Date, DateTime, Float, Integer, JSON, String
+from sqlalchemy import BigInteger, Column, Date, DateTime, Float, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
@@ -54,4 +54,19 @@ class SandclockState(Base):
     level = Column(Integer, default=0, nullable=False)        # completed 10-colour cycles (badge only)
     last_active_day = Column(Date, nullable=True)
     decay_steps = Column(Integer, default=0, nullable=False)  # decay steps already applied this idle spell
+    klique_filled = Column(Integer, default=0, nullable=False)   # Kliques already turned into fill
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+
+class DailyCounter(Base):
+    """Per-user, per-day counters behind the reward caps (videos, text posts, comments per account, social totals)."""
+
+    __tablename__ = "economy_counters"
+    __table_args__ = (UniqueConstraint("user_uid", "day", "key", name="uq_economy_counter"),)
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_uid = Column(String, nullable=False, index=True)
+    day = Column(Date, nullable=False)
+    key = Column(String, nullable=False)
+    amount = Column(Float, default=0.0, nullable=False)
