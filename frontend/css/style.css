@@ -4237,3 +4237,36 @@ body.background-peach-aqua .composer textarea::placeholder{ color:#6B5A44; }
 
 /* ===== SANDCLOCK BOTTLE ===== */
 .sc-hourglass{ width:140px; flex:0 0 140px; }
+
+/* ===== LIVE HUB + ROOM ===== */
+.lv-actions{ padding:8px 12px; }
+.lv-section{ margin:10px 12px 6px; font-size:12px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; opacity:.75; }
+.lv-card{ margin:0 12px 10px; padding:12px; border-radius:16px; background:var(--fc-team-bg); border:1px solid var(--fc-team-border); cursor:pointer; }
+.lv-card-top{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:6px; font-size:11px; }
+.lv-badge{ padding:3px 8px; border-radius:999px; background:rgba(127,127,127,.2); font-weight:700; }
+.lv-badge.lv-live{ background:#e5484d; color:#fff; }
+.lv-title{ font-size:15px; font-weight:800; overflow-wrap:anywhere; }
+.lv-sub{ margin-top:2px; font-size:12px; opacity:.7; }
+.lv-gate{ margin:0 12px 8px; }
+.lv-empty{ margin:6px 12px; font-size:13px; opacity:.7; }
+.lv-room{ display:flex; flex-direction:column; height:calc(100vh - 64px); height:calc(100dvh - 64px); }
+.lv-stage{ position:relative; flex:0 0 auto; aspect-ratio:16/9; background:#0b0f1f; color:#fff; display:flex; align-items:center; justify-content:center; text-align:center; padding:12px; font-size:12px; }
+.lv-stage-badge{ position:absolute; top:10px; left:10px; padding:3px 9px; border-radius:999px; background:#e5484d; font-weight:800; font-size:11px; }
+.lv-host{ display:flex; align-items:center; gap:10px; padding:10px 12px 4px; }
+.lv-hostinfo{ flex:1; min-width:0; }
+.lv-avatar{ width:36px; height:36px; flex:0 0 36px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; background:var(--fc-plus-bg); color:var(--fc-plus-text); }
+.lv-desc{ padding:0 12px 4px; }
+.lv-hostbar{ display:flex; gap:8px; padding:0 12px 6px; }
+.lv-hostbar:empty{ display:none; }
+.lv-gifts{ display:flex; gap:8px; overflow-x:auto; padding:6px 12px; }
+.lv-gift{ flex:0 0 auto; min-width:66px; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 10px; border-radius:14px; border:1px solid var(--fc-team-border); background:var(--fc-team-bg); color:inherit; font-size:11px; cursor:pointer; }
+.lv-gift span{ font-size:20px; }
+.lv-gift small{ opacity:.7; }
+.lv-balance-line{ padding:0 12px 4px; }
+.lv-chat{ flex:1 1 auto; min-height:0; overflow-y:auto; padding:8px 12px; }
+.lv-msg{ padding:3px 0; font-size:13px; line-height:1.35; overflow-wrap:anywhere; }
+.lv-msg b{ margin-right:6px; }
+.lv-msg-gift{ color:var(--neon-blue); font-weight:700; }
+.lv-msg-system{ opacity:.65; font-style:italic; }
+.lv-input{ flex:0 0 auto; display:flex; gap:8px; padding:10px 12px; border-top:1px solid rgba(127,127,127,.25); }
+.lv-input .input-box{ flex:1; margin:0; min-width:0; }

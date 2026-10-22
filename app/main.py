@@ -61,6 +61,9 @@ app.include_router(economy.router, prefix="/v1")
 app.include_router(sandclock.router, prefix="/v1")
 from app.routes import portfolio
 app.include_router(portfolio.router, prefix="/v1")
+from app.routes import live as live_routes, devtools
+app.include_router(live_routes.router, prefix="/v1")
+app.include_router(devtools.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")
