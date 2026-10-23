@@ -36,7 +36,7 @@ function untilText(iso) {
 
 const KIND = {
   checkin: "Daily check-in", like: "Like reward", comment: "Comment reward", share: "Share reward",
-  spot_gem: "Spot a Gem", klique_milestone: "Klique milestone", post_video: "Video post", post_voice: "Voice post", post_text: "Text post", gift_sent: "Gift sent", gift_received: "Gift received",
+  spot_gem: "Spot a Gem", klique_milestone: "Klique milestone", post_video: "Video post", post_voice: "Voice post", post_text: "Text post", live_view: "Live viewing", stream_farm: "Live hosting", dev_grant: "Dev grant", gift_sent: "Gift sent", gift_received: "Gift received",
   gig_entry: "Gig entry", gig_payout: "Gig prize", gig_refund: "Gig refund",
 };
 
@@ -171,7 +171,7 @@ function byflintHtml(w, m, ledger) {
     <div class="md-block">
       <div class="md-title">Base rewards<span class="md-sub">× colour boost</span></div>
       ${rates}
-      <div class="ps-note">Comment rewards: up to ${esc(m.caps.comments_per_target_per_day ?? 3)} per account per day. Gifts have their own weights.</div>
+      <div class="ps-note">Comment rewards: up to ${esc(m.caps.comments_per_target_per_day ?? 3)} per account per day. Gifts have their own weights.${m.caps.share_byflint_per_day ? ` Share rewards stop at ${fmt(m.caps.share_byflint_per_day)} B a day, but you can share as much as you like.` : ""}</div>
     </div>
     ${postRewardsHtml(m)}
     ${kliqueHtml(m, w)}

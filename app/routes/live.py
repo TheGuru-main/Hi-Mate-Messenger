@@ -8,7 +8,7 @@ import time
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
@@ -33,6 +33,148 @@ PRESENCE: dict = {}
 LAST_MSG: dict = {}
 LAST_GIFT: dict = {}
 _last_reap = {"at": 0.0}
+
+ENGAGE: dict = {}
+HOSTFARM: dict = {}
+PRESENCE_IP: dict = {}
+AGE_OK: dict = {}
+
+
+def _ip(request) -> str:
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip() or "?"
+    return request.client.host if request.client else "?"
+
+
+def _old_enough(db, uid: str, days: int) -> bool:
+    if _dev(uid):
+        return True
+    hit = AGE_OK.get(uid)
+    if hit is not None and time.time() - hit[1] < 3600:
+        return hit[0]
+    row = db.query(User.created_at).filter(User.uid == uid).first()
+    ok = bool(row and row[0] and (datetime.utcnow() - row[0]).days >= int(days))
+    AGE_OK[uid] = (ok, time.time())
+    return ok
+
+
+def _qualified_viewers(db, sid: str, host_uid: str, m: dict) -> int:
+    q = m["stream"]["qualified_viewer"]
+    now = time.time()
+    per_ip: dict = {}
+    count = 0
+    for uid, t in (PRESENCE.get(sid) or {}).items():
+        if uid == host_uid or now - t >= PRESENCE_TTL:
+            continue
+        if not _old_enough(db, uid, q["min_account_age_days"]):
+            continue
+        ip = (PRESENCE_IP.get(sid) or {}).get(uid, "?")
+        if per_ip.get(ip, 0) >= int(q["max_per_ip"]):
+            continue
+        per_ip[ip] = per_ip.get(ip, 0) + 1
+        count += 1
+    return count
+
+
+def _viewer_reward(db, s, uid: str, m: dict):
+    st = m["stream"]
+    if not _old_enough(db, uid, st["qualified_viewer"]["min_account_age_days"]):
+        return None
+    cap = int(m.get("caps", {}).get("live_sessions_per_day", 3))
+    return activity_rewards._apply(
+        db, uid, "live_view", f"live_view:{s.id}:{uid}", int(st["viewer_byflint_per_session"]),
+        float(m["fill"]["live_session"]), gates=[("live_sessions", cap, 1)], meta={"session": str(s.id)},
+    )
+
+
+def _after_poll(db, s, uid: str, request):
+    m = get_manifest(db)
+    st = m["stream"]
+    sid = str(s.id)
+    now = time.time()
+    PRESENCE_IP.setdefault(sid, {})[uid] = _ip(request)
+    if uid == s.host_uid:
+        f = HOSTFARM.get(sid)
+        if f is None:
+            f = HOSTFARM[sid] = {"sec": float(s.farm_seconds or 0), "points": float(s.farm_points or 0.0), "last": now}
+        dt = min(max(now - f["last"], 0.0), 10.0)
+        f["last"] = now
+        qv = min(_qualified_viewers(db, sid, uid, m), int(st["viewer_bonus_cap_viewers"]))
+        rate = float(st["base_per_min"]) + (qv // 10) * float(st["per_10_viewers_per_min"])
+        f["sec"] += dt
+        f["points"] += rate * dt / 60.0
+        return
+    e = ENGAGE.setdefault((sid, uid), {"sec": 0.0, "last": now, "done": False})
+    dt = min(max(now - e["last"], 0.0), 10.0)
+    e["last"] = now
+    e["sec"] += dt
+    if not e["done"] and e["sec"] >= int(st["qualified_session_minutes"]) * 60:
+        e["done"] = True
+        _viewer_reward(db, s, uid, m)
+
+
+def _safe_after_poll(db, s, uid, request):
+    try:
+        _after_poll(db, s, uid, request)
+    except Exception as e:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        print(f"[live] poll rewards failed: {e}")
+
+
+def _settle(db, s):
+    """Pay the host for active time once the session is over (10+ live minutes, at most 4 hours a day)."""
+    if s.farm_settled:
+        return
+    m = get_manifest(db)
+    st = m["stream"]
+    sid = str(s.id)
+    f = HOSTFARM.pop(sid, None)
+    secs = float(f["sec"]) if f else float(s.farm_seconds or 0)
+    points = float(f["points"]) if f else float(s.farm_points or 0.0)
+    for k in [k for k in ENGAGE if k[0] == sid]:
+        ENGAGE.pop(k, None)
+    PRESENCE_IP.pop(sid, None)
+    host = s.host_uid
+    sess_id = s.id
+    minutes = secs / 60.0
+    if minutes >= float(st["min_session_minutes"]) and points > 0:
+        today = rewards.today_for(m)
+        row = activity_rewards._counter(db, host, today, "stream_minutes")
+        allow = max(0.0, float(st["max_hours_per_day"]) * 60.0 - row.amount)
+        use = min(minutes, allow)
+        db.commit()
+        if use >= 1.0:
+            base = int(points * (use / minutes))
+            cap = int(m.get("caps", {}).get("live_sessions_per_day", 3))
+            res = activity_rewards._apply(
+                db, host, "stream_farm", f"stream_farm:{sess_id}", base, float(m["fill"]["live_session"]),
+                gates=[("live_sessions", cap, 1)], meta={"session": sid, "minutes": round(use, 1)},
+            )
+            if res:
+                row2 = activity_rewards._counter(db, host, today, "stream_minutes")
+                row2.amount += use
+                db.commit()
+    s2 = db.query(LiveSession).filter(LiveSession.id == sess_id).first()
+    if s2 is not None:
+        s2.farm_settled = True
+        s2.farm_seconds = int(secs)
+        s2.farm_points = float(points)
+        db.commit()
+
+
+def _safe_settle(db, s):
+    try:
+        _settle(db, s)
+    except Exception as e:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        print(f"[live] settle failed: {e}")
 
 
 def _dev(uid: str) -> bool:
@@ -90,6 +232,7 @@ def _reap(db: Session) -> None:
     _last_reap["at"] = time.time()
     now = datetime.utcnow()
     changed = False
+    ended = []
     for s in db.query(LiveSession).filter(LiveSession.status == "live").all():
         seen = s.host_seen_at or s.started_at or s.created_at
         if (now - seen).total_seconds() > HOST_GONE_SECONDS:
@@ -98,8 +241,11 @@ def _reap(db: Session) -> None:
             PRESENCE.pop(str(s.id), None)
             db.add(LiveMessage(session_id=s.id, user_uid=s.host_uid, kind="system", content="The host left. This session has ended."))
             changed = True
+            ended.append(s)
     if changed:
         db.commit()
+        for s in ended:
+            _safe_settle(db, s)
 
 
 def _session_dict(s: LiveSession, hosts: dict, me: str) -> dict:
@@ -273,6 +419,7 @@ def end_session(sid: str, db: Session = Depends(get_db), current_user: User = De
     PRESENCE.pop(str(s.id), None)
     db.add(LiveMessage(session_id=s.id, user_uid=uid, username=current_user.username, kind="system", content="The session has ended."))
     db.commit()
+    _safe_settle(db, s)
     return _session_dict(s, {uid: current_user}, uid)
 
 
@@ -307,7 +454,7 @@ class PollIn(BaseModel):
 
 
 @router.post("/sessions/{sid}/poll")
-def poll(sid: str, payload: PollIn, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def poll(sid: str, payload: PollIn, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     uid = current_user.uid
     _reap(db)
     s = _get(db, sid)
@@ -316,10 +463,15 @@ def poll(sid: str, payload: PollIn, db: Session = Depends(get_db), current_user:
     viewers = 0
     if s.status == "live":
         _touch(sid, uid)
+        _safe_after_poll(db, s, uid, request)
         viewers = _viewers(sid, s.host_uid)
         dirty = False
         if uid == s.host_uid and (s.host_seen_at is None or (now - s.host_seen_at).total_seconds() > 30):
             s.host_seen_at = now
+            f = HOSTFARM.get(sid)
+            if f:
+                s.farm_seconds = int(f["sec"])
+                s.farm_points = float(f["points"])
             dirty = True
         if viewers > int(s.peak_viewers or 0):
             s.peak_viewers = viewers

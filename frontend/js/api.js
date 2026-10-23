@@ -92,6 +92,21 @@ export const api = {
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMyClubs: () => request("/clubs/mine"),
+  getJobs: (p = {}) => {
+    const q = new URLSearchParams();
+    Object.entries(p).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "" && v !== false) q.set(k, v); });
+    const s = q.toString();
+    return request(s ? `/jobs?${s}` : "/jobs");
+  },
+  createJob: (body) => request("/jobs", { method: "POST", body }),
+  getJob: (id) => request(`/jobs/${id}`),
+  setJobState: (id, state) => request(`/jobs/${id}/state`, { method: "POST", body: { state } }),
+  bidJob: (id, body) => request(`/jobs/${id}/bids`, { method: "POST", body }),
+  withdrawBid: (id) => request(`/jobs/${id}/bids/mine`, { method: "DELETE" }),
+  setBidStatus: (id, bidId, status) => request(`/jobs/${id}/bids/${bidId}/status`, { method: "POST", body: { status } }),
+  commentJob: (id, body) => request(`/jobs/${id}/comments`, { method: "POST", body }),
+  pinJobComment: (id, cid) => request(`/jobs/${id}/comments/${cid}/pin`, { method: "POST" }),
+  deleteJobComment: (id, cid) => request(`/jobs/${id}/comments/${cid}`, { method: "DELETE" }),
   getLiveHub: () => request("/live/hub"),
   createLive: (body) => request("/live/sessions", { method: "POST", body }),
   getLiveSession: (id) => request(`/live/sessions/${id}`),

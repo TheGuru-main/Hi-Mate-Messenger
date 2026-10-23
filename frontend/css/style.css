@@ -4270,3 +4270,13 @@ body.background-peach-aqua .composer textarea::placeholder{ color:#6B5A44; }
 .lv-msg-system{ opacity:.65; font-style:italic; }
 .lv-input{ flex:0 0 auto; display:flex; gap:8px; padding:10px 12px; border-top:1px solid rgba(127,127,127,.25); }
 .lv-input .input-box{ flex:1; margin:0; min-width:0; }
+
+/* ===== GIGS HUB ===== */
+.gg-actions{ display:grid; gap:8px; padding:10px 12px; }
+.gg-filters{ display:flex; gap:8px; padding:8px 12px; }
+.gg-filters .input-box{ margin:0; flex:1; min-width:0; }
+.gg-detail{ padding:12px; }
+.gg-text{ white-space:pre-wrap; }
+.gg-chip{ display:inline-flex; align-items:center; gap:6px; }
+.gg-pick{ display:flex; align-items:center; gap:8px; margin:4px 0; font-size:13px; font-weight:500; }
+.gg-attach-list, .gg-pin-list{ margin:6px 0; }

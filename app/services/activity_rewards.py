@@ -35,7 +35,7 @@ def _counter(db: Session, uid: str, day, key: str) -> DailyCounter:
     return row
 
 
-def _apply(db, uid, kind, idem, base_b, fill_pct, gates=(), social_b=False, social_fill=False, meta=None):
+def _apply(db, uid, kind, idem, base_b, fill_pct, gates=(), social_b=False, social_fill=False, meta=None, b_caps=()):
     """gates: (counter_key, limit, cost) hard limits. social_b / social_fill clip to the shared daily caps."""
     m = get_manifest(db)
     today = rewards.today_for(m)
@@ -53,6 +53,7 @@ def _apply(db, uid, kind, idem, base_b, fill_pct, gates=(), social_b=False, soci
         gate_rows.append((row, cost))
     b_row = _counter(db, uid, today, "social_b") if social_b else None
     f_row = _counter(db, uid, today, "social_fill") if social_fill else None
+    cap_rows = [(_counter(db, uid, today, key), int(limit)) for key, limit in b_caps]
 
     st = rewards.sandclock_state(db, uid, today)
     sandclock.apply_decay(st, m, today)
@@ -60,6 +61,8 @@ def _apply(db, uid, kind, idem, base_b, fill_pct, gates=(), social_b=False, soci
     if b_row is not None:
         room = int(caps.get("social_byflint_per_day", 15000) - b_row.amount)
         amount = max(0, min(amount, room))
+    for row, limit in cap_rows:
+        amount = max(0, min(amount, int(limit - row.amount)))
     if amount <= 0:
         db.rollback()
         return None
@@ -84,6 +87,8 @@ def _apply(db, uid, kind, idem, base_b, fill_pct, gates=(), social_b=False, soci
         row.amount += cost
     if b_row is not None:
         b_row.amount += amount
+    for row, limit in cap_rows:
+        row.amount += amount
     if f_row is not None:
         f_row.amount += fill
     db.commit()
@@ -164,3 +169,14 @@ def post(db: Session, p, uid: str):
     if not videos and not audios and (len((p.content or "").strip()) >= 3 or images > 0):
         _apply(db, uid, "post_text", f"post_text:{p.id}", reward_rules.text_reward(m), 0.0,
                gates=[("text", pr["text"]["cap_per_day"], 1)], meta={"post": str(p.id)})
+
+
+def share(db: Session, uid: str, post_id):
+    """Sharing is unlimited; the Byflints from it stop at caps.share_byflint_per_day (117) per account per day."""
+    p = db.query(Post).filter(Post.id == post_id).first()
+    if p is None or p.author_uid == uid:
+        return None
+    m = get_manifest(db)
+    cap = int(m.get("caps", {}).get("share_byflint_per_day", 117))
+    return _apply(db, uid, "share", f"share:{uid}:{p.id}", m["rewards"]["share"], 0.0,
+                  b_caps=[("share_b", cap)], meta={"post": str(p.id), "author": p.author_uid})

@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Column, DateTime, Integer, String, Text
+from sqlalchemy import BigInteger, Boolean, Column, DateTime, Float, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
@@ -24,6 +24,9 @@ class LiveSession(Base):
     ended_at = Column(DateTime, nullable=True)
     host_seen_at = Column(DateTime, nullable=True)
     peak_viewers = Column(Integer, default=0, nullable=False)
+    farm_seconds = Column(Integer, default=0, nullable=False)
+    farm_points = Column(Float, default=0.0, nullable=False)
+    farm_settled = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow, index=True)
 
 

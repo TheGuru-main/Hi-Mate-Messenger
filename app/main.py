@@ -64,6 +64,8 @@ app.include_router(portfolio.router, prefix="/v1")
 from app.routes import live as live_routes, devtools
 app.include_router(live_routes.router, prefix="/v1")
 app.include_router(devtools.router, prefix="/v1")
+from app.routes import jobs as jobs_routes
+app.include_router(jobs_routes.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")
@@ -88,6 +90,9 @@ async def on_startup():
             for _stmt in (
                 "ALTER TABLE sandclock_states ADD COLUMN IF NOT EXISTS klique_filled INTEGER NOT NULL DEFAULT 0",
                 "ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS duration_seconds DOUBLE PRECISION",
+                "ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS farm_seconds INTEGER NOT NULL DEFAULT 0",
+                "ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS farm_points DOUBLE PRECISION NOT NULL DEFAULT 0",
+                "ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS farm_settled BOOLEAN NOT NULL DEFAULT FALSE",
             ):
                 _db.execute(_text(_stmt))
             _db.commit()

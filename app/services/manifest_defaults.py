@@ -207,3 +207,10 @@ REVISIONS.append({
         "post_rewards": {"video": {"over_max": "repeat_tiers", "max_counted_minutes": 1440}},
     },
 })
+
+
+REVISIONS.append({
+    "version": 6,
+    "note": "Cap Byflints earned from shares at 117 a day per account; sharing itself is unlimited",
+    "patch": {"caps": {"share_byflint_per_day": 117}},
+})
