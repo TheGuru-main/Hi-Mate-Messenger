@@ -2,6 +2,7 @@
 import { api, getCachedUser } from "./api.js";
 import { openSheet } from "./sheet.js";
 import { talentLabel, businessLabel } from "./categories.js";
+import { orderProfileBoxes } from "./profile-layout.js";
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
@@ -66,6 +67,7 @@ export async function renderProfilePortfolio(uid) {
   profileUid = uid;
   const b = ensureBox();
   if (!b) return;
+  orderProfileBoxes();
   try {
     const d = await api.getPortfolio(uid);
     if (profileUid !== uid) return;

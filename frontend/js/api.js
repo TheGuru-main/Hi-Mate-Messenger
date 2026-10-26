@@ -92,6 +92,7 @@ export const api = {
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMyClubs: () => request("/clubs/mine"),
+  getProfileExtras: (uid) => request(`/profile-extras/${encodeURIComponent(uid)}`),
   getJobs: (p = {}) => {
     const q = new URLSearchParams();
     Object.entries(p).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== "" && v !== false) q.set(k, v); });

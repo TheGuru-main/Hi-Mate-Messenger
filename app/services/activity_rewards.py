@@ -129,9 +129,27 @@ def _audio_seconds(a):
     return None
 
 
+SHARE_PREFIX = "🔁 Shared:"
+
+
+def _share_post(db, p, uid, m):
+    """A feed share creates a new post. Sharing is unlimited; Byflints stop at caps.share_byflint_per_day."""
+    original = (p.content or "")[len(SHARE_PREFIX):].strip()
+    if original and db.query(Post.id).filter(Post.author_uid == uid, Post.id != p.id, Post.content == original).first():
+        return None   # sharing your own post earns nothing
+    refs = [r for r in (p.media_refs or "").split(",") if r]
+    if refs and db.query(MediaAsset.id).filter(MediaAsset.media_ref.in_(refs), MediaAsset.owner_uid == uid).first():
+        return None
+    cap = int(m.get("caps", {}).get("share_byflint_per_day", 117))
+    return _apply(db, uid, "share", f"share:{uid}:{p.id}", m["rewards"]["share"], 0.0,
+                  b_caps=[("share_b", cap)], meta={"post": str(p.id)})
+
+
 def post(db: Session, p, uid: str):
     m = get_manifest(db)
     pr = m["post_rewards"]
+    if (p.content or "").startswith(SHARE_PREFIX):
+        return _share_post(db, p, uid, m)
     refs = [r for r in (p.media_refs or "").split(",") if r]
     if not refs and p.media_ref:
         refs = [p.media_ref]

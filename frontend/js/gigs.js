@@ -3,6 +3,7 @@
 import { api, getCachedUser } from "./api.js";
 import { openSheet } from "./sheet.js";
 import { showTab } from "./router.js";
+import { openChat } from "./chat.js";
 import { talentLabel, businessLabel } from "./categories.js";
 
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => (
@@ -334,8 +335,8 @@ async function openJob(id, onChange) {
   async function kliqueAction() {
     const k = d.poster_klique;
     if (k === "accepted") {
-      showTab("chats");
-      alert("You're Kliqued with the poster. Open your Kliques tab to message them about this post.");
+      document.querySelectorAll(".hm-sheet").forEach((el) => el.remove());
+      openChat(d.job.poster_uid, d.job.poster_username || "");
     } else if (k === "none") {
       await api.kliqueRequest(d.job.poster_uid);
       alert("Klique request sent. Once it's accepted you can chat about this post.");

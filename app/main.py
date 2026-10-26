@@ -66,6 +66,8 @@ app.include_router(live_routes.router, prefix="/v1")
 app.include_router(devtools.router, prefix="/v1")
 from app.routes import jobs as jobs_routes
 app.include_router(jobs_routes.router, prefix="/v1")
+from app.routes import profile_extras
+app.include_router(profile_extras.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")

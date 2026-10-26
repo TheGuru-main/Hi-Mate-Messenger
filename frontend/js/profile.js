@@ -1,6 +1,7 @@
 import { renderProfileClubs } from "./club-profile.js";
 import { renderProfilePlayers } from "./player-sheet.js";
 import { renderProfilePortfolio } from "./portfolio.js";
+import { renderProfileExtras } from "./profile-extras.js";
 import { api, getCachedUser } from "./api.js";
 import { showPage } from "./router.js";
 import { openChat } from "./chat.js";
@@ -130,6 +131,7 @@ export async function openProfile(uid) {
     renderProfileClubs(uid);
     renderProfilePlayers(uid);
     renderProfilePortfolio(uid);
+    renderProfileExtras(uid);
     document.querySelectorAll('#profile-tab-row .chip').forEach(c => c.classList.toggle("active", c.dataset.ptab === "posts"));
 
     try {
