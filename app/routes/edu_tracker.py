@@ -13,6 +13,7 @@ from app.dependencies import get_current_user
 from app.models.edu import EduCourse, EduTask, EduTopic
 from app.models.edu_journal import EduJournalEntry
 from app.models.user import User
+from app.models.edu_practice import EduQuestion, EduQuestionAttempt
 from app.services import rewards
 from app.services.manifest import get_manifest
 
@@ -124,11 +125,26 @@ def overview(db: Session = Depends(get_db), current_user: User = Depends(get_cur
             .order_by(EduTask.due.asc()).first())
     return {
         "streak": {"current": current, "best": best, "today_done": today in days},
-        "week": {"minutes": week_minutes, "goal": WEEK_GOAL_MINUTES},
+        "week": {"minutes": week_minutes, "goal": int(current_user.weekly_goal_minutes or WEEK_GOAL_MINUTES)},
         "next_exam": _task_dict(exam, names) if exam else None,
         "due_soon": [_task_dict(t, names) for t in tasks],
         "courses": out,
     }
+
+
+class WeeklyGoalIn(BaseModel):
+    minutes: int = Field(ge=30, le=10080)
+
+
+@router.put("/weekly-goal")
+def set_weekly_goal(
+    payload: WeeklyGoalIn,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.weekly_goal_minutes = payload.minutes
+    db.commit()
+    return {"goal": current_user.weekly_goal_minutes}
 
 
 class CourseIn(BaseModel):
@@ -312,3 +328,171 @@ def log_session(payload: SessionIn, db: Session = Depends(get_db), current_user:
     db.commit()
     db.refresh(entry)
     return {"id": str(entry.id), "created_at": _iso(entry.created_at)}
+
+
+# EDU_QUESTION_PRACTICE_V1
+
+class QuestionCreate(BaseModel):
+    question: str = Field(min_length=3, max_length=3000)
+    option_a: str = Field(min_length=1, max_length=500)
+    option_b: str = Field(min_length=1, max_length=500)
+    option_c: str = Field(min_length=1, max_length=500)
+    option_d: str = Field(min_length=1, max_length=500)
+    correct_option: str = Field(min_length=1, max_length=1)
+    explanation: str | None = Field(default=None, max_length=3000)
+    course_id: str | None = None
+    topic_id: str | None = None
+
+
+class QuestionAnswer(BaseModel):
+    question_id: str
+    selected_option: str = Field(min_length=1, max_length=1)
+
+
+def _practice_question(q):
+    return {
+        "id": str(q.id),
+        "question": q.question,
+        "options": {
+            "A": q.option_a,
+            "B": q.option_b,
+            "C": q.option_c,
+            "D": q.option_d,
+        },
+        "course_id": str(q.course_id) if q.course_id else None,
+        "topic_id": str(q.topic_id) if q.topic_id else None,
+    }
+
+
+@router.post("/practice/questions")
+def create_practice_question(
+    payload: QuestionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    uid = current_user.uid
+    correct = payload.correct_option.strip().upper()
+    if correct not in ("A", "B", "C", "D"):
+        raise HTTPException(status_code=400, detail="Correct option must be A, B, C, or D.")
+
+    course = _course(db, payload.course_id, uid) if payload.course_id else None
+    topic = None
+
+    if payload.topic_id:
+        topic = db.query(EduTopic).filter(
+            EduTopic.id == _uuid(payload.topic_id),
+            EduTopic.uid == uid,
+        ).first()
+
+        if topic is None:
+            raise HTTPException(status_code=404, detail="Topic not found.")
+
+        if course and topic.course_id != course.id:
+            raise HTTPException(status_code=400, detail="Topic belongs to another subject.")
+
+        if course is None:
+            course = _course(db, str(topic.course_id), uid)
+
+    question = EduQuestion(
+        uid=uid,
+        course_id=course.id if course else None,
+        topic_id=topic.id if topic else None,
+        question=payload.question.strip(),
+        option_a=payload.option_a.strip(),
+        option_b=payload.option_b.strip(),
+        option_c=payload.option_c.strip(),
+        option_d=payload.option_d.strip(),
+        correct_option=correct,
+        explanation=(payload.explanation or "").strip() or None,
+    )
+    db.add(question)
+    db.commit()
+    db.refresh(question)
+    return {"id": str(question.id), "created": True}
+
+
+@router.get("/practice/questions")
+def list_practice_questions(
+    course_id: str | None = None,
+    topic_id: str | None = None,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(EduQuestion).filter(EduQuestion.uid == current_user.uid)
+
+    if course_id:
+        course = _course(db, course_id, current_user.uid)
+        query = query.filter(EduQuestion.course_id == course.id)
+
+    if topic_id:
+        topic = db.query(EduTopic).filter(
+            EduTopic.id == _uuid(topic_id),
+            EduTopic.uid == current_user.uid,
+        ).first()
+        if topic is None:
+            raise HTTPException(status_code=404, detail="Topic not found.")
+        query = query.filter(EduQuestion.topic_id == topic.id)
+
+    questions = query.order_by(EduQuestion.created_at.desc()).limit(
+        max(1, min(limit, 50))
+    ).all()
+
+    return [_practice_question(q) for q in questions]
+
+
+@router.post("/practice/answer")
+def answer_practice_question(
+    payload: QuestionAnswer,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    selected = payload.selected_option.strip().upper()
+    if selected not in ("A", "B", "C", "D"):
+        raise HTTPException(status_code=400, detail="Choose A, B, C, or D.")
+
+    question = db.query(EduQuestion).filter(
+        EduQuestion.id == _uuid(payload.question_id),
+        EduQuestion.uid == current_user.uid,
+    ).first()
+
+    if question is None:
+        raise HTTPException(status_code=404, detail="Question not found.")
+
+    correct = selected == question.correct_option
+
+    db.add(EduQuestionAttempt(
+        uid=current_user.uid,
+        question_id=question.id,
+        selected_option=selected,
+        is_correct=correct,
+    ))
+    db.commit()
+
+    return {
+        "is_correct": correct,
+        "selected_option": selected,
+        "correct_option": question.correct_option,
+        "explanation": question.explanation or "",
+    }
+
+
+@router.get("/practice/stats")
+def practice_stats(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    attempts = db.query(func.count(EduQuestionAttempt.id)).filter(
+        EduQuestionAttempt.uid == current_user.uid
+    ).scalar() or 0
+
+    correct = db.query(func.count(EduQuestionAttempt.id)).filter(
+        EduQuestionAttempt.uid == current_user.uid,
+        EduQuestionAttempt.is_correct.is_(True),
+    ).scalar() or 0
+
+    return {
+        "attempts": int(attempts),
+        "correct": int(correct),
+        "accuracy": round(correct * 100 / attempts) if attempts else 0,
+    }

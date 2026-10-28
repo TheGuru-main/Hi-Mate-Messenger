@@ -93,6 +93,19 @@ export const api = {
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMyClubs: () => request("/clubs/mine"),
   getEduOverview: () => request("/edu/overview"),
+  createEduQuestion: (body) => request("/edu/practice/questions", { method: "POST", body }),
+  getEduQuestions: (opts = {}) => {
+    const q = new URLSearchParams();
+    if (opts.course_id) q.set("course_id", opts.course_id);
+    if (opts.topic_id) q.set("topic_id", opts.topic_id);
+    if (opts.limit) q.set("limit", opts.limit);
+    const query = q.toString();
+    return request(query ? `/edu/practice/questions?${query}` : "/edu/practice/questions");
+  },
+  answerEduQuestion: (question_id, selected_option) =>
+    request("/edu/practice/answer", { method: "POST", body: { question_id, selected_option } }),
+  getEduPracticeStats: () => request("/edu/practice/stats"),
+  setEduWeeklyGoal: (minutes) => request("/edu/weekly-goal", { method: "PUT", body: { minutes } }),
   createEduCourse: (body) => request("/edu/courses", { method: "POST", body }),
   getEduCourse: (id) => request(`/edu/courses/${id}`),
   deleteEduCourse: (id) => request(`/edu/courses/${id}`, { method: "DELETE" }),

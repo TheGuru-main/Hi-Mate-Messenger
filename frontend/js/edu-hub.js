@@ -68,6 +68,8 @@ function hubHtml(d) {
       <button type="button" class="primary-btn edu-add-course">＋ Add a subject or course</button>
       <button type="button" class="pf-btn edu-add-task">＋ Add an exam or deadline</button>
       <button type="button" class="pf-btn edu-log">Log a study session</button>
+      <button type="button" class="pf-btn edu-practice">Practice questions</button>
+      <button type="button" class="pf-btn edu-week-goal">Set weekly goal</button>
     </div>
     ${d.due_soon.length ? `<div class="section-title">Due soon</div>${d.due_soon.map(taskRow).join("")}` : ""}
     <div class="section-title">My subjects and courses</div>
@@ -105,6 +107,8 @@ function onHubClick(e) {
   if (t.closest(".edu-add-course")) { openCourseForm(); return; }
   if (t.closest(".edu-add-task")) { openTaskForm(null); return; }
   if (t.closest(".edu-log")) { openLogForm(null); return; }
+  if (t.closest(".edu-practice")) { openPracticeForm(); return; }
+  if (t.closest(".edu-week-goal")) { openWeeklyGoalForm(); return; }
   const task = t.closest(".edu-task");
   if (task) { api.toggleEduTask(task.dataset.id).then(loadHub).catch((err) => alert(err.message)); return; }
   const c = t.closest(".edu-course");
@@ -112,6 +116,202 @@ function onHubClick(e) {
 }
 
 /* --------------------------------- forms --------------------------------- */
+
+function openWeeklyGoalForm() {
+  const current = Number(data?.week?.goal || 150);
+  const sheet = openSheet({
+    title: "Weekly study goal",
+    html: `
+      <div class="pf-form">
+        <label>Study minutes per week</label>
+        <input class="input-box" data-f="goal" type="number"
+          min="30" max="10080" step="15" value="${current}">
+        <div class="pf-err" data-f="err"></div>
+        <button type="button" class="primary-btn" data-f="save">Save goal</button>
+      </div>`
+  });
+  const q = (name) => sheet.body.querySelector(`[data-f="${name}"]`);
+  q("save").addEventListener("click", async () => {
+    const minutes = Number(q("goal").value);
+    if (!Number.isInteger(minutes) || minutes < 30 || minutes > 10080) {
+      q("err").textContent = "Choose between 30 and 10,080 minutes.";
+      return;
+    }
+    q("save").disabled = true;
+    try {
+      await api.setEduWeeklyGoal(minutes);
+      data = null;
+      sheet.close();
+      await loadHub();
+    } catch (e) {
+      q("err").textContent = e.message || "Couldn't save the goal.";
+      q("save").disabled = false;
+    }
+  });
+}
+
+
+function openPracticeForm() {
+  const sheet = openSheet({
+    title: "Question practice",
+    html: `
+      <div class="pf-form">
+        <label>Filter by subject</label>
+        <select class="input-box" data-f="filter-course">${courseOptions("")}</select>
+        <button type="button" class="pf-btn" data-f="load">Load questions</button>
+        <div class="ps-note" data-f="stats">Loading practice stats…</div>
+        <div data-f="questions"></div>
+        <details style="margin-top:16px">
+          <summary>Add a question</summary>
+          <div class="pf-form">
+            <label>Subject</label>
+            <select class="input-box" data-f="course">${courseOptions("")}</select>
+            <label>Topic <span class="optional-tag">optional</span></label>
+            <select class="input-box" data-f="topic"><option value="">No topic</option></select>
+            <label>Question</label>
+            <textarea class="input-box" data-f="question" rows="3" maxlength="3000"></textarea>
+            <label>Option A</label><input class="input-box" data-f="a" maxlength="500">
+            <label>Option B</label><input class="input-box" data-f="b" maxlength="500">
+            <label>Option C</label><input class="input-box" data-f="c" maxlength="500">
+            <label>Option D</label><input class="input-box" data-f="d" maxlength="500">
+            <label>Correct option</label>
+            <select class="input-box" data-f="correct">
+              <option value="A">A</option><option value="B">B</option>
+              <option value="C">C</option><option value="D">D</option>
+            </select>
+            <label>Explanation <span class="optional-tag">optional</span></label>
+            <textarea class="input-box" data-f="explanation" rows="3" maxlength="3000"></textarea>
+            <div class="pf-err" data-f="err"></div>
+            <button type="button" class="primary-btn" data-f="save">Save question</button>
+          </div>
+        </details>
+      </div>`
+  });
+
+  const q = (name) => sheet.body.querySelector(`[data-f="${name}"]`);
+  let answered = new Set();
+
+  async function loadStats() {
+    try {
+      const stats = await api.getEduPracticeStats();
+      q("stats").textContent =
+        `Attempts: ${stats.attempts} · Correct: ${stats.correct} · Accuracy: ${stats.accuracy}%`;
+    } catch (_) {
+      q("stats").textContent = "Practice statistics unavailable.";
+    }
+  }
+
+  async function loadQuestions() {
+    q("questions").innerHTML = '<div class="ps-note">Loading questions…</div>';
+    answered = new Set();
+
+    try {
+      const questions = await api.getEduQuestions({
+        course_id: q("filter-course").value || undefined,
+        limit: 30
+      });
+
+      if (!questions.length) {
+        q("questions").innerHTML =
+          '<div class="ps-note">No questions yet. Add your first question below.</div>';
+        return;
+      }
+
+      q("questions").innerHTML = questions.map((item, index) => `
+        <div class="md-block" data-question="${esc(item.id)}">
+          <div class="md-title">Question ${index + 1}</div>
+          <p>${esc(item.question)}</p>
+          ${Object.entries(item.options).map(([letter, text]) => `
+            <button type="button" class="pf-btn edu-answer"
+              data-qid="${esc(item.id)}" data-answer="${letter}"
+              style="display:block;width:100%;text-align:left;margin:6px 0">
+              ${letter}. ${esc(text)}
+            </button>`).join("")}
+          <div class="ps-note" data-f="feedback"></div>
+        </div>`).join("");
+    } catch (error) {
+      q("questions").innerHTML = `<div class="error-text">${esc(error.message)}</div>`;
+    }
+  }
+
+  async function loadTopics() {
+    const id = q("course").value;
+    q("topic").innerHTML = '<option value="">No topic</option>';
+    if (!id) return;
+
+    try {
+      const course = await api.getEduCourse(id);
+      q("topic").innerHTML += (course.topics || []).map((topic) =>
+        `<option value="${esc(topic.id)}">${esc(topic.title)}</option>`
+      ).join("");
+    } catch (_) {}
+  }
+
+  q("course").addEventListener("change", loadTopics);
+  q("load").addEventListener("click", loadQuestions);
+
+  q("save").addEventListener("click", async () => {
+    const question = q("question").value.trim();
+    const options = ["a", "b", "c", "d"].map((key) => q(key).value.trim());
+
+    if (question.length < 3 || options.some((value) => !value)) {
+      q("err").textContent = "Enter a question and all four options.";
+      return;
+    }
+
+    q("save").disabled = true;
+    q("err").textContent = "";
+
+    try {
+      await api.createEduQuestion({
+        question,
+        option_a: options[0],
+        option_b: options[1],
+        option_c: options[2],
+        option_d: options[3],
+        correct_option: q("correct").value,
+        explanation: q("explanation").value.trim() || null,
+        course_id: q("course").value || null,
+        topic_id: q("topic").value || null
+      });
+
+      q("question").value = "";
+      ["a", "b", "c", "d"].forEach((key) => { q(key).value = ""; });
+      q("explanation").value = "";
+      q("err").textContent = "Question saved.";
+      await loadQuestions();
+      await loadStats();
+    } catch (error) {
+      q("err").textContent = error.message || "Couldn't save the question.";
+    } finally {
+      q("save").disabled = false;
+    }
+  });
+
+  sheet.body.addEventListener("click", async (event) => {
+    const button = event.target.closest(".edu-answer");
+    if (!button || answered.has(button.dataset.qid)) return;
+
+    const card = button.closest("[data-question]");
+    const feedback = card.querySelector('[data-f="feedback"]');
+    card.querySelectorAll(".edu-answer").forEach((item) => { item.disabled = true; });
+
+    try {
+      const result = await api.answerEduQuestion(button.dataset.qid, button.dataset.answer);
+      answered.add(button.dataset.qid);
+      feedback.textContent =
+        `${result.is_correct ? "Correct!" : "Not quite."} Correct answer: ${result.correct_option}.` +
+        (result.explanation ? ` ${result.explanation}` : "");
+      await loadStats();
+    } catch (error) {
+      card.querySelectorAll(".edu-answer").forEach((item) => { item.disabled = false; });
+      feedback.textContent = error.message || "Couldn't submit the answer.";
+    }
+  });
+
+  loadStats();
+  loadQuestions();
+}
 
 function openCourseForm() {
   const sheet = openSheet({ title: "Add a subject or course", html: `

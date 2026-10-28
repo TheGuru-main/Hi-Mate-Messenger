@@ -14,6 +14,8 @@ from app.sockets.routes import router as ws_router
 from app.sockets.calls import router as calls_ws_router
 from app.services.match_poller import poll_live_matches
 
+from app.models import edu_curriculum as edu_curriculum_models
+
 from app import models  # noqa: F401
 
 settings = get_settings()
@@ -69,7 +71,11 @@ app.include_router(jobs_routes.router, prefix="/v1")
 from app.routes import profile_extras
 app.include_router(profile_extras.router, prefix="/v1")
 from app.routes import edu_tracker
+from app.routes import edu_curriculum
+from app.routes import edu_curriculum_admin
 app.include_router(edu_tracker.router, prefix="/v1")
+app.include_router(edu_curriculum.router, prefix="/v1")
+app.include_router(edu_curriculum_admin.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")
@@ -131,6 +137,7 @@ async def on_startup():
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_student_id TEXT;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_school_link_id TEXT;"))
         conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS edu_display_name TEXT;"))
+        conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS weekly_goal_minutes INTEGER NOT NULL DEFAULT 150;"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS pending_uids TEXT[] DEFAULT '{}';"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS visibility TEXT DEFAULT 'private';"))
         conn.execute(text("ALTER TABLE groups ADD COLUMN IF NOT EXISTS creator_group_uid TEXT;"))

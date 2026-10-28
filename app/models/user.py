@@ -43,6 +43,7 @@ class User(Base):
     edu_display_name = Column(String, nullable=True)
     religion = Column(String, nullable=True)
     feed_preferences = Column(String, nullable=True)  # comma-separated for simplicity; move to array/table later
+    weekly_goal_minutes = Column(Integer, nullable=False, default=150)
 
     # GSP placement (always computed server-side — never trust client input)
     L = Column(Integer, nullable=False)
