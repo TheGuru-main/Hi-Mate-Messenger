@@ -68,6 +68,8 @@ from app.routes import jobs as jobs_routes
 app.include_router(jobs_routes.router, prefix="/v1")
 from app.routes import profile_extras
 app.include_router(profile_extras.router, prefix="/v1")
+from app.routes import edu_tracker
+app.include_router(edu_tracker.router, prefix="/v1")
 app.include_router(status.router, prefix="/v1")
 app.include_router(notifications.router, prefix="/v1")
 app.include_router(edu.router, prefix="/v1")
@@ -92,6 +94,9 @@ async def on_startup():
             for _stmt in (
                 "ALTER TABLE sandclock_states ADD COLUMN IF NOT EXISTS klique_filled INTEGER NOT NULL DEFAULT 0",
                 "ALTER TABLE media_assets ADD COLUMN IF NOT EXISTS duration_seconds DOUBLE PRECISION",
+                "ALTER TABLE edu_journal_entries ADD COLUMN IF NOT EXISTS course_id UUID",
+                "ALTER TABLE edu_journal_entries ADD COLUMN IF NOT EXISTS topic_id UUID",
+                "ALTER TABLE edu_journal_entries ADD COLUMN IF NOT EXISTS minutes INTEGER",
                 "ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS farm_seconds INTEGER NOT NULL DEFAULT 0",
                 "ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS farm_points DOUBLE PRECISION NOT NULL DEFAULT 0",
                 "ALTER TABLE live_sessions ADD COLUMN IF NOT EXISTS farm_settled BOOLEAN NOT NULL DEFAULT FALSE",

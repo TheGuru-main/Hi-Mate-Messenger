@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer
 from sqlalchemy.dialects.postgresql import UUID
 
 from app.database import Base
@@ -14,4 +14,7 @@ class EduJournalEntry(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     uid = Column(String, ForeignKey("users.uid"), nullable=False, index=True)
     content = Column(Text, nullable=False)
+    course_id = Column(UUID(as_uuid=True), nullable=True)   # study log: which subject
+    topic_id = Column(UUID(as_uuid=True), nullable=True)    # study log: which topic
+    minutes = Column(Integer, nullable=True)                # study log: minutes studied
     created_at = Column(DateTime, default=datetime.utcnow, index=True)

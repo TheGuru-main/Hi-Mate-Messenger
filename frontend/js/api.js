@@ -92,6 +92,17 @@ export const api = {
   joinMatch: (fixtureId) => request(`/matches/${fixtureId}/join`, { method: "POST" }),
   getMatchStats: (fixtureId) => request(`/matches/${fixtureId}/stats`),
   getMyClubs: () => request("/clubs/mine"),
+  getEduOverview: () => request("/edu/overview"),
+  createEduCourse: (body) => request("/edu/courses", { method: "POST", body }),
+  getEduCourse: (id) => request(`/edu/courses/${id}`),
+  deleteEduCourse: (id) => request(`/edu/courses/${id}`, { method: "DELETE" }),
+  addEduTopics: (id, titles) => request(`/edu/courses/${id}/topics`, { method: "POST", body: { titles } }),
+  setEduTopic: (id, status) => request(`/edu/topics/${id}`, { method: "POST", body: { status } }),
+  deleteEduTopic: (id) => request(`/edu/topics/${id}`, { method: "DELETE" }),
+  createEduTask: (body) => request("/edu/tasks", { method: "POST", body }),
+  toggleEduTask: (id) => request(`/edu/tasks/${id}/toggle`, { method: "POST" }),
+  deleteEduTask: (id) => request(`/edu/tasks/${id}`, { method: "DELETE" }),
+  logEduSession: (body) => request("/edu/sessions", { method: "POST", body }),
   getProfileExtras: (uid) => request(`/profile-extras/${encodeURIComponent(uid)}`),
   getJobs: (p = {}) => {
     const q = new URLSearchParams();

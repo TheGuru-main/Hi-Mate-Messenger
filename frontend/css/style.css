@@ -4280,3 +4280,13 @@ body.background-peach-aqua .composer textarea::placeholder{ color:#6B5A44; }
 .gg-chip{ display:inline-flex; align-items:center; gap:6px; }
 .gg-pick{ display:flex; align-items:center; gap:8px; margin:4px 0; font-size:13px; font-weight:500; }
 .gg-attach-list, .gg-pin-list{ margin:6px 0; }
+
+/* ===== EDU HUB ===== */
+.edu-actions{ display:grid; gap:8px; margin:10px 0; }
+.edu-track{ margin:8px 0 6px !important; }
+.edu-topic{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-top:1px solid rgba(127,127,127,.2); }
+.edu-topic span{ min-width:0; flex:1; overflow-wrap:anywhere; font-size:14px; }
+.edu-status{ flex:0 0 auto; padding:4px 10px; border-radius:999px; border:1px solid var(--fc-team-border); background:var(--fc-team-bg); color:inherit; font-size:12px; font-weight:700; cursor:pointer; }
+.edu-x{ flex:0 0 auto; padding:4px 8px; border:0; background:transparent; color:inherit; opacity:.6; cursor:pointer; }
+.edu-task, .edu-ctask{ cursor:pointer; }
+.edu-done{ text-decoration:line-through; opacity:.6; }
